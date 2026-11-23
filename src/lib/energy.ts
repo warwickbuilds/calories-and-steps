@@ -33,12 +33,17 @@ export const CALORIE_FLOOR: Record<Sex, number> = { male: 1500, female: 1200 };
 
 export const STEP_TARGET = { min: 5000, max: 25000, step: 500, default: 10000 } as const;
 
-export function ageOn(birthDate: string, on: Date = new Date()): number {
-  const [y, m, d] = birthDate.split('-').map(Number);
-  let age = on.getFullYear() - y;
-  const beforeBirthday = on.getMonth() + 1 < m || (on.getMonth() + 1 === m && on.getDate() < d);
-  if (beforeBirthday) age -= 1;
-  return age;
+/**
+ * Age today, from the age the user entered and the local date (YYYY-MM-DD)
+ * they entered it. Adds a year for each full year since, so the calorie
+ * target keeps up without asking for a date of birth.
+ */
+export function currentAge(ageYears: number, setOn: string, on: Date = new Date()): number {
+  const [y, m, d] = setOn.split('-').map(Number);
+  let years = on.getFullYear() - y;
+  const beforeAnniversary = on.getMonth() + 1 < m || (on.getMonth() + 1 === m && on.getDate() < d);
+  if (beforeAnniversary) years -= 1;
+  return ageYears + Math.max(0, years);
 }
 
 /** Mifflin-St Jeor basal metabolic rate, calories per day. */

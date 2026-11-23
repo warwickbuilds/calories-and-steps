@@ -8,7 +8,7 @@ Built with Expo (SDK 58), Expo Router, expo-sqlite and Drizzle ORM. The look fol
 
 Phase 1 (foundation) of the MVP plan:
 
-- Onboarding: units, sex, date of birth, height, current and goal weight, activity level, goal mode and daily step target.
+- Onboarding: units, sex, age, height, current and goal weight, activity level, goal mode and daily step target.
 - Daily calorie target: Mifflin-St Jeor maintenance × activity, then a flat daily offset for the goal (hard cut −800, steady cut −500, maintain 0, bulk +500), never below 1,500 (men) or 1,200 (women). Protein 2 g/kg, fat 25% of calories, carbs the rest.
 - Today screen: steps and calories rings, macros, meals (with quick add and "Same as yesterday" on long press), and today's weight.
 - Settings for every profile field, units (metric by default, imperial optional) and appearance.

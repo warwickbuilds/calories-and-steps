@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { BirthDateField } from '@/components/fields/BirthDateField';
+import { AgeField } from '@/components/fields/AgeField';
 import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
@@ -9,7 +9,8 @@ import { TargetSummary } from '@/components/TargetSummary';
 import { Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
 import { updateProfile } from '@/db/queries';
 import { useProfile, useTargets } from '@/hooks/data';
-import { ACTIVITY_LEVELS, GOAL_MODES, type ActivityLevel, type GoalMode } from '@/lib/energy';
+import { toLocalDateString } from '@/lib/dates';
+import { ACTIVITY_LEVELS, GOAL_MODES, currentAge, type ActivityLevel, type GoalMode } from '@/lib/energy';
 import { space } from '@/theme/tokens';
 
 export default function SettingsScreen() {
@@ -67,7 +68,12 @@ export default function SettingsScreen() {
             { value: 'female', label: 'Female' },
           ]}
         />
-        <BirthDateField value={profile.birthDate} onChange={(birthDate) => updateProfile({ birthDate })} />
+        <AgeField
+          value={currentAge(profile.ageYears, profile.ageSetOn)}
+          onChange={(ageYears) => {
+            if (ageYears != null) updateProfile({ ageYears, ageSetOn: toLocalDateString() });
+          }}
+        />
         <HeightField
           units={units}
           valueCm={profile.heightCm}
