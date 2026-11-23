@@ -1,8 +1,60 @@
 # Calories and Steps
 
-An Android app for tracking calories, steps, weight and body fat. Everything is stored on the phone in SQLite. There is no account and no server.
+A simple, private Android app for tracking what you eat, how much you move and how your body changes. No account, no ads, no cloud: everything stays on your phone.
 
-It is not in the Play Store. Signed APK files are published on [GitHub Releases](https://github.com/warwickbuilds/calories-and-steps/releases) for sideloading (see [Installing on Android](#installing-on-android)). iOS is on hold; the iOS settings are kept so it can come back later.
+<p align="center">
+  <img src="docs/screenshots/today.png" width="200" alt="Today screen with the steps and calories rings, macros and meals" />
+  <img src="docs/screenshots/weight.png" width="200" alt="Weight screen with a one-month chart, trend line and change over time" />
+  <img src="docs/screenshots/progress.png" width="200" alt="Progress screen with Navy-method body fat, check-ins and a body-fat chart" />
+  <img src="docs/screenshots/today-dark.png" width="200" alt="Today screen in dark mode" />
+</p>
+
+**[Download the latest APK](https://github.com/warwickbuilds/calories-and-steps/releases/latest)** · Android only · Free and open source
+
+## What it does
+
+- **Calories and macros.** A daily calorie target worked out from your body and activity, with a goal of hard cut, steady cut, maintain or bulk. Protein, carbs and fat are shown against their own targets.
+- **Meals.** Log breakfast, lunch, dinner and snacks. Quick add calories in seconds, or copy a meal from yesterday.
+- **Weight.** A quick weigh-in on the home screen, charts from a week to all time, a smoothed trend line that ignores water swings, change over each period, and a projection of when you'll reach your goal.
+- **Body fat.** Body fat (Navy method) check-ins from a tape measure, with lean and fat mass, plain BMI alongside, and front, side and back photos you can line up and compare side by side.
+- **Steps.** A daily step target from 5,000 to 25,000 (step sync from Health Connect is coming).
+- **Light and dark.** Follows your phone, or pick one.
+- **Updates.** The app tells you when a new version is out.
+
+**Coming next:** photograph a meal and describe it out loud for an AI calorie estimate (using your own Google Gemini, OpenAI or Claude key), barcode scanning, reading nutrition labels, step sync from Health Connect, and backup and restore.
+
+## Install
+
+1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk`.
+2. Open the downloaded file. Android asks whether your browser (or Files app) may install unknown apps. Tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**. You only need to do this once for that browser or app.
+3. **Play Protect** may say the app is unrecognised or "unsafe" because it isn't from the Play Store. Tap **More details → Install anyway**. If it offers to scan the app, that's fine too.
+4. Open the app and set up your profile.
+
+**Updating**: when Today shows "Version x is available", tap **Download** and open the file. It installs over the old version and keeps your data. Every release is signed with the same key, so this always works. If Android ever says the app "conflicts with an existing package", the APK was signed with a different key; don't uninstall to get around it, because that deletes your data.
+
+## Getting started
+
+1. Pick metric or imperial.
+2. Enter your sex, age and height, then your current weight and an optional goal weight.
+3. Choose how active you are and your goal (hard cut, steady cut, maintain or bulk). You'll see your daily calorie target and macros straight away.
+4. Set a daily step target.
+
+<p align="center"><img src="docs/screenshots/onboarding-goal.png" width="200" alt="Choosing a goal during setup, with the daily calorie target shown" /></p>
+
+You can change any of this later in Settings (the gear on the Today screen).
+
+## Your data and privacy
+
+- Everything is stored on your phone. There is no account and nothing is uploaded.
+- **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Backup and restore are on the way.
+- The only thing the app sends today is a daily check with GitHub for a newer version.
+- When AI meal estimates arrive, the photo and description of a meal go to the AI provider you choose, using your own key. With a free Google Gemini key, Google may use those requests to improve its models, so a paid key is recommended.
+
+---
+
+# For developers
+
+Everything below is about how the app is built, released and maintained.
 
 - MVP plan: https://claude.ai/artifact/KJqryMXn1xGxdkzNyhkXJX
 - Design spec ("Rings"): https://claude.ai/artifact/K2jUTsD1PoJ4e57GyVbH9M
@@ -16,7 +68,6 @@ Wording rule: the app always says "calories", never "kcal".
 - [Versions and changelog](#versions-and-changelog)
 - [Architecture](#architecture)
 - [Services](#services)
-- [Installing on Android](#installing-on-android)
 - [Releases](#releases)
 - [Running it](#running-it)
 - [Maintenance](#maintenance)
@@ -31,11 +82,13 @@ Wording rule: the app always says "calories", never "kcal".
 | 3. AI meal logging | Photo and voice meal estimate, provider adapter, review screen, API key setup | Next |
 | 4. Barcode, panels and steps | Open Food Facts scanner, nutrition-panel reading, favourites, step sync | Planned |
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
-| Releases | Signed APKs on GitHub Releases, in-app update check | Done (PR #5) |
+| Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
 The app has not yet been installed on a phone. The first signed APK comes from tagging `v0.2.0` once the release key secrets are set up (see [Releases](#releases)).
 
 ## Features
+
+The detailed list of what works now.
 
 ### Profile and targets
 
@@ -96,7 +149,7 @@ App version: **0.2.0** (in `app.json` and `package.json`). Android's `versionCod
 
 | Date | Change | PR |
 | --- | --- | --- |
-| 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. Version 0.2.0 | #5 |
+| 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. README split into a public part (features, screenshots, install) and a developer part. Version 0.2.0 | #5 |
 | 2026-11-23 | README brought fully up to date; rule added to keep it current with every PR | #4 |
 | 2026-11-23 | Phase 2: weight charts, goal projection, Navy body-fat check-ins with photos | #3 |
 | 2026-11-23 | Ask for age instead of date of birth (migrations 0001 and 0002) | #2 |
@@ -158,6 +211,7 @@ src/lib/          Pure maths and formatting, with tests in __tests__/
 src/theme/        Design tokens (colors.ts, tokens.ts) and the theme provider
 drizzle/          Generated migrations, bundled into the app
 plugins/          Expo config plugins and helpers for the Android release build
+docs/screenshots/ README screenshots
 .github/workflows Android release workflow (android-release.yml)
 ```
 
@@ -175,19 +229,6 @@ plugins/          Expo config plugins and helpers for the Android release build
 | Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
 
 The only network call today is the daily update check. Once AI and barcodes arrive, the only calls will be the AI estimate, the Open Food Facts lookup and an optional backup the user chooses to save. Voice notes will be transcribed on the phone and never uploaded.
-
-## Installing on Android
-
-1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk`.
-2. Open the downloaded file. Android asks whether your browser (or Files app) may install unknown apps. Tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**. You only do this once per app you install from.
-3. **Play Protect** may say the app is unrecognised or "unsafe" because it isn't from the Play Store. Tap **More details → Install anyway**. If it offers to scan the app, that's fine too.
-4. Open the app and set up your profile.
-
-**Updating**: when Today shows "Version x is available", tap **Download** and open the file. It installs over the old version and keeps your data. Every release is signed with the same key, so this always works. If Android ever says the app "conflicts with an existing package", the APK was signed with a different key; don't uninstall to get around it, because that deletes your data.
-
-**Your data lives only on the phone.** Uninstalling the app, or clearing its storage in Android settings, deletes every meal, weight, check-in and photo. Backup export and restore arrive in Phase 5.
-
-The app checks GitHub for updates, so the repo must be public for the check and the downloads to work without signing in. No keys or personal data are stored in the code.
 
 ## Releases
 
@@ -221,7 +262,7 @@ Android only installs an update if it is signed with the same key as the install
    | `ANDROID_CERT_SHA256` | The SHA256 fingerprint (optional, but the build then refuses to publish an APK signed with any other key) |
 
 6. Delete `keystore.txt`.
-7. Make the repo public (**Settings → General → Danger Zone → Change visibility**) so the APK links and the in-app update check work without signing in.
+7. The repo must be public (**Settings → General → Danger Zone → Change visibility**) so the APK links and the in-app update check work without signing in. Nothing private is in the code or its history.
 
 ### Making a release
 
@@ -262,6 +303,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **Database changes**: edit `src/db/schema.ts`, run `npm run db:generate`, and check the SQL it writes into `drizzle/`. drizzle-kit asks about renames interactively and fails when it can't, so do a rename as two migrations (add the new column, then drop the old one) and hand-add any data backfill. Never edit a migration that has shipped.
 - **Upgrading the Expo SDK**: read the SDK release notes, run `npx expo install expo@^<new>` then `npx expo install --fix`, run all the checks, then make new development builds.
 - **Releases**: see [Releases](#releases). Never reuse or lower a version: Android needs a higher `versionCode` every time. Minor and patch must stay below 100.
+- **Screenshots** (`docs/screenshots`): taken from the web build at 390×844, 2× scale, with Playwright. `metro.config.js` adds `wasm` as an asset so expo-sqlite's web worker bundles. On web the database must be opened with `openDatabaseAsync` once before the app loads, so use a temporary entry file that does that (and seeds sample weights and check-ins) and points `main` at it while capturing. Don't commit that entry. Retake them when a screen changes noticeably.
 - **Release key**: lives only in GitHub secrets and Rick's backups. If GitHub secrets are ever lost, re-add them from the backup. If the key itself is lost, a new key means every phone has to uninstall (and lose data) once, so take a backup export first.
 - **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".

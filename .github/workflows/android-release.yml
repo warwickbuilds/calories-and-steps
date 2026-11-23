@@ -136,7 +136,7 @@ jobs:
         run: |
           cat > notes.md <<NOTES
           Download **${{ steps.apk.outputs.path }}** below and open it on your Android phone to install or update.
-          First time? See [Installing on Android](https://github.com/${{ github.repository }}#installing-on-android).
+          First time? See [Installing on Android](https://github.com/${{ github.repository }}#install).
 
           Installing over an older version keeps your data. Uninstalling deletes it.
 
