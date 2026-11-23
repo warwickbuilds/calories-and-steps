@@ -17,4 +17,4 @@ Every pull request updates `README.md` in the same PR. Before opening or updatin
 
 - The app says "calories", never "kcal".
 - Green is only for steps and orange only for calories.
-- Run `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export` before a PR.
+- Run `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export -p android` before a PR.

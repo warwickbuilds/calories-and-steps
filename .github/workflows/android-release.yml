@@ -1,0 +1,148 @@
+# Builds a signed Android APK.
+#
+# - Pushing a tag like v0.2.0 builds the APK, signs it with the release key
+#   and publishes it as a GitHub Release. The tag must match "version" in app.json.
+# - Pull requests that touch the build set-up build the APK too (no release),
+#   so a broken build shows up before anything is tagged.
+# - "Run workflow" on the Actions tab does the same as a pull request.
+#
+# Secrets (Settings → Secrets and variables → Actions), see README "Releases":
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+#   ANDROID_CERT_SHA256 (optional: the build fails if the APK isn't signed with this certificate)
+
+name: Android release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  pull_request:
+    paths:
+      - '.github/workflows/android-release.yml'
+      - 'plugins/**'
+      - 'app.json'
+      - 'app.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read the app version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "App version $VERSION"
+          if [ "$IS_RELEASE" = "true" ] && [ "${GITHUB_REF_NAME}" != "v$VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} doesn't match app.json version $VERSION. Bump app.json (and package.json) first, or tag v$VERSION."
+            exit 1
+          fi
+
+      - name: Check the release key is set up
+        if: env.IS_RELEASE == 'true' && env.HAS_KEY != 'true'
+        run: |
+          echo "::error::The ANDROID_KEYSTORE_BASE64 secret is missing. See README → Releases → One-time setup."
+          exit 1
+
+      - run: npm ci
+
+      - name: Run checks
+        run: |
+          npm test -- --ci
+          npm run typecheck
+          npm run lint
+
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: 1
+
+      - name: Restore the release key
+        if: env.HAS_KEY == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build the release APK
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --no-daemon
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Name the APK and check its signature
+        id: apk
+        env:
+          EXPECTED_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        run: |
+          APK="calories-and-steps-${{ steps.version.outputs.version }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$APK"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK" | tee certs.txt
+          ACTUAL=$(grep -m1 'certificate SHA-256 digest' certs.txt | awk '{print $NF}')
+          echo "sha256=$ACTUAL" >> "$GITHUB_OUTPUT"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          if [ "$IS_RELEASE" = "true" ] && [ -n "$EXPECTED_SHA256" ]; then
+            WANT=$(echo "$EXPECTED_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')
+            if [ "$ACTUAL" != "$WANT" ]; then
+              echo "::error::APK is signed with $ACTUAL but ANDROID_CERT_SHA256 says $WANT. Phones would refuse this update."
+              exit 1
+            fi
+          fi
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::warning::No release key secrets, so this APK is signed with the debug key. It's for testing only and won't install over a released version."
+          fi
+
+      - name: Keep the APK as a build artifact
+        if: env.IS_RELEASE != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.path }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 7
+
+      - name: Publish the GitHub Release
+        if: env.IS_RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notes.md <<NOTES
+          Download **${{ steps.apk.outputs.path }}** below and open it on your Android phone to install or update.
+          First time? See [Installing on Android](https://github.com/${{ github.repository }}#installing-on-android).
+
+          Installing over an older version keeps your data. Uninstalling deletes it.
+
+          Signing certificate SHA-256: \`${{ steps.apk.outputs.sha256 }}\`
+          NOTES
+          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" \
+            --title "Calories and Steps ${{ steps.version.outputs.version }}" \
+            --notes-file notes.md \
+            --generate-notes

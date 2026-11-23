@@ -1,6 +1,8 @@
 # Calories and Steps
 
-An iOS and Android app for tracking calories, steps, weight and body fat. Everything is stored on the phone in SQLite. There is no account and no server.
+An Android app for tracking calories, steps, weight and body fat. Everything is stored on the phone in SQLite. There is no account and no server.
+
+It is not in the Play Store. Signed APK files are published on [GitHub Releases](https://github.com/warwickbuilds/calories-and-steps/releases) for sideloading (see [Installing on Android](#installing-on-android)). iOS is on hold; the iOS settings are kept so it can come back later.
 
 - MVP plan: https://claude.ai/artifact/KJqryMXn1xGxdkzNyhkXJX
 - Design spec ("Rings"): https://claude.ai/artifact/K2jUTsD1PoJ4e57GyVbH9M
@@ -14,6 +16,8 @@ Wording rule: the app always says "calories", never "kcal".
 - [Versions and changelog](#versions-and-changelog)
 - [Architecture](#architecture)
 - [Services](#services)
+- [Installing on Android](#installing-on-android)
+- [Releases](#releases)
 - [Running it](#running-it)
 - [Maintenance](#maintenance)
 - [Future enhancements](#future-enhancements)
@@ -26,9 +30,10 @@ Wording rule: the app always says "calories", never "kcal".
 | 2. Weight and body fat | Weight charts, change cards, goal projection, Navy check-ins with photos | Done (PR #3) |
 | 3. AI meal logging | Photo and voice meal estimate, provider adapter, review screen, API key setup | Next |
 | 4. Barcode, panels and steps | Open Food Facts scanner, nutrition-panel reading, favourites, step sync | Planned |
-| 5. Backup and polish | Zip export and import, empty and offline states, icons, store testing | Planned |
+| 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
+| Releases | Signed APKs on GitHub Releases, in-app update check | Done (PR #5) |
 
-The app has not yet been installed on a phone. That needs an EAS development build on Rick's Expo account (see [Running it](#running-it)).
+The app has not yet been installed on a phone. The first signed APK comes from tagging `v0.2.0` once the release key secrets are set up (see [Releases](#releases)).
 
 ## Features
 
@@ -77,13 +82,21 @@ The app has not yet been installed on a phone. That needs an EAS development bui
 
 - Every profile field, units, goal mode, target date and step target.
 - Appearance: System, Light or Dark.
+- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it.
+- App version, with a "Check for updates" button.
+
+### Updates
+
+- On Android the app asks GitHub for the latest release at most once a day. When a newer version exists, Today shows a "Version x is available" card with a Download button that opens the APK link. "Not now" hides it until the next version.
+- The check sends one anonymous request to `api.github.com` and nothing else. If GitHub can't be reached, or the repo is private, it stays quiet.
 
 ## Versions and changelog
 
-App version: **0.1.0** (in `app.json` and `package.json`). Store build numbers are managed remotely by EAS (`appVersionSource: remote`, `autoIncrement` on production).
+App version: **0.2.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. Version 0.2.0 | #5 |
 | 2026-11-23 | README brought fully up to date; rule added to keep it current with every PR | #4 |
 | 2026-11-23 | Phase 2: weight charts, goal projection, Navy body-fat check-ins with photos | #3 |
 | 2026-11-23 | Ask for age instead of date of birth (migrations 0001 and 0002) | #2 |
@@ -102,6 +115,8 @@ App version: **0.1.0** (in `app.json` and `package.json`). Store build numbers a
 | Reanimated | 4.7.1 |
 | react-native-svg | ^15.16.0 |
 | expo-camera / expo-image-manipulator / expo-file-system | ~58.0.14 / ~58.0.16 / ~58.0.14 |
+| expo-constants (update check) | ~58.0.16 |
+| Release build tools (CI) | Node 22, JDK 17 (Temurin), Gradle from the Expo template |
 | TypeScript | ~6.0.3 |
 | Jest (jest-expo preset) | ^30.5.2 |
 
@@ -127,6 +142,8 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
   - Migrations in `drizzle/` are bundled into the app (babel inline-import plus a metro `sql` extension) and run at start-up by `useMigrations` in `src/app/_layout.tsx`.
 - **Photos**: taken with expo-camera, saved by expo-image-manipulator as a 1080 px JPEG plus a 240 px thumbnail under `document/photos`. The database stores relative paths only, so backups and restores stay portable. `src/lib/captureStore.ts` hands camera results back to the check-in screen.
 - **Charts**: a small custom SVG line chart (`src/components/LineChart.tsx`) instead of a chart library. Charts use neutral colours, because green and orange are reserved for steps and calories.
+- **Release build** (`app.config.js`, `plugins/`): `app.config.js` adds the `versionCode` and the `withReleaseSigning` config plugin on top of `app.json`. The plugin edits the generated `android/app/build.gradle` so release builds sign with the key named by `ANDROID_KEYSTORE_PATH` and friends, falling back to the debug key when they are not set. `android/` itself is never committed; `expo prebuild` regenerates it.
+- **Update check** (`src/lib/updates.ts`, `src/lib/version.ts`, `src/components/UpdateBanner.tsx`): compares the installed version (`expo-constants`) with the latest GitHub release of `extra.releasesRepo` in `app.json`, caching the result and any dismissed version in `update-check.json` in the document folder.
 - **Design system**: tokens in `src/theme` (colours for light and dark, spacing, radius, type scale). Space Grotesk for numbers and headings, Inter for text, lucide icons. Font scaling is capped at 1.3×.
 - **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `body.ts` (Navy formula, BMI), `weight.ts` (trend, change rows, projection), `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
 
@@ -140,24 +157,83 @@ src/hooks/        Live data hooks
 src/lib/          Pure maths and formatting, with tests in __tests__/
 src/theme/        Design tokens (colors.ts, tokens.ts) and the theme provider
 drizzle/          Generated migrations, bundled into the app
+plugins/          Expo config plugins and helpers for the Android release build
+.github/workflows Android release workflow (android-release.yml)
 ```
 
 ## Services
 
 | Service | Used for | State |
 | --- | --- | --- |
-| Expo EAS Build | Cloud builds for iOS and Android (no Mac needed). Profiles: development, development-simulator, preview, production | In use |
 | GitHub | Code and pull requests | In use |
-| Apple App Store and Google Play | Public release, via EAS Submit | Phase 5 |
-| Google Gemini, OpenAI, Anthropic Claude | AI meal and nutrition-panel estimates, using the user's own API key stored in the Keychain or Keystore (expo-secure-store). Gemini is the default because its key is free | Phase 3 |
+| GitHub Actions | Builds, signs and publishes the release APK on every `v*` tag (`android-release.yml`). Holds the release key as secrets. Free for this use | In use |
+| GitHub Releases | Hosts the APKs. The app reads `api.github.com/repos/<repo>/releases/latest` once a day to offer updates. Needs a public repo (see [Releases](#releases)) | In use |
+| Expo EAS Build | Optional development builds for working on the app. Not used for releases, so the free tier's monthly build limit doesn't matter | Optional |
+| Apple App Store and Google Play | Store release | On hold |
+| Google Gemini (default), OpenAI, Anthropic Claude | AI meal and nutrition-panel estimates, using the user's own API key stored in the Android Keystore (expo-secure-store). Rick uses a paid Gemini key. On Google's free tier, Google may use requests (photos and descriptions) to improve its models, so the consent screen says so and recommends a paid key | Phase 3 |
 | Open Food Facts | Barcode lookups. Free, no key, results cached locally | Phase 4 |
 | Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
 
-The app makes no network calls today. Once AI and barcodes arrive, the only calls will be the AI estimate, the Open Food Facts lookup and an optional backup the user chooses to save. Voice notes will be transcribed on the phone and never uploaded.
+The only network call today is the daily update check. Once AI and barcodes arrive, the only calls will be the AI estimate, the Open Food Facts lookup and an optional backup the user chooses to save. Voice notes will be transcribed on the phone and never uploaded.
+
+## Installing on Android
+
+1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk`.
+2. Open the downloaded file. Android asks whether your browser (or Files app) may install unknown apps. Tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**. You only do this once per app you install from.
+3. **Play Protect** may say the app is unrecognised or "unsafe" because it isn't from the Play Store. Tap **More details → Install anyway**. If it offers to scan the app, that's fine too.
+4. Open the app and set up your profile.
+
+**Updating**: when Today shows "Version x is available", tap **Download** and open the file. It installs over the old version and keeps your data. Every release is signed with the same key, so this always works. If Android ever says the app "conflicts with an existing package", the APK was signed with a different key; don't uninstall to get around it, because that deletes your data.
+
+**Your data lives only on the phone.** Uninstalling the app, or clearing its storage in Android settings, deletes every meal, weight, check-in and photo. Backup export and restore arrive in Phase 5.
+
+The app checks GitHub for updates, so the repo must be public for the check and the downloads to work without signing in. No keys or personal data are stored in the code.
+
+## Releases
+
+APKs are built and signed by GitHub Actions (`.github/workflows/android-release.yml`) with a local Gradle build (`expo prebuild` then `gradlew assembleRelease`), not EAS.
+
+### One-time setup: the release key
+
+Android only installs an update if it is signed with the same key as the installed app. **If the key is lost, no update can ever install over the existing app again**, and the only way forward is uninstalling, which wipes the data. So make it once, keep two backups, and never commit it.
+
+1. Make the key on your computer (needs a JDK; Android Studio includes one, or install Temurin 17). Pick a strong password when it asks:
+
+   ```bash
+   keytool -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks \
+     -alias calories-and-steps -keyalg RSA -keysize 4096 -validity 36500 \
+     -dname "CN=Calories and Steps"
+   ```
+
+2. Back it up: save the `.jks` file and the password in your password manager, and a second copy somewhere offline (for example a USB stick). Don't put it in the repo folder.
+3. Encode it for GitHub:
+   - macOS / Linux: `base64 -i calories-and-steps-release.jks | tr -d '\n' > keystore.txt`
+   - Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("calories-and-steps-release.jks")) | Set-Content keystore.txt`
+4. Get the certificate fingerprint: `keytool -list -v -keystore calories-and-steps-release.jks -alias calories-and-steps` and copy the `SHA256:` line.
+5. In GitHub, open the repo's **Settings → Secrets and variables → Actions → New repository secret** and add:
+
+   | Secret | Value |
+   | --- | --- |
+   | `ANDROID_KEYSTORE_BASE64` | Contents of `keystore.txt` |
+   | `ANDROID_KEYSTORE_PASSWORD` | The password |
+   | `ANDROID_KEY_ALIAS` | `calories-and-steps` |
+   | `ANDROID_KEY_PASSWORD` | The password (same as above) |
+   | `ANDROID_CERT_SHA256` | The SHA256 fingerprint (optional, but the build then refuses to publish an APK signed with any other key) |
+
+6. Delete `keystore.txt`.
+7. Make the repo public (**Settings → General → Danger Zone → Change visibility**) so the APK links and the in-app update check work without signing in.
+
+### Making a release
+
+1. In a PR, bump `version` in `app.json` and `package.json` (for example 0.2.0 → 0.3.0) and add a changelog row.
+2. After it merges, tag `main` and push the tag: `git tag v0.3.0 && git push origin v0.3.0` (or create the release from GitHub's **Releases → Draft a new release** with a new `v0.3.0` tag).
+3. The workflow checks the tag matches `app.json`, runs the tests, builds and signs the APK, checks the signature and publishes the release with the APK attached. It takes about 15 to 25 minutes.
+
+Pull requests that change the build set-up (`app.json`, `app.config.js`, `plugins/`, dependencies or the workflow) also build the APK, without releasing it, and keep it as a build artifact for 7 days. **Run workflow** on the Actions tab does the same for any branch.
 
 ## Running it
 
-The app uses native modules, so it runs in a development build rather than Expo Go.
+For day-to-day development the app runs in a development build rather than Expo Go, because it uses native modules.
 
 ```bash
 npm install
@@ -176,16 +252,18 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
-| `npx expo export` | Bundles the app, a quick check that everything resolves |
+| `npx expo export -p android` | Bundles the app, a quick check that everything resolves. (The web bundle fails on expo-sqlite's wasm file; the app doesn't target web) |
 
 ## Maintenance
 
-- **Before every PR**: run `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export`, and update this README (see `CLAUDE.md`).
+- **Before every PR**: run `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export -p android`, and update this README (see `CLAUDE.md`).
 - **Adding a package**: use `npx expo install <package>` so it matches the SDK. If that can't reach Expo's servers, read the right version from `node -e 'console.log(require("expo/bundledNativeModules.json")["<package>"])'` and `npm install` it.
 - **Native modules**: after adding one, add its config plugin to `app.json` if it has one, then make a new EAS development build.
 - **Database changes**: edit `src/db/schema.ts`, run `npm run db:generate`, and check the SQL it writes into `drizzle/`. drizzle-kit asks about renames interactively and fails when it can't, so do a rename as two migrations (add the new column, then drop the old one) and hand-add any data backfill. Never edit a migration that has shipped.
 - **Upgrading the Expo SDK**: read the SDK release notes, run `npx expo install expo@^<new>` then `npx expo install --fix`, run all the checks, then make new development builds.
-- **Releases**: bump `version` in `app.json` and `package.json`, add a changelog row above, and build with the production profile. EAS raises the build numbers.
+- **Releases**: see [Releases](#releases). Never reuse or lower a version: Android needs a higher `versionCode` every time. Minor and patch must stay below 100.
+- **Release key**: lives only in GitHub secrets and Rick's backups. If GitHub secrets are ever lost, re-add them from the backup. If the key itself is lost, a new key means every phone has to uninstall (and lose data) once, so take a backup export first.
+- **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
 
 ## Future enhancements
@@ -196,7 +274,8 @@ Everything we've discussed that is not built yet.
 - Photo plus hold-to-talk voice note, transcribed on the phone, sent in one request to the user's chosen AI provider.
 - Provider adapter with one JSON schema for all providers: Gemini (default), OpenAI and Claude. Mid-tier models for meals, the cheapest model for nutrition panels, low reasoning effort.
 - Review and edit screen (edit grams, delete, add items) before saving.
-- Guided "get your key" step with a test button, a one-time consent screen naming the provider and what is sent, and a privacy note for Gemini's free tier.
+- Guided "get your key" step with a test button, and a one-time consent screen naming the provider and what is sent.
+- Gemini privacy note on the consent screen: with a free-tier key, Google may use the photos and descriptions sent to improve its models (and people may review them); a paid key (billing turned on) avoids this, so the note recommends one.
 - A weighed 30-meal benchmark across providers to pick the default models.
 - Food log tab with day-by-day history, swiping between days and a weekly calorie average.
 
@@ -208,9 +287,12 @@ Everything we've discussed that is not built yet.
 
 **Phase 5: backup and polish**
 - Export a single zip (database, manifest and photos) through the share sheet, and import it back.
-- Empty states, offline error handling, app icons, TestFlight and Play internal testing.
+- A reminder to back up every couple of weeks, showing the date of the last backup, plus a nudge to export before installing an update by hand.
+- Empty states, offline error handling, app icons.
 
 **After the MVP**
+- Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.
+- Download and open the update APK from inside the app instead of through the browser.
 - A small key-holding relay (with App Attest and Play Integrity) so people can use the AI without their own key.
 - Signing in with OpenRouter instead of pasting a key.
 - Automatic Google Drive backup.
