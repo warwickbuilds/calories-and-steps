@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
 import { Check, Plus, Settings } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { AddButton, Button, Card, DualRings, IconButton, ProgressBar, Screen, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { logWeightForDay } from '@/db/queries';
 import { useDayTotals, useLatestWeight, useProfile, useRecentWeights, useTargets } from '@/hooks/data';
-import { addDays, dayBounds, formatLongDate, toLocalDateString } from '@/lib/dates';
+import { addDays, dayBounds, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import {
   MEAL_TYPES,
   caloriesReadout,
@@ -175,61 +175,83 @@ function MacrosCard({ day }: { day: string }) {
 function MealsCard({ day }: { day: string }) {
   const { colors } = useTheme();
   const totals = useDayTotals(day);
+  const yesterday = toLocalDateString(addDays(fromLocalDateString(day), -1));
+  const yesterdayTotals = useDayTotals(yesterday);
 
+  // Full add-food flow (photo, barcode, search) arrives in Phase 3; until then + opens quick add.
   const openQuickAdd = (meal: MealType) => router.push({ pathname: '/quick-add', params: { meal } });
-
-  const sameAsYesterday = async (meal: MealType, label: string) => {
-    const yesterday = toLocalDateString(addDays(new Date(), -1));
-    const copied = await copyMeal(meal, yesterday, day);
-    if (copied === 0) Alert.alert('Nothing to copy', `No ${label.toLowerCase()} was logged yesterday.`);
-  };
-
-  const moreOptions = (meal: MealType, label: string) => {
-    const options = ['Same as yesterday', 'Quick add', 'Cancel'];
-    const pick = (i: number) => {
-      if (i === 0) sameAsYesterday(meal, label);
-      if (i === 1) openQuickAdd(meal);
-    };
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex: 2, title: label }, pick);
-    } else {
-      Alert.alert(label, undefined, [
-        { text: options[0], onPress: () => pick(0) },
-        { text: options[1], onPress: () => pick(1) },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
-  };
 
   return (
     <Card style={styles.mealsCard}>
       {MEAL_TYPES.map((m, i) => {
         const t = totals.byMeal[m.value];
+        const hadYesterday = yesterdayTotals.byMeal[m.value].count > 0;
         return (
           <View
             key={m.value}
             style={[styles.mealRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
-            <Pressable
-              style={styles.mealText}
-              accessibilityRole="button"
-              accessibilityHint={`Shows what you logged for ${m.label.toLowerCase()}`}
-              onPress={() => router.push({ pathname: '/food', params: { meal: m.value } })}>
-              <Text variant="bodyMedium">{m.label}</Text>
-              <Text variant="label" muted style={{ fontVariant: ['tabular-nums'] }}>
-                {t.count > 0 ? `${formatNumber(t.calories)} calories` : 'Not logged'}
-              </Text>
-            </Pressable>
+            <View style={styles.mealText}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityHint={`Shows what you logged for ${m.label.toLowerCase()}`}
+                onPress={() => router.push({ pathname: '/food', params: { meal: m.value } })}>
+                <Text variant="bodyMedium">{m.label}</Text>
+                <Text variant="label" muted style={{ fontVariant: ['tabular-nums'] }}>
+                  {t.count > 0 ? `${formatNumber(t.calories)} calories` : 'Not logged'}
+                </Text>
+              </Pressable>
+              <View style={styles.pills}>
+                {hadYesterday ? (
+                  <Pill
+                    label="Same as yesterday"
+                    accessibilityLabel={`Same ${m.label.toLowerCase()} as yesterday`}
+                    onPress={() => copyMeal(m.value, yesterday, day)}
+                  />
+                ) : null}
+                <Pill
+                  label="Quick add"
+                  accessibilityLabel={`Quick add to ${m.label}`}
+                  onPress={() => openQuickAdd(m.value)}
+                />
+              </View>
+            </View>
             <AddButton
               icon={Plus}
               accessibilityLabel={`Add food to ${m.label}`}
-              accessibilityHint="Long press for Same as yesterday"
               onPress={() => openQuickAdd(m.value)}
-              onLongPress={() => moreOptions(m.value, m.label)}
             />
           </View>
         );
       })}
     </Card>
+  );
+}
+
+/** Small pill: 28 tall, caption text in muted on a track fill, 44 tap area. */
+function Pill({
+  label,
+  onPress,
+  accessibilityLabel,
+}: {
+  label: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      hitSlop={{ top: 8, bottom: 8 }}>
+      {({ pressed }) => (
+        <View style={[styles.pill, { backgroundColor: colors.track, opacity: pressed ? 0.7 : 1 }]}>
+          <Text variant="caption" muted>
+            {label}
+          </Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -322,8 +344,10 @@ const styles = StyleSheet.create({
   macros: { flexDirection: 'row', gap: space[4] },
   macro: { flex: 1, gap: space[1] },
   mealsCard: { paddingVertical: space[1], gap: 0 },
-  mealRow: { minHeight: 48 + space[2], flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  mealText: { flex: 1, minHeight: layout.minTap, justifyContent: 'center', paddingVertical: space[1] },
+  mealRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[2] },
+  mealText: { flex: 1, gap: space[2] },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  pill: { height: 28, borderRadius: 14, paddingHorizontal: space[3], justifyContent: 'center' },
   weightRow: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
   weightLeft: { flex: 1, gap: 2 },
   weightInputRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] },
