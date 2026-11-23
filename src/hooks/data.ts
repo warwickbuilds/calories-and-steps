@@ -1,10 +1,12 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
 
-import { dayItemsQuery, latestWeightQuery, profileQuery, recentWeightsQuery } from '@/db/queries';
+import { bodyChecksQuery, bodyPhotosQuery, type Pose } from '@/db/body';
+import { allWeightsQuery, dayItemsQuery, latestWeightQuery, profileQuery, recentWeightsQuery } from '@/db/queries';
 import { addDays, toLocalDateString } from '@/lib/dates';
 import { currentAge, dailyTargets } from '@/lib/energy';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
+import { dailyWeights, withTrend } from '@/lib/weight';
 
 export function useProfile() {
   const { data, updatedAt } = useLiveQuery(profileQuery());
@@ -71,4 +73,36 @@ export function useDayTotals(day: string = toLocalDateString()): DayTotals {
     }
     return { ...totals, byMeal };
   }, [items]);
+}
+
+/** Every weight entry as daily points with the smoothed trend, oldest first. */
+export function useWeightTrend() {
+  const { data } = useLiveQuery(allWeightsQuery());
+  return useMemo(() => withTrend(dailyWeights(data ?? [])), [data]);
+}
+
+export interface CheckIn {
+  id: number;
+  measuredAt: string;
+  neckCm: number;
+  waistCm: number;
+  hipCm: number | null;
+  bodyFatPct: number;
+  weightKg: number | null;
+  photos: Partial<Record<Pose, { path: string; thumbPath: string | null }>>;
+}
+
+/** Navy check-ins with their photos, newest first. */
+export function useCheckIns(): CheckIn[] {
+  const { data: checks } = useLiveQuery(bodyChecksQuery());
+  const { data: photos } = useLiveQuery(bodyPhotosQuery());
+  return useMemo(() => {
+    const byCheck = new Map<number, CheckIn['photos']>();
+    for (const p of photos ?? []) {
+      const m = byCheck.get(p.bodyCheckId) ?? {};
+      m[p.pose] = { path: p.path, thumbPath: p.thumbPath };
+      byCheck.set(p.bodyCheckId, m);
+    }
+    return (checks ?? []).map((c) => ({ ...c, photos: byCheck.get(c.id) ?? {} }));
+  }, [checks, photos]);
 }

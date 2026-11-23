@@ -14,7 +14,13 @@ Phase 1 (foundation) of the MVP plan:
 - Settings for every profile field, units (metric by default, imperial optional) and appearance.
 - The full local database schema for later phases (meals, food items, saved foods, weight, body checks, body photos, daily steps).
 
-Coming next: weight charts and Navy body-fat check-ins (Phase 2), AI meal logging (Phase 3), barcodes and step sync (Phase 4), backup (Phase 5).
+Phase 2 (weight and body fat):
+
+- Weight tab: chart with 1W / 1M / 6M / 1Y / All and a smoothed trend line (10% exponential smoothing per day), change over week, month, 6 months, year and all time, and a goal projection from the last four weeks of trend, plus the weekly rate needed for an optional target date.
+- Progress tab: Navy method check-ins (neck, waist, hips for women) with lean and fat mass, front / side / back photos taken with a framing guide and a ghost of the last photo, a scrollable timeline, side-by-side compare of any two dates, and a body-fat chart. Plain BMI is shown alongside.
+- Photos are stored as 1080 px JPEGs with 240 px thumbnails in the app's document folder; the database stores relative paths.
+
+Coming next: AI meal logging (Phase 3), barcodes and step sync (Phase 4), backup (Phase 5).
 
 ## Running it
 
