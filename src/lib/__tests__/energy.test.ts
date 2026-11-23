@@ -1,9 +1,11 @@
-import { GOAL_MODES, ageOn, bmr, dailyTargets } from '../energy';
+import { GOAL_MODES, bmr, currentAge, dailyTargets } from '../energy';
 
-describe('ageOn', () => {
-  it('counts birthdays correctly', () => {
-    expect(ageOn('1990-06-15', new Date(2026, 5, 14))).toBe(35);
-    expect(ageOn('1990-06-15', new Date(2026, 5, 15))).toBe(36);
+describe('currentAge', () => {
+  it('adds a year on each anniversary of when the age was entered', () => {
+    expect(currentAge(35, '2026-11-23', new Date(2026, 10, 23))).toBe(35);
+    expect(currentAge(35, '2026-11-23', new Date(2027, 10, 22))).toBe(35);
+    expect(currentAge(35, '2026-11-23', new Date(2027, 10, 23))).toBe(36);
+    expect(currentAge(35, '2026-11-23', new Date(2029, 0, 1))).toBe(37);
   });
 });
 

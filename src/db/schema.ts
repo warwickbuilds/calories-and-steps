@@ -16,7 +16,11 @@ const createdAt = () =>
 export const profile = sqliteTable('profile', {
   id: integer('id').primaryKey(),
   sex: text('sex', { enum: ['male', 'female'] }).notNull(),
-  birthDate: text('birth_date').notNull(),
+  /** Age in years as entered, and the local date it was entered; see currentAge(). */
+  // Defaults only exist so the column could be added to an existing table;
+  // the app always writes both values. Backfilled from birth_date in migration 0001.
+  ageYears: integer('age_years').notNull().default(30),
+  ageSetOn: text('age_set_on').notNull().default('2026-01-01'),
   heightCm: real('height_cm').notNull(),
   activityLevel: text('activity_level', {
     enum: ['sedentary', 'light', 'moderate', 'very', 'extra'],

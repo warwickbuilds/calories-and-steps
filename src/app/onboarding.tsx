@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { BirthDateField } from '@/components/fields/BirthDateField';
+import { AgeField } from '@/components/fields/AgeField';
 import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
@@ -12,12 +12,12 @@ import {
   ACTIVITY_LEVELS,
   GOAL_MODES,
   STEP_TARGET,
-  ageOn,
   dailyTargets,
   type ActivityLevel,
   type GoalMode,
   type Sex,
 } from '@/lib/energy';
+import { toLocalDateString } from '@/lib/dates';
 import type { UnitSystem } from '@/lib/units';
 import { LIMITS, inRange } from '@/lib/validation';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -28,7 +28,7 @@ const APP_NAME = 'Calories and Steps';
 interface Draft {
   units: UnitSystem;
   sex: Sex | null;
-  birthDate: string | null;
+  age: number | null;
   heightCm: number | null;
   weightKg: number | null;
   goalWeightKg: number | null;
@@ -46,7 +46,7 @@ export default function Onboarding() {
   const [d, setD] = useState<Draft>({
     units: 'metric',
     sex: null,
-    birthDate: null,
+    age: null,
     heightCm: null,
     weightKg: null,
     goalWeightKg: null,
@@ -57,10 +57,9 @@ export default function Onboarding() {
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }));
 
   const name = STEPS[step];
-  const age = d.birthDate ? ageOn(d.birthDate) : null;
   const canContinue =
     name === 'about'
-      ? !!d.sex && inRange(age, LIMITS.age) && inRange(d.heightCm, LIMITS.heightCm)
+      ? !!d.sex && inRange(d.age, LIMITS.age) && inRange(d.heightCm, LIMITS.heightCm)
       : name === 'weight'
         ? inRange(d.weightKg, LIMITS.weightKg)
         : name === 'activity'
@@ -68,10 +67,10 @@ export default function Onboarding() {
           : true;
 
   const targets =
-    d.sex && d.birthDate && d.heightCm && d.weightKg && d.activity
+    d.sex && d.age && d.heightCm && d.weightKg && d.activity
       ? dailyTargets({
           sex: d.sex,
-          age: ageOn(d.birthDate),
+          age: d.age,
           heightCm: d.heightCm,
           weightKg: d.weightKg,
           activity: d.activity,
@@ -80,14 +79,15 @@ export default function Onboarding() {
       : null;
 
   const finish = async () => {
-    if (!d.sex || !d.birthDate || !d.heightCm || !d.weightKg || !d.activity) return;
+    if (!d.sex || !d.age || !d.heightCm || !d.weightKg || !d.activity) return;
     setSaving(true);
     try {
       await addWeight(d.weightKg);
       // Saving the profile flips navigation over to the Today screen.
       await saveProfile({
         sex: d.sex,
-        birthDate: d.birthDate,
+        ageYears: d.age,
+        ageSetOn: toLocalDateString(),
         heightCm: d.heightCm,
         activityLevel: d.activity,
         unitPref: d.units,
@@ -165,7 +165,7 @@ export default function Onboarding() {
               { value: 'female', label: 'Female' },
             ]}
           />
-          <BirthDateField value={d.birthDate} onChange={(v) => set('birthDate', v)} />
+          <AgeField value={d.age} onChange={(v) => set('age', v)} />
           <HeightField units={d.units} valueCm={d.heightCm} onChangeCm={(v) => set('heightCm', v)} />
         </View>
       ) : null}

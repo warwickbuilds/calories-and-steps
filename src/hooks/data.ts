@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 import { dayItemsQuery, latestWeightQuery, profileQuery, recentWeightsQuery } from '@/db/queries';
 import { addDays, toLocalDateString } from '@/lib/dates';
-import { ageOn, dailyTargets } from '@/lib/energy';
+import { currentAge, dailyTargets } from '@/lib/energy';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
 
 export function useProfile() {
@@ -33,7 +33,7 @@ export function useTargets() {
       sex: profile.sex,
       weightKg: latest.weightKg,
       heightCm: profile.heightCm,
-      age: ageOn(profile.birthDate),
+      age: currentAge(profile.ageYears, profile.ageSetOn),
       activity: profile.activityLevel,
       goal: profile.goalMode,
       macros: profile.macroOverrides,
