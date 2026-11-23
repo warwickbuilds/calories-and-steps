@@ -43,3 +43,9 @@ export function navyBodyFat(input: {
   if (!Number.isFinite(pct)) return null;
   return Math.max(0, pct);
 }
+
+/** Fat and lean mass in kg from total weight and body-fat %. */
+export function bodyComposition(weightKg: number, bodyFatPct: number): { fatKg: number; leanKg: number } {
+  const fatKg = (weightKg * bodyFatPct) / 100;
+  return { fatKg, leanKg: weightKg - fatKg };
+}

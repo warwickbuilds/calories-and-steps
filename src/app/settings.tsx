@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AgeField } from '@/components/fields/AgeField';
+import { DateField } from '@/components/fields/DateField';
 import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
@@ -43,6 +44,11 @@ export default function SettingsScreen() {
           onChangeKg={(goalWeightKg) => {
             if (goalWeightKg != null) updateProfile({ goalWeightKg });
           }}
+        />
+        <DateField
+          label="Target date (optional)"
+          value={profile.goalDate}
+          onChange={(goalDate) => updateProfile({ goalDate })}
         />
       </Section>
 
