@@ -1,20 +1,12 @@
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { Mic, Square } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui';
+import { voiceErrorMessage, voiceErrorText } from '@/lib/voice';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, radius, space } from '@/theme/tokens';
-
-const ERRORS: Record<string, string> = {
-  'not-allowed': 'Microphone access is off. Turn it on in Android settings, or type instead.',
-  'language-not-supported':
-    'On-device speech isn’t set up for your language. Use the microphone on your keyboard, or type instead.',
-  'service-not-allowed': 'Speech recognition isn’t available on this phone. Use the keyboard’s microphone, or type.',
-  network: 'Speech recognition needs a connection on this phone. Try again, or type instead.',
-  'audio-capture': 'Couldn’t use the microphone. Try again.',
-};
 
 /** The phone's language, e.g. "en-AU", for the recogniser. */
 const deviceLocale = () => {
@@ -28,41 +20,66 @@ const deviceLocale = () => {
 /**
  * Tap to talk, tap again to stop. Speech is turned into text on the phone
  * where it supports that (on-device recognition), and only the text is used.
+ *
+ * The words shown while listening are kept even when the phone ends without a
+ * final result: some on-device recognisers report an error instead when you
+ * tap stop, so whatever was last heard goes into the box when listening ends.
  */
 export function VoiceButton({ onText }: { onText: (text: string) => void }) {
   const { colors } = useTheme();
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /** Words heard but not yet confirmed as final. */
+  const pending = useRef('');
+  /** True once the user taps stop, so the phone's "error" on stopping isn't shown. */
+  const userStopped = useRef(false);
+
+  const flushPending = () => {
+    const text = pending.current.trim();
+    pending.current = '';
+    if (text) onText(text);
+  };
 
   useSpeechRecognitionEvent('start', () => setListening(true));
   useSpeechRecognitionEvent('end', () => {
+    flushPending();
+    userStopped.current = false;
     setListening(false);
     setInterim('');
   });
   useSpeechRecognitionEvent('result', (e) => {
     const text = e.results[0]?.transcript ?? '';
     if (e.isFinal) {
+      pending.current = '';
       if (text.trim()) onText(text.trim());
       setInterim('');
     } else {
+      pending.current = text;
       setInterim(text);
     }
   });
   useSpeechRecognitionEvent('error', (e) => {
-    if (e.error === 'aborted' || e.error === 'no-speech') return;
-    setError(ERRORS[e.error] ?? 'Speech recognition stopped. Try again, or type instead.');
+    const message = voiceErrorMessage(e.error, {
+      userStopped: userStopped.current,
+      heardText: pending.current.trim().length > 0,
+    });
+    flushPending();
+    setInterim('');
+    if (message) setError(message);
   });
 
   const start = async () => {
     setError(null);
+    pending.current = '';
+    userStopped.current = false;
     const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!perm.granted) {
-      setError(ERRORS['not-allowed']);
+      setError(voiceErrorText('not-allowed'));
       return;
     }
     if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
-      setError(ERRORS['service-not-allowed']);
+      setError(voiceErrorText('service-not-allowed'));
       return;
     }
     ExpoSpeechRecognitionModule.start({
@@ -74,12 +91,17 @@ export function VoiceButton({ onText }: { onText: (text: string) => void }) {
     });
   };
 
+  const stop = () => {
+    userStopped.current = true;
+    ExpoSpeechRecognitionModule.stop();
+  };
+
   return (
     <View style={styles.wrap}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={listening ? 'Stop listening' : 'Describe it out loud'}
-        onPress={() => (listening ? ExpoSpeechRecognitionModule.stop() : start())}
+        onPress={() => (listening ? stop() : start())}
         style={({ pressed }) => [
           styles.button,
           { backgroundColor: listening ? colors.primary : colors.track, opacity: pressed ? 0.75 : 1 },

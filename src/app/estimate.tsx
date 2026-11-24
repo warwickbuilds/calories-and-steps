@@ -15,6 +15,7 @@ import { toLocalDateString } from '@/lib/dates';
 import { macroLine, scaleNutrition } from '@/lib/food';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { parseDecimal } from '@/lib/units';
+import { appendSpoken } from '@/lib/voice';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
 
@@ -247,7 +248,7 @@ export default function EstimateScreen() {
                 ? 'Amounts, brands, how it was cooked, oil or butter, or if you only ate part of it. Optional, but it makes the estimate better.'
                 : 'Say or type what and how much, e.g. “two eggs scrambled with butter, two slices of sourdough toast”.'}
             </Text>
-            <VoiceButton onText={(t) => setDescription((d) => (d.trim() ? `${d.trim()} ${t}` : t))} />
+            <VoiceButton onText={(t) => setDescription((d) => appendSpoken(d, t))} />
             <TextInput
               value={description}
               onChangeText={setDescription}
