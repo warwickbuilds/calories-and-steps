@@ -175,8 +175,8 @@ function MealsCard({ day }: { day: string }) {
   const yesterday = toLocalDateString(addDays(fromLocalDateString(day), -1));
   const yesterdayTotals = useDayTotals(yesterday);
 
-  // Full add-food flow (photo, barcode, search) arrives in Phase 3; until then + opens quick add.
-  const openQuickAdd = (meal: MealType) => router.push({ pathname: '/quick-add', params: { meal } });
+  const openQuickAdd = (meal: MealType) => router.push({ pathname: '/quick-add', params: { meal, day } });
+  const openAddFood = (meal: MealType) => router.push({ pathname: '/add-food', params: { meal, day } });
 
   return (
     <Card style={styles.mealsCard}>
@@ -191,7 +191,7 @@ function MealsCard({ day }: { day: string }) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityHint={`Shows what you logged for ${m.label.toLowerCase()}`}
-                onPress={() => router.push({ pathname: '/food', params: { meal: m.value } })}>
+                onPress={() => router.push({ pathname: '/food', params: { day } })}>
                 <Text variant="bodyMedium">{m.label}</Text>
                 <Text variant="label" muted style={{ fontVariant: ['tabular-nums'] }}>
                   {t.count > 0 ? `${formatNumber(t.calories)} calories` : 'Not logged'}
@@ -215,7 +215,7 @@ function MealsCard({ day }: { day: string }) {
             <AddButton
               icon={Plus}
               accessibilityLabel={`Add food to ${m.label}`}
-              onPress={() => openQuickAdd(m.value)}
+              onPress={() => openAddFood(m.value)}
             />
           </View>
         );
