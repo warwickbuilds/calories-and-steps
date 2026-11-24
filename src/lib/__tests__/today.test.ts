@@ -1,4 +1,4 @@
-import { caloriesReadout, weeklyChangeKg, weeklyChangeText } from '../today';
+import { caloriesReadout, weeklyChangeText } from '../today';
 
 describe('caloriesReadout', () => {
   it('shows calories left', () => {
@@ -21,29 +21,11 @@ describe('caloriesReadout', () => {
   });
 });
 
-describe('weekly weight change', () => {
-  const day = (n: number) => new Date(Date.UTC(2026, 10, n, 7)).toISOString();
-
-  it('compares against the entry about a week earlier', () => {
-    const entries = [
-      { measuredAt: day(22), weightKg: 80.0 },
-      { measuredAt: day(21), weightKg: 80.4 },
-      { measuredAt: day(15), weightKg: 80.3 },
-      { measuredAt: day(10), weightKg: 81.0 },
-    ];
-    expect(weeklyChangeKg(entries)).toBeCloseTo(-0.3);
+describe('weekly weight change text', () => {
+  it('rounds to one decimal and says which way', () => {
     expect(weeklyChangeText(-0.3)).toBe('0.3 down this week');
     expect(weeklyChangeText(0.52)).toBe('0.5 up this week');
     expect(weeklyChangeText(0.01)).toBe('No change this week');
-  });
-
-  it('returns null without a comparable entry', () => {
-    expect(weeklyChangeKg([{ measuredAt: day(22), weightKg: 80 }])).toBeNull();
-    expect(
-      weeklyChangeKg([
-        { measuredAt: day(22), weightKg: 80 },
-        { measuredAt: day(21), weightKg: 80.2 },
-      ]),
-    ).toBeNull();
+    expect(weeklyChangeText(null)).toBeNull();
   });
 });

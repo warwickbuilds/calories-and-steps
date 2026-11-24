@@ -9,13 +9,6 @@ export const PROFILE_ID = 1;
 
 export const profileQuery = () => db.select().from(profile).where(eq(profile.id, PROFILE_ID));
 
-export const recentWeightsQuery = (sinceIso: string) =>
-  db
-    .select()
-    .from(weightEntry)
-    .where(gte(weightEntry.measuredAt, sinceIso))
-    .orderBy(desc(weightEntry.measuredAt));
-
 export const latestWeightQuery = () =>
   db.select().from(weightEntry).orderBy(desc(weightEntry.measuredAt)).limit(1);
 

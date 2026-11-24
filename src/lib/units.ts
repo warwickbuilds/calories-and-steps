@@ -61,3 +61,10 @@ export function parseDecimal(text: string): number | null {
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
+
+/** "0.8 kg down", "0.3 kg up" or "No change", in the user's unit. */
+export function signedWeight(kg: number, units: UnitSystem): string {
+  const v = Math.round(toDisplayWeight(Math.abs(kg), units) * 10) / 10;
+  if (v === 0) return 'No change';
+  return `${v.toFixed(1)} ${weightUnitLabel(units)} ${kg < 0 ? 'down' : 'up'}`;
+}

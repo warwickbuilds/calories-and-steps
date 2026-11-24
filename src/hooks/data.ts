@@ -3,8 +3,8 @@ import { useMemo } from 'react';
 
 import { bodyChecksQuery, bodyPhotosQuery, type Pose } from '@/db/body';
 import { dailyCaloriesQuery, foodItemQuery, recentItemsQuery } from '@/db/meals';
-import { allWeightsQuery, dayItemsQuery, latestWeightQuery, profileQuery, recentWeightsQuery } from '@/db/queries';
-import { addDays, toLocalDateString } from '@/lib/dates';
+import { allWeightsQuery, dayItemsQuery, latestWeightQuery, profileQuery } from '@/db/queries';
+import { toLocalDateString } from '@/lib/dates';
 import { currentAge, dailyTargets } from '@/lib/energy';
 import { averageLoggedCalories, recentFoods, weekEndingOn } from '@/lib/food';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
@@ -18,13 +18,6 @@ export function useProfile() {
 export function useLatestWeight() {
   const { data } = useLiveQuery(latestWeightQuery());
   return data?.[0] ?? null;
-}
-
-/** Weight entries from the last 14 days, newest first. */
-export function useRecentWeights() {
-  const since = useMemo(() => addDays(new Date(), -14).toISOString(), []);
-  const { data } = useLiveQuery(recentWeightsQuery(since), [since]);
-  return data ?? [];
 }
 
 /** Calorie and macro targets from the profile and latest weight. */

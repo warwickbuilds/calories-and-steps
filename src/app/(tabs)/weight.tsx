@@ -1,36 +1,22 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
-import { LineChart } from '@/components/LineChart';
+import { WeightChart } from '@/components/WeightChart';
 import { WeightLogCard } from '@/components/WeightLogCard';
 import { Button, Card, Screen, Segmented, Text } from '@/components/ui';
 import { allWeightsQuery, deleteWeight } from '@/db/queries';
 import { useProfile, useWeightTrend } from '@/hooks/data';
 import { bmi, bmiCategory } from '@/lib/body';
 import { formatShortDate, fromLocalDateString } from '@/lib/dates';
-import { formatWeight, toDisplayWeight, weightUnitLabel, type UnitSystem } from '@/lib/units';
-import {
-  RANGE_DAYS,
-  changeRows,
-  inRange,
-  projectGoal,
-  rateNeededPerWeek,
-  type WeightRange,
-} from '@/lib/weight';
+import { formatWeight, signedWeight, toDisplayWeight, weightUnitLabel, type UnitSystem } from '@/lib/units';
+import { RANGE_DAYS, changeRows, projectGoal, rateNeededPerWeek, type WeightRange } from '@/lib/weight';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
 
 const RANGES = (Object.keys(RANGE_DAYS) as WeightRange[]).map((r) => ({ value: r, label: r }));
-
-/** "0.8 down", "0.3 up", "No change" in the user's unit. */
-function signed(kg: number, units: UnitSystem): string {
-  const v = Math.round(toDisplayWeight(Math.abs(kg), units) * 10) / 10;
-  if (v === 0) return 'No change';
-  return `${v.toFixed(1)} ${weightUnitLabel(units)} ${kg < 0 ? 'down' : 'up'}`;
-}
 
 export default function WeightScreen() {
   const { profile } = useProfile();
@@ -45,7 +31,7 @@ export default function WeightScreen() {
 
       <Card>
         <Segmented value={range} onChange={setRange} options={RANGES} />
-        <WeightChart range={range} units={units} goalKg={profile?.goalWeightKg ?? null} />
+        <WeightChart trend={trend} range={range} units={units} goalKg={profile?.goalWeightKg ?? null} />
       </Card>
 
       {trend.length > 0 ? <ChangeCards units={units} /> : null}
@@ -66,38 +52,6 @@ export default function WeightScreen() {
   );
 }
 
-function WeightChart({ range, units, goalKg }: { range: WeightRange; units: UnitSystem; goalKg: number | null }) {
-  const trend = useWeightTrend();
-  const points = useMemo(
-    () =>
-      inRange(trend, range).map((p) => ({
-        t: fromLocalDateString(p.day).getTime(),
-        value: toDisplayWeight(p.kg, units),
-        trend: toDisplayWeight(p.trend, units),
-      })),
-    [trend, range, units],
-  );
-  const goal = goalKg == null ? null : toDisplayWeight(goalKg, units);
-  // Only show the goal line when it's near the data, so it doesn't flatten the chart.
-  const values = points.map((p) => p.value);
-  const showGoal =
-    goal != null && values.length > 0 && goal >= Math.min(...values) - 5 && goal <= Math.max(...values) + 5;
-  const last = points[points.length - 1];
-  return (
-    <LineChart
-      points={points}
-      goal={showGoal ? goal : null}
-      formatValue={(v) => `${v.toFixed(1)}`}
-      formatDate={(t) => formatShortDate(new Date(t), range === '1Y' || range === 'All')}
-      accessibilityLabel={
-        last
-          ? `Weight chart, ${range}. Trend ${last.trend?.toFixed(1)} ${weightUnitLabel(units)}.`
-          : `Weight chart, ${range}. No entries.`
-      }
-    />
-  );
-}
-
 function ChangeCards({ units }: { units: UnitSystem }) {
   const trend = useWeightTrend();
   const rows = changeRows(trend);
@@ -107,16 +61,18 @@ function ChangeCards({ units }: { units: UnitSystem }) {
         {rows.map((r) => (
           <View key={r.label} style={styles.cell}>
             <Text variant="label" muted>
-              {r.label}
+              {r.partial && r.fromDay ? `${r.label} (since ${formatShortDate(fromLocalDateString(r.fromDay))})` : r.label}
             </Text>
             <Text variant="bodyStrong" style={styles.tabular}>
-              {r.kg == null ? '–' : signed(r.kg, units)}
+              {r.kg == null ? '–' : signedWeight(r.kg, units)}
             </Text>
           </View>
         ))}
       </View>
       <Text variant="caption" muted>
-        Based on your trend line, which smooths out day-to-day swings.
+        All changes use your trend line, which smooths out day-to-day water swings, so the numbers here, on the chart
+        and under today’s weight always match. Where your history is shorter than the period, the change runs from your
+        first weigh-in.
       </Text>
     </Card>
   );
@@ -179,7 +135,7 @@ function GoalCard() {
       </View>
       {toGo != null && p.kind !== 'reached' ? (
         <Text variant="label" muted>
-          {signed(toGo, units).replace('down', 'to lose').replace('up', 'to gain')}
+          {signedWeight(toGo, units).replace('down', 'to lose').replace('up', 'to gain')}
         </Text>
       ) : null}
       {profile.goalDate ? (
