@@ -26,16 +26,16 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Updates.** The app tells you when a new version is out.
 - **Backup and restore.** Save everything (meals, weights, check-ins, photos and settings) to one file on Google Drive, by email or in a folder on the phone, and restore it after reinstalling or on a new phone. Today reminds you every two weeks.
 
-**Coming next:** more step history, and smaller downloads.
+**Coming next:** more step history.
 
 ## Install
 
-1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk` (about 143 MB, so use Wi-Fi).
+1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>-arm64.apk`. It fits almost every phone from the last several years. If Android says it can't install it (older 32-bit phones), download `calories-and-steps-<version>-universal.apk` instead, which works on every phone but is bigger. Releases before 0.16.0 have a single `calories-and-steps-<version>.apk` of about 143 MB.
 2. Open the downloaded file. Android asks whether your browser (or Files app) may install unknown apps. Tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**. You only need to do this once for that browser or app.
 3. **Play Protect** may say the app is unrecognised or "unsafe" because it isn't from the Play Store. Tap **More details → Install anyway**. If it offers to scan the app, that's fine too.
 4. Open the app and set up your profile.
 
-**Updating**: when Today shows "Version x is available", tap **Download** and open the file. It installs over the old version and keeps your data. Every release is signed with the same key, so this always works. If Android ever says the app "conflicts with an existing package", the APK was signed with a different key; don't uninstall to get around it, because that deletes your data.
+**Updating**: when Today shows "Version x is available", tap **Download** and open the file. The app picks the right APK for your phone. It installs over the old version and keeps your data. Every release is signed with the same key, so this always works. If Android ever says the app "conflicts with an existing package", the APK was signed with a different key; don't uninstall to get around it, because that deletes your data.
 
 ## Getting started
 
@@ -102,8 +102,9 @@ Wording rule: the app always says "calories", never "kcal".
 | Check-in polish | Backdate and edit check-ins, save photos without measuring, add photos from the gallery | Done (PR #16, 0.15.0) |
 | 5b. Polish | Empty and offline states, app icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
+| Smaller APKs | A small arm64 APK plus a universal one, compressed native libraries, update check picks the right file | Done (PR #15, 0.16.0) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.6.0** (all of Phase 3, PR #8) is released the same way. **v0.7.0** (the weight chart upgrade, PR #9) is released the same way. **v0.8.0** (ml for drinks, PR #10) follows once merged, and **v0.11.0** (food icons, PR #13) after it. **v0.13.0** (PR #12) fixes spoken descriptions being lost when you tap stop. **v0.14.0** (backup and restore) follows once merged, then **v0.15.0** (check-in polish).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.6.0** (all of Phase 3, PR #8) is released the same way. **v0.7.0** (the weight chart upgrade, PR #9) is released the same way. **v0.8.0** (ml for drinks, PR #10) follows once merged, and **v0.11.0** (food icons, PR #13) after it. **v0.13.0** (PR #12) fixes spoken descriptions being lost when you tap stop. **v0.14.0** (backup and restore) follows once merged. **v0.16.0** (smaller APKs) adds a second, much smaller APK.
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
@@ -273,15 +274,16 @@ Called "Food" before 0.12.0; the route is still `/food`.
 ### Updates
 
 - On Android the app asks GitHub for the latest release at most once a day. When a newer version exists, Today shows a "Version x is available" card with a Download button that opens the APK link. "Not now" hides it until the next version.
+- From 0.16.0 each release has two APKs. The Download button gives phones with a 64-bit ARM chip (almost all of them) the small `-arm64.apk`, and anything else, or a phone whose chip can't be read, the `-universal.apk`. The chip list comes from expo-device (`supportedCpuArchitectures`) and the choice is `pickApk` in `src/lib/version.ts`. Releases before 0.16.0 have one APK, which is used as is.
 - The check sends one anonymous request to `api.github.com` and nothing else. If GitHub can't be reached, or the repo is private, it stays quiet.
 
 ## Versions and changelog
 
-App version: **0.15.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.16.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
-| 2026-11-24 | Check-in polish: a date field to backdate check-ins, **Edit check-in** on the detail screen (date, measurements, weight, photos), photos-only check-ins (no measurements), and photos from the gallery as well as the camera. Neck, waist and body fat become nullable (migration 0005, which rebuilds `body_check` and `body_photo` and keeps every row and photo). Backups from 0.15.0 need 0.15.0 or later to restore. Version 0.15.0 | #16 |
+| 2026-11-24 | Smaller downloads: each release now has a small `-arm64.apk` (64-bit ARM phones, almost all of them) and a `-universal.apk` (every phone), built in one Gradle run with ABI splits (`plugins/withAbiSplits.js`). Native libraries are now compressed inside the APK (`useLegacyPackaging` through expo-build-properties), which shrinks both. The in-app update check picks the right APK for the phone with expo-device. The universal APK is uploaded first, so older app versions, which take the first APK they find, still get one that runs everywhere. Version 0.16.0 (0.15.0 is taken by the check-in polish PR) | #15 |
 | 2026-11-24 | Backup and restore: one zip file with all data and photos, shared through the share sheet or saved to a folder, restored from Settings or the first onboarding page after a confirmation that lists what's inside. Two-week backup reminder on Today, and update cards suggest a backup first. New packages expo-sharing and fflate. No schema change. Version 0.14.0 | #14 |
 | 2026-11-24 | Fix: tapping stop on "Describe it out loud" showed "Speech recognition stopped" and threw away what you'd said. Now the words heard so far go into the text box and no error shows after a stop you made. Version 0.13.0 (0.12.0 is taken by the steps PR) | #12 |
 | 2026-11-24 | Food icons: a small grey line icon (lucide) beside every logged food on the Food tab and every recent food in Add food, one of 12 categories. Barcode products take it from Open Food Facts' `categories_tags`, AI label reads and meal estimates return a category, and anything else (quick adds, older entries) is guessed from the name. Change it under **Type** in the food form. New `category` column on `food_ref` and `food_item` (migration 0004, nullable, no backfill needed). Version 0.11.0 | #13 |
@@ -313,13 +315,14 @@ App version: **0.15.0** (in `app.json` and `package.json`). Android's `versionCo
 | react-native-svg | ^15.16.0 |
 | expo-camera (photos and barcode scanning) / expo-image-manipulator / expo-file-system | ~58.0.14 / ~58.0.16 / ~58.0.14 |
 | expo-constants (update check) | ~58.0.16 |
+| expo-device (update check picks the APK for the phone's chip) | ~58.0.5 |
 | expo-sharing (backup share sheet; its config plugin is only for receiving shares, so it isn't added) | ~58.0.23 |
 | fflate (backup zip, pure JavaScript, streaming) | ^0.8.3 |
 | expo-image-picker (weight import) | ~58.0.10 |
 | expo-secure-store (AI keys) | ~58.0.3 |
 | expo-speech-recognition (voice descriptions; community module by jamsch) | ~58.0.1 |
 | react-native-health-connect (step sync; community module by matinzd, includes its Expo config plugin) | ^4.1.3 |
-| expo-build-properties (sets Android minSdkVersion 26 for Health Connect) | ~58.0.12 |
+| expo-build-properties (sets Android minSdkVersion 26 for Health Connect, and compresses native libraries with `useLegacyPackaging`) | ~58.0.12 |
 | Android minimum / target / compile SDK | 26 / 36 / 37 (target and compile are Expo SDK 58's defaults) |
 | Release build tools (CI) | Node 22, JDK 17 (Temurin), Gradle from the Expo template |
 | TypeScript | ~6.0.3 |
@@ -397,6 +400,15 @@ The only network calls today are the daily update check, Open Food Facts lookups
 
 APKs are built and signed by GitHub Actions (`.github/workflows/android-release.yml`) with a local Gradle build (`expo prebuild` then `gradlew assembleRelease`), not EAS.
 
+Every release has two APKs, made in the same Gradle run by ABI splits (`plugins/withAbiSplits.js`):
+
+| File | For | Why |
+| --- | --- | --- |
+| `calories-and-steps-<version>-arm64.apk` | 64-bit ARM phones (almost every phone from the last several years) | Only carries native code for one chip type, so it's much smaller |
+| `calories-and-steps-<version>-universal.apk` | Every phone, including 32-bit ARM and x86 | Native code for all four chip types |
+
+Both have the same version code and the same signature, so a phone can switch from one to the other by installing over it, without losing data. Native libraries are stored compressed (`useLegacyPackaging: true` in `app.json` through expo-build-properties). That makes the download much smaller; the app takes a little more space once installed, because Android unpacks them. The build summary on the Actions run lists both sizes.
+
 ### One-time setup: the release key
 
 Android only installs an update if it is signed with the same key as the installed app. **If the key is lost, no update can ever install over the existing app again**, and the only way forward is uninstalling, which wipes the data. So make it once, keep two backups, and never commit it.
@@ -439,7 +451,7 @@ Android only installs an update if it is signed with the same key as the install
 
 1. In a PR, bump `version` in `app.json` and `package.json` (for example 0.2.0 → 0.3.0) and add a changelog row.
 2. After it merges, either push a tag (`git tag v0.3.0 origin/main && git push origin v0.3.0`), or on GitHub open **Releases → Draft a new release**, type `v0.3.0` as a new tag on `main`, and publish. In the second case the release appears straight away and the APK is added to it when the build finishes.
-3. The workflow checks the tag matches `app.json`, runs the tests, builds and signs the APK, checks the signature and publishes the release with the APK attached. It takes about 15 to 25 minutes.
+3. The workflow checks the tag matches `app.json`, runs the tests, builds and signs both APKs, checks their signatures and publishes the release with the universal APK first and then the arm64 one. It takes about 15 to 25 minutes.
 
 The current release key's certificate SHA-256 is `07aea4df8cd30a8827dce11db1083b4ded20f0a36a98d58120da397011ae18c8` (alias `calories`). Every release must show this same fingerprint. The release page lists it, and `ANDROID_CERT_SHA256` makes the build refuse any other key.
 
@@ -454,7 +466,7 @@ The current release key's certificate SHA-256 is `07aea4df8cd30a8827dce11db1083b
 
 Use the same Releases-page steps for v0.3.0 and later releases.
 
-Pull requests that change the build set-up (`app.json`, `app.config.js`, `plugins/`, dependencies or the workflow) also build the APK, without releasing it, and keep it as a build artifact for 7 days. **Run workflow** on the Actions tab does the same for any branch.
+Pull requests that change the build set-up (`app.json`, `app.config.js`, `plugins/`, dependencies or the workflow) also build both APKs, without releasing them, and keep them as one build artifact (a zip) for 7 days. **Run workflow** on the Actions tab does the same for any branch.
 
 ## Running it
 
@@ -489,6 +501,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **Releases**: see [Releases](#releases). Never reuse or lower a version: Android needs a higher `versionCode` every time. Minor and patch must stay below 100.
 - **Screenshots** (`docs/screenshots`): taken from the web build at 390×844, 2× scale, with Playwright. `metro.config.js` adds `wasm` as an asset so expo-sqlite's web worker bundles. On web the database must be opened with `openDatabaseAsync` once before the app loads, so use a temporary entry file that does that, runs the migrations with drizzle's `migrate`, seeds sample data, then `require('expo-router/entry')`, and point `main` at it while capturing. Don't commit that entry. expo-sqlite on web needs `SharedArrayBuffer`, so the page must be cross-origin isolated: in Playwright, route the dev server's responses and add `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. Retake them when a screen changes noticeably.
 - **Release key**: lives only in GitHub secrets and Rick's backups. If GitHub secrets are ever lost, re-add them from the backup. If the key itself is lost, a new key means every phone has to uninstall (and lose data) once, so take a backup export first.
+- **APK splits**: `plugins/withAbiSplits.js` adds a `splits { abi { … } }` block to the generated `android/app/build.gradle` and fails the build if the template's `android {` line changes. Keep the universal APK as the first asset of every release: app versions before 0.16.0 download the first APK they find. If a new chip type is ever worth its own APK, add it to the plugin's `include` line, name it in the workflow, and teach `pickApk` about it.
 - **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
 - **Open Food Facts**: no key or account. If lookups start failing for every barcode, check the v2 API (`/api/v2/product/<barcode>.json`) is still current and that the `User-Agent` is being sent. Field names used: `product_name`, `generic_name`, `brands`, `serving_quantity`, `serving_quantity_unit`, `serving_size`, `quantity`, `product_quantity_unit` (the last four only to tell ml from g), `nutriments.energy-kcal_100g`, `energy-kj_100g`, `proteins_100g`, `carbohydrates_100g`, `fat_100g`, and `categories_tags` (for the food icon).
 - **AI models**: providers retire model names. When one stops working (Settings → Save and test says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts` and release a new version. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
@@ -562,7 +575,7 @@ Everything we've discussed that is not built yet.
 **After the MVP**
 - Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.
 - Download and open the update APK from inside the app instead of through the browser.
-- Smaller APKs: build one APK per phone chip type (ABI split), or arm64 only, which covers modern phones. That's about a third of today's 143 MB universal APK. The update check would then have to pick the right file.
+- Shrink the APKs further: turn on resource shrinking (`enableShrinkResourcesInReleaseBuilds`), and look at which native libraries are largest. A Play Store release would use an app bundle (.aab) instead, where Google makes a per-phone APK automatically.
 - A small key-holding relay (with App Attest and Play Integrity) so people can use the AI without their own key.
 - Signing in with OpenRouter instead of pasting a key.
 - Automatic Google Drive backup.

@@ -6,6 +6,7 @@
  */
 
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { File, Paths } from 'expo-file-system';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
@@ -65,7 +66,7 @@ export async function checkForUpdate(): Promise<CheckResult> {
     });
     // 404 means no release yet, or the repo is private.
     if (!res.ok) return { status: 'unavailable' };
-    const update = availableUpdate(installedVersion(), (await res.json()) as ReleaseInfo);
+    const update = availableUpdate(installedVersion(), (await res.json()) as ReleaseInfo, Device.supportedCpuArchitectures);
     writeState({ ...readState(), lastCheckedAt: new Date().toISOString(), latest: update });
     return update ? { status: 'update', update } : { status: 'current' };
   } catch {

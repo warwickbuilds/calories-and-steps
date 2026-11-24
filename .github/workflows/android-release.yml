@@ -1,4 +1,5 @@
-# Builds a signed Android APK.
+# Builds signed Android APKs: a small arm64 one for modern phones and a
+# universal one for every phone (plugins/withAbiSplits.js).
 #
 # - Pushing a tag like v0.2.0 builds the APK, signs it with the release key
 #   and publishes it as a GitHub Release. The tag must match "version" in app.json.
@@ -100,58 +101,82 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
-      - name: Name the APK and check its signature
+      - name: Name the APKs and check their signatures
         id: apk
         env:
           EXPECTED_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         run: |
-          APK="calories-and-steps-${{ steps.version.outputs.version }}.apk"
-          cp android/app/build/outputs/apk/release/app-release.apk "$APK"
+          VERSION="${{ steps.version.outputs.version }}"
+          OUT=android/app/build/outputs/apk/release
+          ARM64="calories-and-steps-$VERSION-arm64.apk"
+          UNIVERSAL="calories-and-steps-$VERSION-universal.apk"
+          cp "$OUT/app-arm64-v8a-release.apk" "$ARM64"
+          cp "$OUT/app-universal-release.apk" "$UNIVERSAL"
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          "$APKSIGNER" verify --print-certs "$APK" | tee certs.txt
-          ACTUAL=$(grep -m1 'certificate SHA-256 digest' certs.txt | awk '{print $NF}')
-          echo "sha256=$ACTUAL" >> "$GITHUB_OUTPUT"
-          echo "path=$APK" >> "$GITHUB_OUTPUT"
-          if [ "$IS_RELEASE" = "true" ] && [ -n "$EXPECTED_SHA256" ]; then
-            WANT=$(echo "$EXPECTED_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')
-            if [ "$ACTUAL" != "$WANT" ]; then
-              echo "::error::APK is signed with $ACTUAL but ANDROID_CERT_SHA256 says $WANT. Phones would refuse this update."
+          WANT=$(echo "$EXPECTED_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')
+          for APK in "$ARM64" "$UNIVERSAL"; do
+            "$APKSIGNER" verify --print-certs "$APK" | tee certs.txt
+            ACTUAL=$(grep -m1 'certificate SHA-256 digest' certs.txt | awk '{print $NF}')
+            if [ "$IS_RELEASE" = "true" ] && [ -n "$WANT" ] && [ "$ACTUAL" != "$WANT" ]; then
+              echo "::error::$APK is signed with $ACTUAL but ANDROID_CERT_SHA256 says $WANT. Phones would refuse this update."
               exit 1
             fi
-          fi
+          done
+          echo "sha256=$ACTUAL" >> "$GITHUB_OUTPUT"
+          echo "arm64=$ARM64" >> "$GITHUB_OUTPUT"
+          echo "universal=$UNIVERSAL" >> "$GITHUB_OUTPUT"
+          {
+            echo "| APK | Size |"
+            echo "| --- | --- |"
+            for APK in "$ARM64" "$UNIVERSAL"; do
+              echo "| $APK | $(du -m "$APK" | cut -f1) MB |"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$HAS_KEY" != "true" ]; then
-            echo "::warning::No release key secrets, so this APK is signed with the debug key. It's for testing only and won't install over a released version."
+            echo "::warning::No release key secrets, so these APKs are signed with the debug key. They're for testing only and won't install over a released version."
           fi
 
-      - name: Keep the APK as a build artifact
+      - name: Keep the APKs as build artifacts
         if: env.IS_RELEASE != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.apk.outputs.path }}
-          path: ${{ steps.apk.outputs.path }}
+          name: calories-and-steps-${{ steps.version.outputs.version }}-apks
+          path: |
+            ${{ steps.apk.outputs.arm64 }}
+            ${{ steps.apk.outputs.universal }}
           retention-days: 7
 
       - name: Publish the GitHub Release
         if: env.IS_RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          ARM64: ${{ steps.apk.outputs.arm64 }}
+          UNIVERSAL: ${{ steps.apk.outputs.universal }}
         run: |
           cat > notes.md <<NOTES
-          Download **${{ steps.apk.outputs.path }}** below and open it on your Android phone to install or update.
+          Download one APK below and open it on your Android phone to install or update:
+
+          - **$ARM64**: for almost every phone from the last several years (64-bit). Smaller download.
+          - **$UNIVERSAL**: works on every Android phone, including older 32-bit ones. Pick this if the other one won't install.
+
+          The app's own update check picks the right one for your phone.
           First time? See [Installing on Android](https://github.com/${{ github.repository }}#install).
 
           Installing over an older version keeps your data. Uninstalling deletes it.
 
           Signing certificate SHA-256: \`${{ steps.apk.outputs.sha256 }}\`
           NOTES
+          # The universal APK goes up first: app versions before 0.16.0 download
+          # the first APK they find, and the universal one runs on every phone.
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            # The release was made on GitHub's Releases page, which also creates the tag: add the APK to it.
-            gh release upload "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" --clobber
+            # The release was made on GitHub's Releases page, which also creates the tag: add the APKs to it.
+            gh release upload "$GITHUB_REF_NAME" "$UNIVERSAL" --clobber
             gh release view "$GITHUB_REF_NAME" --json body --jq .body >> notes.md
             gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
           else
-            gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" \
+            gh release create "$GITHUB_REF_NAME" "$UNIVERSAL" \
               --title "Calories and Steps ${{ steps.version.outputs.version }}" \
               --notes-file notes.md \
               --generate-notes
           fi
+          gh release upload "$GITHUB_REF_NAME" "$ARM64" --clobber
