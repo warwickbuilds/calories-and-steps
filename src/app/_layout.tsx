@@ -98,6 +98,8 @@ function Navigation({ hasProfile }: { hasProfile: boolean }) {
           <Stack.Screen name="add-food" options={{ presentation: 'modal' }} />
           <Stack.Screen name="quick-add" options={{ presentation: 'modal' }} />
           <Stack.Screen name="food-item" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
+          <Stack.Screen name="product" options={{ presentation: 'modal' }} />
           <Stack.Screen name="check-in" options={{ presentation: 'modal' }} />
           <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="check-ins/[id]" options={{ headerShown: true, title: 'Check-in', headerBackTitle: 'Progress' }} />

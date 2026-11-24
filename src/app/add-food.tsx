@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, Plus, Search } from 'lucide-react-native';
+import { Check, FileText, PencilLine, Plus, ScanBarcode, Search, type LucideIcon } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -75,7 +75,19 @@ export default function AddFoodScreen() {
         />
       </View>
 
-      <Button variant="secondary" label="Quick add calories" onPress={() => quickAdd()} />
+      <View style={styles.actions}>
+        <ActionTile
+          icon={ScanBarcode}
+          label="Scan barcode"
+          onPress={() => router.push({ pathname: '/scan', params: { meal, day } })}
+        />
+        <ActionTile
+          icon={FileText}
+          label="Read a label"
+          onPress={() => router.push({ pathname: '/scan', params: { meal, day, mode: 'label' } })}
+        />
+        <ActionTile icon={PencilLine} label="Quick add" onPress={() => quickAdd()} />
+      </View>
 
       {recent.length === 0 ? (
         <Text variant="label" muted style={styles.note}>
@@ -125,7 +137,22 @@ export default function AddFoodScreen() {
   );
 }
 
+function ActionTile({ icon: Icon, label, onPress }: { icon: LucideIcon; label: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 }]}>
+      <Icon size={22} strokeWidth={1.8} color={colors.text} />
+      <Text variant="label">{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  actions: { flexDirection: 'row', gap: space[2] },
+  tile: { flex: 1, minHeight: 76, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', gap: space[1] },
   search: {
     flexDirection: 'row',
     alignItems: 'center',

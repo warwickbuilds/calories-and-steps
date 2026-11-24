@@ -165,7 +165,7 @@ function AppVersionSection() {
   };
 
   return (
-    <Section title="App version">
+    <Section title="About">
       <Card>
         <Text variant="body">Version {installedVersion() ?? 'unknown'}</Text>
         {result?.status === 'current' ? (
@@ -188,6 +188,18 @@ function AppVersionSection() {
         ) : Platform.OS === 'android' ? (
           <Button variant="secondary" label="Check for updates" loading={checking} onPress={check} />
         ) : null}
+      </Card>
+      <Card>
+        <Text variant="bodyMedium">Food data</Text>
+        <Text variant="label" muted>
+          Barcode lookups use Open Food Facts, a free, open database of food products made by volunteers, available under
+          the Open Database License. Products you scan are saved on this phone.
+        </Text>
+        <Button
+          variant="secondary"
+          label="Open Food Facts website"
+          onPress={() => Linking.openURL('https://world.openfoodfacts.org')}
+        />
       </Card>
     </Section>
   );

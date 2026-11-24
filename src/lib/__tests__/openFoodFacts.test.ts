@@ -1,0 +1,103 @@
+import { parseLabelAnswer } from '../ai/nutritionLabel';
+import { displayName, isBarcode, nutritionFor, offUrl, parseOffProduct } from '../openFoodFacts';
+
+describe('parseOffProduct', () => {
+  it('reads per-100 g values', () => {
+    const food = parseOffProduct({
+      status: 1,
+      product: {
+        product_name: 'Rolled Oats',
+        brands: 'Uncle Tobys, Nestlé',
+        serving_quantity: '40',
+        nutriments: { 'energy-kcal_100g': 375.4, proteins_100g: 11.04, carbohydrates_100g: 56, fat_100g: 8.5 },
+      },
+    });
+    expect(food).toEqual({
+      name: 'Rolled Oats',
+      brand: 'Uncle Tobys',
+      caloriesPer100g: 375,
+      proteinPer100g: 11,
+      carbsPer100g: 56,
+      fatPer100g: 8.5,
+      servingG: 40,
+    });
+  });
+
+  it('converts kJ when calories are missing', () => {
+    const food = parseOffProduct({ status: 1, product: { product_name: 'X', nutriments: { 'energy-kj_100g': 1569 } } });
+    expect(food?.caloriesPer100g).toBe(375);
+    expect(food?.proteinPer100g).toBeNull();
+  });
+
+  it('returns null for unknown products or no energy', () => {
+    expect(parseOffProduct({ status: 0 })).toBeNull();
+    expect(parseOffProduct({ status: 1, product: { product_name: 'X', nutriments: {} } })).toBeNull();
+    expect(parseOffProduct(null)).toBeNull();
+  });
+
+  it('names unnamed products and ignores silly servings', () => {
+    const food = parseOffProduct({
+      status: 1,
+      product: { serving_quantity: 0, nutriments: { 'energy-kcal_100g': 50 } },
+    });
+    expect(food?.name).toBe('Unnamed product');
+    expect(food?.servingG).toBeNull();
+  });
+});
+
+describe('barcode helpers', () => {
+  it('accepts EAN and UPC lengths', () => {
+    expect(isBarcode('9300617003014')).toBe(true);
+    expect(isBarcode('12345678')).toBe(true);
+    expect(isBarcode('123')).toBe(false);
+    expect(isBarcode('abc45678')).toBe(false);
+  });
+
+  it('builds the lookup URL with only the fields used', () => {
+    expect(offUrl('9300617003014')).toBe(
+      'https://world.openfoodfacts.org/api/v2/product/9300617003014.json?fields=product_name,generic_name,brands,nutriments,serving_quantity',
+    );
+  });
+
+  it('scales per-100 g values to an amount', () => {
+    expect(
+      nutritionFor({ caloriesPer100g: 375, proteinPer100g: 11, carbsPer100g: 56, fatPer100g: 8.5 }, 40),
+    ).toEqual({ calories: 150, proteinG: 4.4, carbsG: 22.4, fatG: 3.4, grams: 40 });
+  });
+
+  it('does not repeat the brand', () => {
+    expect(displayName({ name: 'Rolled Oats', brand: 'Uncle Tobys' })).toBe('Uncle Tobys Rolled Oats');
+    expect(displayName({ name: 'Uncle Tobys Oats', brand: 'Uncle Tobys' })).toBe('Uncle Tobys Oats');
+    expect(displayName({ name: 'Oats', brand: null })).toBe('Oats');
+  });
+});
+
+describe('parseLabelAnswer', () => {
+  const base = { isLabel: true, name: 'Muesli bar', energyUnit: 'kcal', servingG: 30 };
+
+  it('keeps per-100 values', () => {
+    expect(
+      parseLabelAnswer({ ...base, per100: { basis: 'per100', energy: 420, protein: 8, carbs: 60, fat: 15 } }),
+    ).toEqual({ name: 'Muesli bar', caloriesPer100g: 420, proteinPer100g: 8, carbsPer100g: 60, fatPer100g: 15, servingG: 30 });
+  });
+
+  it('converts kJ and per-serving columns', () => {
+    const r = parseLabelAnswer({
+      ...base,
+      energyUnit: 'kJ',
+      per100: { basis: 'perServing', energy: 527, protein: 2.4, carbs: null, fat: 4.5 },
+    });
+    expect(r?.caloriesPer100g).toBe(420);
+    expect(r?.proteinPer100g).toBe(8);
+    expect(r?.carbsPer100g).toBeNull();
+    expect(r?.fatPer100g).toBe(15);
+  });
+
+  it('rejects non-labels and impossible numbers', () => {
+    expect(parseLabelAnswer({ ...base, isLabel: false, per100: { basis: 'per100', energy: 0 } })).toBeNull();
+    expect(parseLabelAnswer({ ...base, per100: { basis: 'per100', energy: 4000, protein: 1, carbs: 1, fat: 1 } })).toBeNull();
+    expect(
+      parseLabelAnswer({ ...base, servingG: null, per100: { basis: 'perServing', energy: 100, protein: 1, carbs: 1, fat: 1 } }),
+    ).toBeNull();
+  });
+});
