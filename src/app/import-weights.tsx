@@ -2,7 +2,7 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { Check, ImagePlus } from 'lucide-react-native';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { AiKeyCard } from '@/components/AiKeyCard';
@@ -51,6 +51,8 @@ export default function ImportWeightsScreen() {
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const [saving, setSaving] = useState(false);
   const abort = useRef<AbortController | null>(null);
+
+  useEffect(() => () => abort.current?.abort(), []);
 
   const rows: ReviewRow[] = useMemo(
     () =>

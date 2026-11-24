@@ -45,6 +45,7 @@ export default function CompareScreen() {
           <View key={i} style={styles.side}>
             <PhotoThumb
               path={c.photos[pose]?.path}
+              fit="contain"
               accessibilityLabel={`${i === 0 ? 'Before' : 'After'}, ${formatShortDate(new Date(c.measuredAt), true)}`}
             />
             <Text variant="bodyStrong">{formatShortDate(new Date(c.measuredAt), true)}</Text>

@@ -1,4 +1,4 @@
-import { AiError, buildRequest, errorForStatus, extractText, parseJsonLoose } from '../providers';
+import { AiError, buildRequest, errorForStatus, extractText, parseJsonLoose, requestJson } from '../providers';
 import { weightScreenshotRequest } from '../weightScreenshot';
 
 const req = weightScreenshotRequest({ base64: 'QUJD', mimeType: 'image/jpeg' });
@@ -70,5 +70,48 @@ describe('errorForStatus', () => {
     expect(errorForStatus('gemini', 403).kind).toBe('auth');
     expect(errorForStatus('gemini', 400, 'API key not valid').kind).toBe('auth');
     expect(errorForStatus('openai', 429).kind).toBe('rate-limit');
+  });
+});
+
+describe('requestJson', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('turns a request timeout into a clear network AiError', async () => {
+    global.fetch = jest.fn(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        }),
+    ) as unknown as typeof fetch;
+
+    await expect(requestJson('gemini', 'gemini-3.6-flash', 'k', req, undefined, 25)).rejects.toMatchObject({
+      kind: 'network',
+      message: expect.stringMatching(/timed out/i),
+    });
+  });
+
+  it('rethrows caller-initiated AbortError without masking it', async () => {
+    global.fetch = jest.fn(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        }),
+    ) as unknown as typeof fetch;
+
+    const ac = new AbortController();
+    const pending = requestJson('gemini', 'gemini-3.6-flash', 'k', req, ac.signal, 5000);
+    ac.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
   });
 });

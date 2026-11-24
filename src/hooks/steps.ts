@@ -92,6 +92,17 @@ export async function connectSteps(): Promise<void> {
     await syncSteps({ force: true });
     return;
   }
+  if (access === 'error') {
+    Alert.alert(
+      'Health Connect didn’t respond',
+      'Try again in a moment, or open Health Connect to check that it’s set up and allowed to share steps.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Open Health Connect', onPress: openHealthConnect },
+      ],
+    );
+    return;
+  }
   if (access !== 'not-granted') return;
 
   let allowed = false;

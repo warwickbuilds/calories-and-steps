@@ -10,11 +10,14 @@ import { radius } from '@/theme/tokens';
 export function PhotoThumb({
   path,
   uri,
+  fit = 'cover',
   style,
   accessibilityLabel,
 }: {
   path?: string | null;
   uri?: string | null;
+  /** 'cover' fills thumbnails; 'contain' keeps the whole photo visible on detail and compare screens. */
+  fit?: 'cover' | 'contain';
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }) {
@@ -27,7 +30,7 @@ export function PhotoThumb({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole={source ? 'image' : undefined}>
       {source ? (
-        <Image source={{ uri: source }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+        <Image source={{ uri: source }} style={StyleSheet.absoluteFill} contentFit={fit} transition={150} />
       ) : (
         <Camera size={20} strokeWidth={1.8} color={colors.muted} />
       )}

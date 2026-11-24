@@ -46,8 +46,8 @@ export default function SettingsScreen() {
           units={units}
           valueKg={profile.goalWeightKg}
           placeholder="Not set"
-          onChangeKg={(goalWeightKg) => {
-            if (goalWeightKg != null) updateProfile({ goalWeightKg });
+          onChangeKg={(goalWeightKg, empty) => {
+            if (goalWeightKg != null || empty) updateProfile({ goalWeightKg: empty ? null : goalWeightKg });
           }}
         />
         <DateField
@@ -131,7 +131,7 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="AI">
-        <AiKeyCard />
+        <AiKeyCard showModelOverride />
       </Section>
 
       <Section title="Your data">

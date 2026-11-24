@@ -5,7 +5,8 @@ import { StepsChart } from '@/components/StepsChart';
 import { Card, ProgressBar, Screen, Text } from '@/components/ui';
 import { useProfile } from '@/hooks/data';
 import { useStepsHistory, useStepsSync } from '@/hooks/steps';
-import { fromLocalDateString, toLocalDateString } from '@/lib/dates';
+import { useToday } from '@/hooks/useToday';
+import { fromLocalDateString } from '@/lib/dates';
 import { WEEK_DAYS, totalSteps } from '@/lib/steps';
 import { formatNumber } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -19,7 +20,7 @@ export default function StepsScreen() {
   const { profile } = useProfile();
   const { todayHours } = useStepsSync();
   const target = profile?.stepTarget ?? 10000;
-  const todayKey = toLocalDateString();
+  const todayKey = useToday();
   const week = useStepsHistory(WEEK_DAYS, todayKey);
   const today = week[week.length - 1]?.steps ?? null;
   const weekTotal = totalSteps(week);

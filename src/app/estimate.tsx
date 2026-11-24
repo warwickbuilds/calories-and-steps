@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Plus, Trash2 } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { VoiceButton } from '@/components/VoiceButton';
@@ -72,23 +72,32 @@ export default function EstimateScreen() {
   const [raw, setRaw] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const imageCache = useRef<Awaited<ReturnType<typeof prepareImage>> | null>(null);
+  const abort = useRef<AbortController | null>(null);
+
+  useEffect(() => () => abort.current?.abort(), []);
 
   const canEstimate = !!photo || description.trim().length > 2;
 
   const estimate = async () => {
     if (!ai?.apiKey) return;
+    abort.current?.abort();
+    const controller = new AbortController();
+    abort.current = controller;
     setEstimating(true);
     setError(null);
     try {
       if (photo && !imageCache.current) {
         imageCache.current = await prepareImage(photo, params.width ? Number(params.width) : undefined);
       }
+      if (controller.signal.aborted) return;
       const answer = await requestJson(
         ai.provider,
         ai.model,
         ai.apiKey,
         mealEstimateRequest({ image: imageCache.current, description }),
+        controller.signal,
       );
+      if (controller.signal.aborted) return;
       const parsed = parseMealAnswer(answer);
       if (!parsed) {
         setError(
@@ -101,9 +110,10 @@ export default function EstimateScreen() {
       setRows(parsed.items.map(toRow));
       setRaw(JSON.stringify(answer));
     } catch (e) {
+      if (controller.signal.aborted || (e as Error)?.name === 'AbortError') return;
       setError(e instanceof AiError ? e.message : 'Something went wrong. Try again.');
     } finally {
-      setEstimating(false);
+      if (!controller.signal.aborted) setEstimating(false);
     }
   };
 
@@ -170,7 +180,14 @@ export default function EstimateScreen() {
           <Button label="Estimate calories" onPress={estimate} disabled={!canEstimate || !ai} loading={estimating} />
         )
       }>
-      {photo ? <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" accessibilityIgnoresInvertColors /> : null}
+      {photo ? (
+        <Image
+          source={{ uri: photo }}
+          style={[styles.photo, { backgroundColor: colors.track }]}
+          contentFit="contain"
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
 
       {rows ? (
         <>

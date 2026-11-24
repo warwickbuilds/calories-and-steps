@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 
 import type { FoodUnit } from '@/lib/food';
 import type { FoodCategory } from '@/lib/foodCategory';
@@ -172,10 +172,10 @@ export async function copyMeal(mealType: MealType, fromDay: string, toDay: strin
     where: and(eq(meal.day, fromDay), eq(meal.mealType, mealType)),
   });
   if (source.length === 0) return 0;
-  const items: (typeof foodItem.$inferSelect)[] = [];
-  for (const m of source) {
-    items.push(...(await db.select().from(foodItem).where(eq(foodItem.mealId, m.id))));
-  }
+  const items = await db
+    .select()
+    .from(foodItem)
+    .where(inArray(foodItem.mealId, source.map((m) => m.id)));
   if (items.length === 0) return 0;
   await db.transaction(async (tx) => {
     const [m] = await tx

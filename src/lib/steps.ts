@@ -18,6 +18,8 @@ export type StepsAccess =
   | 'update-required'
   /** Health Connect is ready, but the app hasn't been given access to steps. */
   | 'not-granted'
+  /** Health Connect failed to respond (transient error, not necessarily missing). */
+  | 'error'
   | 'granted';
 
 /** One day's total from Health Connect's daily buckets. */
@@ -151,6 +153,12 @@ export function accessMessage(access: StepsAccess): { title: string; body: strin
         title: 'Update Health Connect',
         body: 'Health Connect needs an update before it can share steps. Update it from the Play Store, then come back and connect.',
         action: 'Update Health Connect',
+      };
+    case 'error':
+      return {
+        title: 'Couldn’t check Health Connect',
+        body: 'Health Connect didn’t respond. Try again, or open Health Connect to check its permissions.',
+        action: 'Try again',
       };
     case 'unsupported':
       return {

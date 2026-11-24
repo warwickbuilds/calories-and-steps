@@ -121,17 +121,42 @@ export function offUrl(barcode: string) {
 
 export type LookupResult = { kind: 'found'; food: Per100g } | { kind: 'not-found' } | { kind: 'offline' };
 
+export const OFF_TIMEOUT_MS = 15_000;
+
 /** Looks a barcode up. Open Food Facts asks apps to name themselves in the User-Agent. */
-export async function lookupBarcode(barcode: string, appVersion: string, signal?: AbortSignal): Promise<LookupResult> {
+export async function lookupBarcode(
+  barcode: string,
+  appVersion: string,
+  signal?: AbortSignal,
+  timeoutMs = OFF_TIMEOUT_MS,
+): Promise<LookupResult> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  }
+  const timer =
+    timeoutMs > 0
+      ? setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
   let res: Response;
   try {
     res = await fetch(offUrl(barcode), {
       headers: { 'User-Agent': `CaloriesAndSteps/${appVersion} (Android; github.com/warwickbuilds/calories-and-steps)` },
-      signal,
+      signal: controller.signal,
     });
   } catch (e) {
-    if ((e as Error)?.name === 'AbortError') throw e;
+    if (!timedOut && (signal?.aborted || (e as Error)?.name === 'AbortError')) throw e;
     return { kind: 'offline' };
+  } finally {
+    if (timer) clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
   }
   if (res.status === 404) return { kind: 'not-found' };
   if (!res.ok) return { kind: 'offline' };

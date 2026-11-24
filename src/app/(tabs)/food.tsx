@@ -1,14 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FoodIcon } from '@/components/FoodIcon';
 import { AddButton, Card, IconButton, Screen, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { useDayItems, useDayTotals, useTargets, useWeekAverage } from '@/hooks/data';
+import { useToday } from '@/hooks/useToday';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { dayLabel, formatAmount, macroLine } from '@/lib/food';
-import { MEAL_TYPES, formatNumber, isLocalDate } from '@/lib/today';
+import { MEAL_TYPES, formatNumber, isLocalDate, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
 
@@ -16,7 +18,8 @@ import { space } from '@/theme/tokens';
 export default function FoodScreen() {
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ day?: string }>();
-  const today = toLocalDateString();
+  const today = useToday();
+  const [copying, setCopying] = useState<MealType | null>(null);
   // The day lives in the route, so Today can open a given day and the tab remembers it.
   const day = isLocalDate(params.day) && params.day <= today ? params.day : today;
   const shift = (n: number) => router.setParams({ day: toLocalDateString(addDays(fromLocalDateString(day), n)) });
@@ -27,6 +30,16 @@ export default function FoodScreen() {
   const prevTotals = useDayTotals(prevDay);
   const targets = useTargets();
   const week = useWeekAverage(day);
+
+  const handleCopy = async (mealType: MealType) => {
+    if (copying) return;
+    setCopying(mealType);
+    try {
+      await copyMeal(mealType, prevDay, day);
+    } finally {
+      setCopying(null);
+    }
+  };
 
   return (
     <Screen
@@ -113,9 +126,13 @@ export default function FoodScreen() {
             {canCopy ? (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => copyMeal(m.value, prevDay, day)}
+                disabled={copying === m.value}
+                onPress={() => handleCopy(m.value)}
                 hitSlop={{ top: 8, bottom: 8 }}
-                style={({ pressed }) => [styles.pill, { backgroundColor: colors.track, opacity: pressed ? 0.7 : 1 }]}>
+                style={({ pressed }) => [
+                  styles.pill,
+                  { backgroundColor: colors.track, opacity: pressed || copying === m.value ? 0.7 : 1 },
+                ]}>
                 <Text variant="caption" muted>
                   {prevLabel === 'Yesterday' ? 'Same as yesterday' : `Same as ${prevLabel}`}
                 </Text>

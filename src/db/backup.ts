@@ -12,7 +12,7 @@
  */
 
 import Constants from 'expo-constants';
-import { Directory, File, Paths } from 'expo-file-system';
+import { Directory, File, FileMode, Paths, type FileHandle } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Unzip, UnzipInflate, Zip, ZipDeflate, ZipPassThrough, strFromU8, strToU8 } from 'fflate';
 
@@ -40,11 +40,27 @@ const PHOTO_DIR = 'photos';
 const STAGING_DIR = 'photos-incoming';
 const OLD_DIR = 'photos-old';
 const INSERT_CHUNK = 50;
+const STREAM_CHUNK = 1024 * 1024;
 
 /** Number of migrations this build applies; a backup from a later schema is refused. */
 export const SCHEMA_VERSION = migrations.journal.entries.length;
 
 const appVersion = () => Constants.expoConfig?.version ?? null;
+
+async function copyFileStreaming(src: File, dest: File): Promise<void> {
+  const reader = src.open(FileMode.ReadOnly);
+  const writer = dest.open(FileMode.WriteOnly);
+  try {
+    while (true) {
+      const chunk = await reader.readBytes(STREAM_CHUNK);
+      if (chunk.length === 0) break;
+      await writer.writeBytes(chunk);
+    }
+  } finally {
+    reader.close();
+    writer.close();
+  }
+}
 
 async function readAllRows(): Promise<BackupRows> {
   const rows = {} as BackupRows;
@@ -118,7 +134,7 @@ export async function saveBackupToFolder(): Promise<BackupManifest | null> {
   if (!folder) return null;
   const { file, manifest } = await writeBackupFile();
   const target = folder.createFile(file.name, 'application/zip');
-  await target.write(await file.bytes());
+  await copyFileStreaming(file, target);
   return manifest;
 }
 
@@ -147,43 +163,95 @@ export async function readBackup(): Promise<StagedBackup | null> {
     mimeTypes: ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
   });
   if (picked.canceled || !picked.result) return null;
-  const bytes = await picked.result.bytes();
 
   discardStagedBackup();
   const photoDir = stagingDir();
   photoDir.create({ intermediates: true });
 
   const texts: Record<string, string> = {};
-  const pending: Promise<void>[] = [];
+  const openHandles = new Set<FileHandle>();
   let failed: Error | null = null;
 
+  const closeHandle = (h: FileHandle | null) => {
+    if (!h || !openHandles.has(h)) return;
+    openHandles.delete(h);
+    try {
+      h.close();
+    } catch {
+      // Closing during error cleanup.
+    }
+  };
+
   const unzip = new Unzip((entry) => {
-    const wanted = entry.name === MANIFEST_NAME || entry.name === DATA_NAME || isPhotoEntry(entry.name);
-    if (!wanted) return; // Anything else in the zip is ignored.
-    const chunks: Uint8Array[] = [];
+    const isText = entry.name === MANIFEST_NAME || entry.name === DATA_NAME;
+    if (!isText && !isPhotoEntry(entry.name)) return; // Anything else in the zip is ignored.
+
+    if (isText) {
+      const chunks: Uint8Array[] = [];
+      entry.ondata = (err, chunk, final) => {
+        if (err) {
+          failed = err;
+          return;
+        }
+        chunks.push(chunk);
+        if (final) texts[entry.name] = strFromU8(concat(chunks));
+      };
+      entry.start();
+      return;
+    }
+
+    let outHandle: FileHandle | null = null;
+    try {
+      const out = new File(photoDir, entry.name.slice(PHOTO_DIR.length + 1));
+      out.create({ overwrite: true });
+      outHandle = out.open(FileMode.WriteOnly);
+      openHandles.add(outHandle);
+    } catch (e) {
+      failed = e instanceof Error ? e : new Error(String(e));
+      return;
+    }
+
     entry.ondata = (err, chunk, final) => {
       if (err) {
         failed = err;
+        closeHandle(outHandle);
         return;
       }
-      chunks.push(chunk);
-      if (!final) return;
-      const data = concat(chunks);
-      if (entry.name === MANIFEST_NAME || entry.name === DATA_NAME) {
-        texts[entry.name] = strFromU8(data);
-      } else {
-        const out = new File(photoDir, entry.name.slice(PHOTO_DIR.length + 1));
-        pending.push(out.write(data));
+      try {
+        if (chunk.length > 0 && outHandle) outHandle.writeBytesSync(chunk);
+      } catch (e) {
+        failed = e instanceof Error ? e : new Error(String(e));
+        closeHandle(outHandle);
+        return;
       }
+      if (final) closeHandle(outHandle);
     };
     entry.start();
   });
   unzip.register(UnzipInflate);
 
+  let reader: FileHandle | null = null;
   try {
-    unzip.push(bytes, true);
-    await Promise.all(pending);
-    if (failed) throw failed;
+    try {
+      reader = picked.result.open(FileMode.ReadOnly);
+      while (true) {
+        const chunk = await reader.readBytes(STREAM_CHUNK);
+        if (chunk.length === 0) break;
+        unzip.push(chunk, false);
+        if (failed) throw failed;
+      }
+      unzip.push(new Uint8Array(0), true);
+      if (failed) throw failed;
+    } finally {
+      if (reader) {
+        try {
+          reader.close();
+        } catch {
+          // Ignore close error on cleanup.
+        }
+      }
+      for (const h of [...openHandles]) closeHandle(h);
+    }
   } catch (e) {
     discardStagedBackup();
     if (e instanceof BackupError) throw e;

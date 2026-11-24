@@ -5,7 +5,8 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { Button, Card, Text } from '@/components/ui';
 import { logWeightForDay } from '@/db/queries';
 import { useLatestWeight, useProfile, useWeightTrend } from '@/hooks/data';
-import { dayBounds } from '@/lib/dates';
+import { useToday } from '@/hooks/useToday';
+import { dayBounds, fromLocalDateString } from '@/lib/dates';
 import { weeklyChangeText } from '@/lib/today';
 import { fromDisplayWeight, parseDecimal, toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { LIMITS, inRange } from '@/lib/validation';
@@ -19,10 +20,11 @@ export function WeightLogCard() {
   const { profile } = useProfile();
   const latest = useLatestWeight();
   const trend = useWeightTrend();
+  const today = useToday();
   const units = profile?.unitPref ?? 'metric';
   const unit = weightUnitLabel(units);
 
-  const { start, end } = dayBounds();
+  const { start, end } = useMemo(() => dayBounds(fromLocalDateString(today)), [today]);
   const loggedToday =
     !!latest && latest.measuredAt >= start.toISOString() && latest.measuredAt < end.toISOString();
 

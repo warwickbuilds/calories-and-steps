@@ -127,8 +127,9 @@ export function describeBackup(m: BackupManifest): string {
   add(m.counts.foodItem ?? 0, 'food logged', 'foods logged');
   add(m.counts.weightEntry ?? 0, 'weigh-in', 'weigh-ins');
   add(m.counts.bodyCheck ?? 0, 'check-in', 'check-ins');
-  // Each photo is stored with a thumbnail, so count the full-size ones.
-  add(Math.round((m.photoCount ?? 0) / 2), 'photo', 'photos');
+  // Prefer the exact DB photo row count, falling back to half the files (full + thumb).
+  const photos = (m.counts.bodyPhoto ?? 0) > 0 ? m.counts.bodyPhoto : Math.round((m.photoCount ?? 0) / 2);
+  add(photos, 'photo', 'photos');
   if (parts.length === 0) return 'your settings only';
   if (parts.length === 1) return parts[0];
   return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
