@@ -10,7 +10,8 @@ import { prepareImage } from '@/lib/ai/prepareImage';
 import { AiError, requestJson } from '@/lib/ai/providers';
 import { useAiSettings } from '@/lib/ai/settings';
 import { toLocalDateString } from '@/lib/dates';
-import { macroLine } from '@/lib/food';
+import { macroLine, type FoodUnit } from '@/lib/food';
+import type { FoodCategory } from '@/lib/foodCategory';
 import { displayName, lookupBarcode, nutritionFor, type Per100g } from '@/lib/openFoodFacts';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { parseDecimal } from '@/lib/units';
@@ -27,6 +28,8 @@ type Step =
   | { kind: 'form' };
 
 type Origin = 'off' | 'panel' | 'custom';
+
+const UNIT_HINT = 'Switches between grams and millilitres. Use ml for drinks when the label is per 100 ml.';
 
 const str = (n: number | null | undefined) => (n == null ? '' : String(n));
 
@@ -58,6 +61,8 @@ export default function ProductScreen() {
   const [fat, setFat] = useState('');
   const [serving, setServing] = useState('');
   const [amount, setAmount] = useState('');
+  const [unit, setUnit] = useState<FoodUnit>('g');
+  const [category, setCategory] = useState<FoodCategory | null>(null);
   const [saving, setSaving] = useState(false);
   const started = useRef(false);
 
@@ -69,6 +74,8 @@ export default function ProductScreen() {
     setCarbs(str(f.carbsPer100g));
     setFat(str(f.fatPer100g));
     setServing(str(f.servingG));
+    setUnit(f.unit === 'ml' ? 'ml' : 'g');
+    setCategory(f.category ?? null);
     setAmount(str(f.servingG ?? 100));
     setOrigin(from);
     setRefId(id);
@@ -90,7 +97,11 @@ export default function ProductScreen() {
         return;
       }
       const cached = barcode ? await findByBarcode(barcode) : null;
-      fill({ ...read, name: read.name ?? cached?.name ?? '', brand: cached?.brand ?? null }, 'panel', null);
+      fill(
+        { ...read, name: read.name ?? cached?.name ?? '', brand: cached?.brand ?? null, category: read.category ?? cached?.category ?? null },
+        'panel',
+        null,
+      );
       setEdited(true); // Not saved yet: saving on Add caches it under the barcode.
     } catch (e) {
       setStep({ kind: 'read-failed', message: e instanceof AiError ? e.message : 'Couldn’t read the label. Try again.' });
@@ -144,6 +155,12 @@ export default function ProductScreen() {
     setEdited(true);
   };
 
+  // Only the label changes: the numbers stay per 100 of whichever unit the pack uses.
+  const toggleUnit = () => {
+    setUnit((u) => (u === 'g' ? 'ml' : 'g'));
+    setEdited(true);
+  };
+
   const scanLabel = () =>
     router.replace({
       pathname: '/scan',
@@ -159,6 +176,8 @@ export default function ProductScreen() {
         brand,
         ...per100,
         servingG: servingG && servingG > 0 ? servingG : null,
+        unit,
+        category,
       };
       let id = refId;
       if (edited || id == null) {
@@ -169,7 +188,7 @@ export default function ProductScreen() {
         mealType: meal,
         source: origin === 'panel' ? 'panel' : barcode ? 'barcode' : 'manual',
         foodRefId: id,
-        food: { name: displayName(food), ...total, grams: Math.round(grams) },
+        food: { name: displayName(food), ...total, grams: Math.round(grams), unit, category },
       });
       // Close this screen and the add-food list under it.
       router.dismiss(2);
@@ -274,14 +293,21 @@ export default function ProductScreen() {
       <Card title="How much">
         <View style={styles.chips}>
           {servingG && servingG > 0 ? (
-            <Chip label={`1 serving (${formatNumber(servingG)} g)`} selected={grams === servingG} onPress={() => setAmount(str(servingG))} />
+            <Chip label={`1 serving (${formatNumber(servingG)} ${unit})`} selected={grams === servingG} onPress={() => setAmount(str(servingG))} />
           ) : null}
           {servingG && servingG > 0 ? (
             <Chip label="2 servings" selected={grams === servingG * 2} onPress={() => setAmount(str(servingG * 2))} />
           ) : null}
-          <Chip label="100 g" selected={grams === 100} onPress={() => setAmount('100')} />
+          <Chip label={`100 ${unit}`} selected={grams === 100} onPress={() => setAmount('100')} />
         </View>
-        <NumberField label="Amount" unit="g" value={amount} onChangeText={setAmount} />
+        <NumberField
+          label="Amount"
+          unit={unit}
+          onUnitPress={toggleUnit}
+          unitHint={UNIT_HINT}
+          value={amount}
+          onChangeText={setAmount}
+        />
         <Text variant="bodyStrong">
           {total ? `${formatNumber(total.calories)} calories` : '–'}
           {total && macroLine(total) ? (
@@ -293,10 +319,17 @@ export default function ProductScreen() {
         </Text>
       </Card>
 
-      <Card title="Per 100 g">
+      <Card title={`Per 100 ${unit}`}>
         <View style={styles.row}>
           <NumberField label="Calories" value={cal} onChangeText={edit(setCal)} />
-          <NumberField label="Serving size" unit="g" value={serving} onChangeText={edit(setServing)} />
+          <NumberField
+            label="Serving size"
+            unit={unit}
+            onUnitPress={toggleUnit}
+            unitHint={UNIT_HINT}
+            value={serving}
+            onChangeText={edit(setServing)}
+          />
         </View>
         <View style={styles.row}>
           <NumberField label="Protein" unit="g" value={protein} onChangeText={edit(setProtein)} />

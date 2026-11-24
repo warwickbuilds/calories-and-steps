@@ -1,5 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 
+import type { FoodUnit } from '@/lib/food';
+import type { FoodCategory } from '@/lib/foodCategory';
 import type { MealType } from '@/lib/today';
 
 import { db } from './client';
@@ -10,6 +12,8 @@ export const recentItemsQuery = (limit = 400) =>
     .select({
       name: foodItem.name,
       grams: foodItem.grams,
+      unit: foodItem.unit,
+      category: foodItem.category,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,
@@ -36,6 +40,8 @@ export const foodItemQuery = (id: number) =>
       id: foodItem.id,
       name: foodItem.name,
       grams: foodItem.grams,
+      unit: foodItem.unit,
+      category: foodItem.category,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,
@@ -51,6 +57,10 @@ export const foodItemQuery = (id: number) =>
 export type FoodValues = {
   name: string;
   grams?: number | null;
+  /** What `grams` is measured in. Grams when left out. */
+  unit?: FoodUnit;
+  /** For the icon. Null means guess from the name; left out keeps what is stored. */
+  category?: FoodCategory | null;
   calories: number;
   proteinG?: number | null;
   carbsG?: number | null;
@@ -139,11 +149,13 @@ export async function updateFoodItem(id: number, food: FoodValues, mealType: Mea
 const nullable = (f: FoodValues) => ({
   name: f.name,
   grams: f.grams ?? null,
+  unit: f.unit ?? 'g',
   calories: f.calories,
   proteinG: f.proteinG ?? null,
   carbsG: f.carbsG ?? null,
   fatG: f.fatG ?? null,
   ...(f.confidence !== undefined ? { confidence: f.confidence } : {}),
+  ...(f.category !== undefined ? { category: f.category } : {}),
 });
 
 /** Now for today; midday for another day, so past entries sort sensibly. */

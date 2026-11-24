@@ -1,6 +1,7 @@
 import {
   averageLoggedCalories,
   dayLabel,
+  formatAmount,
   macroLine,
   recentFoods,
   scaleNutrition,
@@ -34,7 +35,12 @@ describe('recentFoods', () => {
   it('skips generic quick adds and blank names', () => {
     const r = recentFoods([row('Quick add', '2026-11-22T07:00:00Z'), row('  ', '2026-11-22T08:00:00Z')]);
     expect(r).toEqual([]);
+  });  it('keeps the unit of the newest serving', () => {
+    const r = recentFoods([{ ...row('FitMilk', '2026-11-24T07:00:00Z', 108), grams: 250, unit: 'ml' }]);
+    expect(r[0].unit).toBe('ml');
+    expect(recentFoods([row('Oats', '2026-11-24T07:00:00Z')])[0].unit).toBe('g');
   });
+
 
   it('respects the limit', () => {
     const rows = Array.from({ length: 10 }, (_, i) => row(`Food ${i}`, `2026-11-${10 + i}T07:00:00Z`));
@@ -57,6 +63,19 @@ describe('scaleNutrition', () => {
   it('scales calories, macros and grams', () => {
     const s = scaleNutrition({ calories: 250, proteinG: 10, carbsG: null, fatG: 4, grams: 120 }, 1.5);
     expect(s).toEqual({ calories: 375, proteinG: 15, carbsG: null, fatG: 6, grams: 180 });
+  });
+  it('keeps the unit', () => {
+    const s = scaleNutrition({ calories: 108, proteinG: 13, carbsG: 6, fatG: 4, grams: 250, unit: 'ml' }, 2);
+    expect(s.unit).toBe('ml');
+    expect(s.grams).toBe(500);
+  });
+});
+
+describe('formatAmount', () => {
+  it('shows grams or ml', () => {
+    expect(formatAmount(250, 'ml')).toBe('250 ml');
+    expect(formatAmount(40.4, 'g')).toBe('40 g');
+    expect(formatAmount(1500, undefined)).toBe('1,500 g');
   });
 });
 
