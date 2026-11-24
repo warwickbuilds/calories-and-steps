@@ -5,7 +5,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { LineChart } from '@/components/LineChart';
 import { PhotoThumb } from '@/components/PhotoThumb';
 import { Button, Card, Screen, Text } from '@/components/ui';
-import { useCheckIns, useProfile, useWeightTrend } from '@/hooks/data';
+import { useCheckIns, useProfile, useWeightTrend, type CheckIn } from '@/hooks/data';
 import { bmi, bmiCategory, bodyComposition } from '@/lib/body';
 import { formatShortDate } from '@/lib/dates';
 import { formatWeight } from '@/lib/units';
@@ -15,8 +15,13 @@ export default function ProgressScreen() {
   const { profile } = useProfile();
   const checkIns = useCheckIns();
   const trend = useWeightTrend();
-  const latest = checkIns[0];
-  const previous = checkIns[1];
+  // Body fat comes from measured check-ins; photos-only ones still show in the strip.
+  const measured = useMemo(
+    () => checkIns.filter((c): c is CheckIn & { bodyFatPct: number } => c.bodyFatPct != null),
+    [checkIns],
+  );
+  const latest = measured[0];
+  const previous = measured[1];
   const weightNow = trend[trend.length - 1]?.trend ?? null;
   const units = profile?.unitPref ?? 'metric';
   const withPhotos = checkIns.filter((c) => Object.keys(c.photos).length > 0);
@@ -27,10 +32,10 @@ export default function ProgressScreen() {
 
   const chartPoints = useMemo(
     () =>
-      [...checkIns]
+      [...measured]
         .reverse()
         .map((c) => ({ t: new Date(c.measuredAt).getTime(), value: c.bodyFatPct })),
-    [checkIns],
+    [measured],
   );
 
   return (
@@ -53,7 +58,7 @@ export default function ProgressScreen() {
                 : null}
             </Text>
             <Text variant="caption" muted>
-              Last check-in {formatShortDate(new Date(latest.measuredAt), true)}
+              Measured {formatShortDate(new Date(latest.measuredAt), true)}
             </Text>
           </>
         ) : (
@@ -83,20 +88,24 @@ export default function ProgressScreen() {
               <Pressable
                 style={styles.stripItem}
                 accessibilityRole="button"
-                accessibilityLabel={`Check-in ${formatShortDate(new Date(item.measuredAt), true)}, ${item.bodyFatPct.toFixed(1)} percent`}
+                accessibilityLabel={`Check-in ${formatShortDate(new Date(item.measuredAt), true)}, ${
+                  item.bodyFatPct != null ? `${item.bodyFatPct.toFixed(1)} percent` : 'photos only'
+                }`}
                 onPress={() => router.push({ pathname: '/check-ins/[id]', params: { id: String(item.id) } })}>
                 <PhotoThumb path={item.photos.front?.thumbPath ?? item.photos.side?.thumbPath ?? item.photos.back?.thumbPath} />
                 <Text variant="caption" muted>
                   {formatShortDate(new Date(item.measuredAt))}
                 </Text>
-                <Text variant="label">{item.bodyFatPct.toFixed(1)}%</Text>
+                <Text variant="label" muted={item.bodyFatPct == null}>
+                  {item.bodyFatPct != null ? `${item.bodyFatPct.toFixed(1)}%` : 'Photos'}
+                </Text>
               </Pressable>
             )}
           />
         </Card>
       ) : null}
 
-      {checkIns.length > 1 ? (
+      {measured.length > 1 ? (
         <Card title="Body fat over time">
           <LineChart
             points={chartPoints}

@@ -19,7 +19,8 @@ export default function CheckInDetail() {
   if (!check || !profile) return <Screen edges={[]} />;
   const units = profile.unitPref;
   const len = (cm: number) => `${toDisplayLength(cm, units).toFixed(1)} ${lengthUnitLabel(units)}`;
-  const comp = check.weightKg ? bodyComposition(check.weightKg, check.bodyFatPct) : null;
+  const measured = check.bodyFatPct != null && check.neckCm != null && check.waistCm != null;
+  const comp = check.weightKg && check.bodyFatPct != null ? bodyComposition(check.weightKg, check.bodyFatPct) : null;
   const hasPhotos = Object.keys(check.photos).length > 0;
 
   const remove = () =>
@@ -44,7 +45,7 @@ export default function CheckInDetail() {
         month: 'long',
         year: 'numeric',
       })}
-      title={`${check.bodyFatPct.toFixed(1)}% body fat`}>
+      title={check.bodyFatPct != null ? `${check.bodyFatPct.toFixed(1)}% body fat` : 'Photos'}>
       {hasPhotos ? (
         <Card>
           <Segmented value={pose} onChange={setPose} options={POSES} />
@@ -54,15 +55,22 @@ export default function CheckInDetail() {
           />
         </Card>
       ) : null}
-      <Card title="Measurements">
-        <Row label="Neck" value={len(check.neckCm)} />
-        <Row label="Waist" value={len(check.waistCm)} />
-        {check.hipCm != null ? <Row label="Hips" value={len(check.hipCm)} /> : null}
-        {check.weightKg != null ? <Row label="Weight" value={formatWeight(check.weightKg, units)} /> : null}
-        {comp ? <Row label="Lean mass" value={formatWeight(comp.leanKg, units)} /> : null}
-        {comp ? <Row label="Fat mass" value={formatWeight(comp.fatKg, units)} /> : null}
-        {check.weightKg != null ? <Row label="BMI" value={bmi(check.weightKg, profile.heightCm).toFixed(1)} /> : null}
-      </Card>
+      {measured || check.weightKg != null ? (
+        <Card title="Measurements">
+          {check.neckCm != null ? <Row label="Neck" value={len(check.neckCm)} /> : null}
+          {check.waistCm != null ? <Row label="Waist" value={len(check.waistCm)} /> : null}
+          {check.hipCm != null ? <Row label="Hips" value={len(check.hipCm)} /> : null}
+          {check.weightKg != null ? <Row label="Weight" value={formatWeight(check.weightKg, units)} /> : null}
+          {comp ? <Row label="Lean mass" value={formatWeight(comp.leanKg, units)} /> : null}
+          {comp ? <Row label="Fat mass" value={formatWeight(comp.fatKg, units)} /> : null}
+          {check.weightKg != null ? <Row label="BMI" value={bmi(check.weightKg, profile.heightCm).toFixed(1)} /> : null}
+        </Card>
+      ) : null}
+      <Button
+        variant="secondary"
+        label="Edit check-in"
+        onPress={() => router.push({ pathname: '/check-in', params: { id: String(check.id) } })}
+      />
       <Button variant="ghost" label="Delete check-in" onPress={remove} />
     </Screen>
   );

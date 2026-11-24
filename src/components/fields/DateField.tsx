@@ -7,22 +7,29 @@ import { addDays, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, radius, space } from '@/theme/tokens';
 
-/** A future date (YYYY-MM-DD), e.g. a goal date. Optional, with a Clear action. */
+/**
+ * A date (YYYY-MM-DD). By default a future date, e.g. a goal date, optional
+ * with a Clear action. Pass `past` for a day up to today that is always set,
+ * e.g. when a check-in happened.
+ */
 export function DateField({
   label,
   value,
   onChange,
   placeholder = 'Not set',
+  past = false,
 }: {
   label: string;
   value: string | null;
   onChange: (isoDate: string | null) => void;
   placeholder?: string;
+  past?: boolean;
 }) {
   const { colors, scheme } = useTheme();
   const [iosOpen, setIosOpen] = useState(false);
-  const min = addDays(new Date(), 1);
-  const date = value ? fromLocalDateString(value) : addDays(new Date(), 90);
+  const min = past ? undefined : addDays(new Date(), 1);
+  const max = past ? new Date() : undefined;
+  const date = value ? fromLocalDateString(value) : past ? new Date() : addDays(new Date(), 90);
 
   const open = () => {
     if (Platform.OS === 'android') {
@@ -30,6 +37,7 @@ export function DateField({
         value: date,
         mode: 'date',
         minimumDate: min,
+        maximumDate: max,
         onChange: (e, d) => {
           if (e.type === 'set' && d) onChange(toLocalDateString(d));
         },
@@ -52,7 +60,7 @@ export function DateField({
               : placeholder}
           </Text>
         </Pressable>
-        {value ? (
+        {value && !past ? (
           <Pressable accessibilityRole="button" onPress={() => onChange(null)} style={styles.clear}>
             <Text variant="label" muted>
               Clear
@@ -66,6 +74,7 @@ export function DateField({
           mode="date"
           display="inline"
           minimumDate={min}
+          maximumDate={max}
           themeVariant={scheme}
           onChange={(_, d) => d && onChange(toLocalDateString(d))}
         />

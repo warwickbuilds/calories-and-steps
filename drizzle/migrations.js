@@ -6,6 +6,7 @@ import m0001 from './0001_add_age.sql';
 import m0002 from './0002_drop_birth_date.sql';
 import m0003 from './0003_food_units.sql';
 import m0004 from './0004_food_category.sql';
+import m0005 from './0005_body_check_optional.sql';
 
   export default {
     journal,
@@ -14,7 +15,8 @@ import m0004 from './0004_food_category.sql';
 m0001,
 m0002,
 m0003,
-m0004
+m0004,
+m0005
     }
   }
   

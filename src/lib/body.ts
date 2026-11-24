@@ -49,3 +49,51 @@ export function bodyComposition(weightKg: number, bodyFatPct: number): { fatKg: 
   const fatKg = (weightKg * bodyFatPct) / 100;
   return { fatKg, leanKg: weightKg - fatKg };
 }
+
+/**
+ * What a check-in form can save. Measurements are all-or-nothing: either
+ * enough to work out body fat, or none at all with at least one photo.
+ */
+export function checkInReadiness(input: {
+  female: boolean;
+  neckCm: number | null;
+  waistCm: number | null;
+  hipCm: number | null;
+  bodyFatPct: number | null;
+  photoCount: number;
+}): { ok: true; measured: boolean } | { ok: false; reason: string } {
+  const entered = [input.neckCm, input.waistCm, ...(input.female ? [input.hipCm] : [])].filter((v) => v != null).length;
+  if (entered === 0) {
+    return input.photoCount > 0
+      ? { ok: true, measured: false }
+      : { ok: false, reason: 'Add measurements, photos or both.' };
+  }
+  if (input.bodyFatPct == null) {
+    const missing = [
+      input.neckCm == null ? 'neck' : null,
+      input.waistCm == null ? 'waist' : null,
+      input.female && input.hipCm == null ? 'hips' : null,
+    ].filter(Boolean);
+    return {
+      ok: false,
+      reason: missing.length
+        ? `Add your ${missing.join(' and ')} too, or clear the measurements to save photos only.`
+        : 'Check the measurements: waist should be bigger than neck.',
+    };
+  }
+  return { ok: true, measured: true };
+}
+
+/**
+ * When a check-in on a chosen day happened. Editing keeps the original time
+ * of day; a new one today uses now, and a new one on an earlier day uses midday.
+ */
+export function checkInTimestamp(day: Date, opts: { now?: Date; keepTimeOf?: Date } = {}): Date {
+  const now = opts.now ?? new Date();
+  const at = (h: number, m: number, s = 0) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m, s);
+  const t = opts.keepTimeOf;
+  if (t) return at(t.getHours(), t.getMinutes(), t.getSeconds());
+  const today =
+    day.getFullYear() === now.getFullYear() && day.getMonth() === now.getMonth() && day.getDate() === now.getDate();
+  return today ? now : at(12, 0);
+}

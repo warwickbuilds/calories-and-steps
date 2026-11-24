@@ -133,14 +133,17 @@ export const weightEntry = sqliteTable(
   (t) => [index('weight_entry_measured_idx').on(t.measuredAt)],
 );
 
-/** Navy method check-ins; body-fat % is computed when saved. */
+/**
+ * Navy method check-ins; body-fat % is computed when saved. Neck, waist and
+ * body fat are null for a photos-only check-in (migration 0005).
+ */
 export const bodyCheck = sqliteTable('body_check', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   measuredAt: text('measured_at').notNull(),
-  neckCm: real('neck_cm').notNull(),
-  waistCm: real('waist_cm').notNull(),
+  neckCm: real('neck_cm'),
+  waistCm: real('waist_cm'),
   hipCm: real('hip_cm'),
-  bodyFatPct: real('body_fat_pct').notNull(),
+  bodyFatPct: real('body_fat_pct'),
   weightKg: real('weight_kg'),
   note: text('note'),
 });
