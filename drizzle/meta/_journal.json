@@ -29,6 +29,13 @@
       "when": 1795506926624,
       "tag": "0003_food_units",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795508965655,
+      "tag": "0004_food_category",
+      "breakpoints": true
     }
   ]
 }

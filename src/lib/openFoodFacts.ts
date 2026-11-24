@@ -5,6 +5,7 @@
  */
 
 import { scaleNutrition, type FoodUnit, type Nutrition } from './food';
+import { categoryFromOffTags, type FoodCategory } from './foodCategory';
 
 export interface Per100g {
   name: string;
@@ -20,6 +21,8 @@ export interface Per100g {
    * field names keep "g" for history; with 'ml' they mean per 100 ml.
    */
   unit: FoodUnit;
+  /** For the food's icon; null when unknown (the name is used instead). */
+  category?: FoodCategory | null;
 }
 
 const KJ_PER_CALORIE = 4.184;
@@ -82,12 +85,13 @@ export function parseOffProduct(json: any): Per100g | null {
     fatPer100g: round1(num(n.fat_100g)),
     servingG: serving && serving > 0 && serving < 5000 ? serving : null,
     unit: offUnit(p),
+    category: categoryFromOffTags(p.categories_tags),
   };
 }
 
 /** What `grams` (or ml, for a drink) of a per-100 food comes to. */
 export function nutritionFor(
-  food: Omit<Per100g, 'name' | 'brand' | 'servingG' | 'unit'>,
+  food: Omit<Per100g, 'name' | 'brand' | 'servingG' | 'unit' | 'category'>,
   grams: number,
 ): Nutrition {
   return scaleNutrition(
@@ -109,7 +113,7 @@ export function displayName(food: Pick<Per100g, 'name' | 'brand'>): string {
 }
 
 export const OFF_FIELDS =
-  'product_name,generic_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,quantity,product_quantity_unit';
+  'product_name,generic_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,quantity,product_quantity_unit,categories_tags';
 
 export function offUrl(barcode: string) {
   return `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${OFF_FIELDS}`;

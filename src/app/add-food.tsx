@@ -3,6 +3,7 @@ import { Camera, Check, FileText, Mic, PencilLine, Plus, ScanBarcode, Search, ty
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { FoodIcon } from '@/components/FoodIcon';
 import { AddButton, Button, Card, Screen, Segmented, Text } from '@/components/ui';
 import { addFood } from '@/db/meals';
 import { useRecentFoods } from '@/hooks/data';
@@ -41,6 +42,7 @@ export default function AddFoodScreen() {
           fatG: f.fatG,
           grams: f.grams,
           unit: f.unit,
+          category: f.category,
         }),
       },
     });
@@ -49,7 +51,16 @@ export default function AddFoodScreen() {
     await addFood({
       day,
       mealType: meal,
-      food: { name: f.name, calories: f.calories, proteinG: f.proteinG, carbsG: f.carbsG, fatG: f.fatG, grams: f.grams, unit: f.unit },
+      food: {
+        name: f.name,
+        calories: f.calories,
+        proteinG: f.proteinG,
+        carbsG: f.carbsG,
+        fatG: f.fatG,
+        grams: f.grams,
+        unit: f.unit,
+        category: f.category,
+      },
     });
     setAdded((s) => new Set(s).add(f.name));
   };
@@ -118,6 +129,7 @@ export default function AddFoodScreen() {
               <View
                 key={f.name}
                 style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+                <FoodIcon food={f} />
                 <Pressable
                   style={styles.rowText}
                   accessibilityRole="button"

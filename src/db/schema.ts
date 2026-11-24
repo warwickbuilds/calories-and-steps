@@ -7,6 +7,8 @@
 import { sql } from 'drizzle-orm';
 import { integer, real, sqliteTable, text, index } from 'drizzle-orm/sqlite-core';
 
+import { FOOD_CATEGORY_VALUES } from '../lib/foodCategory';
+
 const createdAt = () =>
   text('created_at')
     .notNull()
@@ -82,6 +84,8 @@ export const foodRef = sqliteTable(
     unit: text('unit', { enum: ['g', 'ml'] })
       .notNull()
       .default('g'),
+    /** For the food's icon (see lib/foodCategory). Null means guess it from the name. */
+    category: text('category', { enum: FOOD_CATEGORY_VALUES }),
     source: text('source', { enum: ['off', 'panel', 'custom'] }).notNull(),
     isFavourite: integer('is_favourite', { mode: 'boolean' }).notNull().default(false),
     createdAt: createdAt(),
@@ -108,6 +112,8 @@ export const foodItem = sqliteTable(
     carbsG: real('carbs_g'),
     fatG: real('fat_g'),
     confidence: text('confidence', { enum: ['low', 'medium', 'high'] }),
+    /** For the food's icon (see lib/foodCategory). Null means guess it from the name. */
+    category: text('category', { enum: FOOD_CATEGORY_VALUES }),
     foodRefId: integer('food_ref_id').references(() => foodRef.id, { onDelete: 'set null' }),
   },
   (t) => [index('food_item_meal_idx').on(t.mealId)],

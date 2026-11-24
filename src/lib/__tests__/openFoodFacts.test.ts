@@ -9,6 +9,7 @@ describe('parseOffProduct', () => {
         product_name: 'Rolled Oats',
         brands: 'Uncle Tobys, Nestlé',
         serving_quantity: '40',
+        categories_tags: ['en:plant-based-foods-and-beverages', 'en:cereals-and-potatoes', 'en:breakfast-cereals', 'en:rolled-oats'],
         nutriments: { 'energy-kcal_100g': 375.4, proteins_100g: 11.04, carbohydrates_100g: 56, fat_100g: 8.5 },
       },
     });
@@ -21,6 +22,7 @@ describe('parseOffProduct', () => {
       fatPer100g: 8.5,
       servingG: 40,
       unit: 'g',
+      category: 'grains',
     });
   });
 
@@ -72,7 +74,7 @@ describe('barcode helpers', () => {
 
   it('builds the lookup URL with only the fields used', () => {
     expect(offUrl('9300617003014')).toBe(
-      'https://world.openfoodfacts.org/api/v2/product/9300617003014.json?fields=product_name,generic_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,quantity,product_quantity_unit',
+      'https://world.openfoodfacts.org/api/v2/product/9300617003014.json?fields=product_name,generic_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,quantity,product_quantity_unit,categories_tags',
     );
   });
 
@@ -103,7 +105,15 @@ describe('parseLabelAnswer', () => {
       fatPer100g: 15,
       servingG: 30,
       unit: 'g',
+      category: null,
     });
+  });
+
+  it('keeps a known category and drops "other"', () => {
+    const per100 = { basis: 'per100', energy: 420 };
+    expect(parseLabelAnswer({ ...base, category: 'snack', per100 })?.category).toBe('snack');
+    expect(parseLabelAnswer({ ...base, category: 'other', per100 })?.category).toBeNull();
+    expect(parseLabelAnswer({ ...base, category: 'pudding', per100 })?.category).toBeNull();
   });
 
   it('keeps ml for drinks', () => {

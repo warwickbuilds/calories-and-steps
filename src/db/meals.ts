@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 
 import type { FoodUnit } from '@/lib/food';
+import type { FoodCategory } from '@/lib/foodCategory';
 import type { MealType } from '@/lib/today';
 
 import { db } from './client';
@@ -12,6 +13,7 @@ export const recentItemsQuery = (limit = 400) =>
       name: foodItem.name,
       grams: foodItem.grams,
       unit: foodItem.unit,
+      category: foodItem.category,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,
@@ -39,6 +41,7 @@ export const foodItemQuery = (id: number) =>
       name: foodItem.name,
       grams: foodItem.grams,
       unit: foodItem.unit,
+      category: foodItem.category,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,
@@ -56,6 +59,8 @@ export type FoodValues = {
   grams?: number | null;
   /** What `grams` is measured in. Grams when left out. */
   unit?: FoodUnit;
+  /** For the icon. Null means guess from the name; left out keeps what is stored. */
+  category?: FoodCategory | null;
   calories: number;
   proteinG?: number | null;
   carbsG?: number | null;
@@ -150,6 +155,7 @@ const nullable = (f: FoodValues) => ({
   carbsG: f.carbsG ?? null,
   fatG: f.fatG ?? null,
   ...(f.confidence !== undefined ? { confidence: f.confidence } : {}),
+  ...(f.category !== undefined ? { category: f.category } : {}),
 });
 
 /** Now for today; midday for another day, so past entries sort sensibly. */

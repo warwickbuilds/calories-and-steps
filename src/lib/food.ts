@@ -1,6 +1,7 @@
 /** Pure helpers behind the food log: recent foods, search, scaling and day labels. */
 
 import { addDays, formatShortDate, fromLocalDateString, toLocalDateString } from './dates';
+import type { FoodCategory } from './foodCategory';
 
 /** Grams for food, millilitres for drinks. */
 export type FoodUnit = 'g' | 'ml';
@@ -19,12 +20,14 @@ export interface Nutrition {
 
 export interface LoggedFood extends Nutrition {
   name: string;
+  category?: FoodCategory | null;
   /** When the meal it belongs to was eaten (ISO). */
   eatenAt: string;
 }
 
 export interface RecentFood extends Nutrition {
   name: string;
+  category: FoodCategory | null;
   lastEatenAt: string;
   /** How many times it was logged among the rows looked at. */
   timesLogged: number;
@@ -56,6 +59,7 @@ export function recentFoods(rows: LoggedFood[], limit = 50): RecentFood[] {
       fatG: r.fatG,
       grams: r.grams,
       unit: r.unit ?? 'g',
+      category: r.category ?? null,
       lastEatenAt: r.eatenAt,
       timesLogged: 1,
     });

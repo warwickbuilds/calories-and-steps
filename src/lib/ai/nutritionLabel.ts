@@ -3,13 +3,14 @@
  * Used when a barcode isn't in Open Food Facts, or straight from Add food.
  */
 
+import { FOOD_CATEGORY_VALUES, isFoodCategory } from '../foodCategory';
 import type { Per100g } from '../openFoodFacts';
 import type { AiImage, AiJsonRequest } from './providers';
 
 export const NUTRITION_LABEL_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['isLabel', 'name', 'per100', 'servingG', 'energyUnit', 'unit'],
+  required: ['isLabel', 'name', 'per100', 'servingG', 'energyUnit', 'unit', 'category'],
   properties: {
     isLabel: { type: 'boolean', description: 'False if the photo is not a nutrition label' },
     name: { type: ['string', 'null'], description: 'Product name if visible on the photo' },
@@ -28,6 +29,7 @@ export const NUTRITION_LABEL_SCHEMA = {
     },
     servingG: { type: ['number', 'null'], description: 'Grams (or ml) in one serving, if stated' },
     unit: { type: 'string', enum: ['g', 'ml'], description: '"ml" if the label is per 100 ml (a drink), otherwise "g"' },
+    category: { type: 'string', enum: FOOD_CATEGORY_VALUES, description: 'What kind of food the product is' },
   },
 } as const;
 
@@ -41,6 +43,7 @@ Rules:
 - servingG: the serving size in grams or ml, if stated (e.g. "Serving size: 30g" → 30, "Serving size: 250mL" → 250).
 - unit: "ml" if the column is per 100 ml or the serving is given in ml (drinks, milk, juice, liquid yoghurt), otherwise "g".
 - name: the product name if it is visible, otherwise null.
+- category: the kind of food, from the list. Use "other" if none fits.
 - If the photo is not a nutrition label, set isLabel false and use 0 and nulls.`;
 
 export function nutritionLabelRequest(image: AiImage): AiJsonRequest {
@@ -83,5 +86,6 @@ export function parseLabelAnswer(answer: any): (Omit<Per100g, 'name' | 'brand'> 
     fatPer100g: scale(r1(p.fat)),
     servingG: servingG && servingG > 0 ? servingG : null,
     unit: answer.unit === 'ml' ? 'ml' : 'g',
+    category: isFoodCategory(answer.category) && answer.category !== 'other' ? answer.category : null,
   };
 }

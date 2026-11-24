@@ -28,7 +28,7 @@ describe('parseMealAnswer', () => {
       isFood: true,
       mealName: 'Chicken and rice',
       items: [
-        { name: 'rice', grams: 180.4, calories: 234.6, protein: 4.33, carbs: 51, fat: 0.5, confidence: 'medium' },
+        { name: 'rice', grams: 180.4, category: 'grains', calories: 234.6, protein: 4.33, carbs: 51, fat: 0.5, confidence: 'medium' },
         { name: 'Chicken breast', grams: 150, calories: 248, protein: 46, carbs: 0, fat: 5.4, confidence: 'high' },
       ],
     });
@@ -37,6 +37,7 @@ describe('parseMealAnswer', () => {
       name: 'Rice',
       grams: 180,
       unit: 'g',
+      category: 'grains',
       calories: 235,
       proteinG: 4.3,
       carbsG: 51,
@@ -60,6 +61,7 @@ describe('parseMealAnswer', () => {
       items: [{ name: 'Flat white', grams: 220, unit: 'ml', calories: 110, protein: 6, carbs: 9, fat: 5.5, confidence: 'high' }],
     });
     expect(r?.items[0].unit).toBe('ml');
+    expect(r?.items[0].category).toBeNull(); // Not given: the name decides the icon.
     expect(r?.items[0].grams).toBe(220);
   });
 

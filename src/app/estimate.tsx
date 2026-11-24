@@ -123,6 +123,8 @@ export default function EstimateScreen() {
     name: r.name.trim(),
     grams: num(r.grams),
     unit: r.unit,
+    // The AI's category, unless the item was renamed (then the icon follows the new name).
+    category: r.base && r.name.trim() === r.base.name ? r.base.category : null,
     calories: num(r.calories) ?? 0,
     proteinG: num(r.protein),
     carbsG: num(r.carbs),

@@ -11,6 +11,7 @@ import { AiError, requestJson } from '@/lib/ai/providers';
 import { useAiSettings } from '@/lib/ai/settings';
 import { toLocalDateString } from '@/lib/dates';
 import { macroLine, type FoodUnit } from '@/lib/food';
+import type { FoodCategory } from '@/lib/foodCategory';
 import { displayName, lookupBarcode, nutritionFor, type Per100g } from '@/lib/openFoodFacts';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { parseDecimal } from '@/lib/units';
@@ -61,6 +62,7 @@ export default function ProductScreen() {
   const [serving, setServing] = useState('');
   const [amount, setAmount] = useState('');
   const [unit, setUnit] = useState<FoodUnit>('g');
+  const [category, setCategory] = useState<FoodCategory | null>(null);
   const [saving, setSaving] = useState(false);
   const started = useRef(false);
 
@@ -73,6 +75,7 @@ export default function ProductScreen() {
     setFat(str(f.fatPer100g));
     setServing(str(f.servingG));
     setUnit(f.unit === 'ml' ? 'ml' : 'g');
+    setCategory(f.category ?? null);
     setAmount(str(f.servingG ?? 100));
     setOrigin(from);
     setRefId(id);
@@ -94,7 +97,11 @@ export default function ProductScreen() {
         return;
       }
       const cached = barcode ? await findByBarcode(barcode) : null;
-      fill({ ...read, name: read.name ?? cached?.name ?? '', brand: cached?.brand ?? null }, 'panel', null);
+      fill(
+        { ...read, name: read.name ?? cached?.name ?? '', brand: cached?.brand ?? null, category: read.category ?? cached?.category ?? null },
+        'panel',
+        null,
+      );
       setEdited(true); // Not saved yet: saving on Add caches it under the barcode.
     } catch (e) {
       setStep({ kind: 'read-failed', message: e instanceof AiError ? e.message : 'Couldn’t read the label. Try again.' });
@@ -170,6 +177,7 @@ export default function ProductScreen() {
         ...per100,
         servingG: servingG && servingG > 0 ? servingG : null,
         unit,
+        category,
       };
       let id = refId;
       if (edited || id == null) {
@@ -180,7 +188,7 @@ export default function ProductScreen() {
         mealType: meal,
         source: origin === 'panel' ? 'panel' : barcode ? 'barcode' : 'manual',
         foodRefId: id,
-        food: { name: displayName(food), ...total, grams: Math.round(grams), unit },
+        food: { name: displayName(food), ...total, grams: Math.round(grams), unit, category },
       });
       // Close this screen and the add-food list under it.
       router.dismiss(2);

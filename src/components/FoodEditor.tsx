@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { CATEGORY_ICONS } from '@/components/FoodIcon';
 import { Button, NumberField, Screen, Segmented, Text } from '@/components/ui';
 import type { FoodValues } from '@/db/meals';
 import { scaleNutrition, type FoodUnit, type Nutrition } from '@/lib/food';
+import { FOOD_CATEGORIES, categoryFor, categoryLabel, type FoodCategory } from '@/lib/foodCategory';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
 import { parseDecimal } from '@/lib/units';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -18,7 +20,7 @@ const PORTIONS = [
 
 const str = (n: number | null | undefined) => (n == null ? '' : String(n));
 
-export type FoodEditorInitial = { name: string } & Partial<Nutrition>;
+export type FoodEditorInitial = { name: string; category?: FoodCategory | null } & Partial<Nutrition>;
 
 /**
  * The one form for a food: quick add, adding a recent food, and editing a
@@ -53,6 +55,9 @@ export function FoodEditor({
   const [fat, setFat] = useState(str(initial?.fatG));
   const [grams, setGrams] = useState(str(initial?.grams));
   const [unit, setUnit] = useState<FoodUnit>(initial?.unit ?? base?.unit ?? 'g');
+  // Null until picked (or stored), so the icon keeps following the name as it is typed.
+  const [category, setCategory] = useState<FoodCategory | null>(initial?.category ?? null);
+  const shownCategory = categoryFor({ category, name });
   const [portion, setPortion] = useState<number | null>(base ? 1 : null);
   const [saving, setSaving] = useState(false);
 
@@ -99,6 +104,7 @@ export function FoodEditor({
           fatG: num(fat),
           grams: num(grams),
           unit,
+          category,
         },
         meal,
       );
@@ -189,6 +195,28 @@ export function FoodEditor({
         <NumberField label="Carbs" unit="g" value={carbs} onChangeText={setCarbs} />
         <NumberField label="Fat" unit="g" value={fat} onChangeText={setFat} />
       </View>
+      <View style={styles.field}>
+        <Text variant="label" muted>
+          Type · {categoryLabel(shownCategory)}
+        </Text>
+        <View style={styles.categories} accessibilityRole="radiogroup">
+          {FOOD_CATEGORIES.map((c) => {
+            const Icon = CATEGORY_ICONS[c.value];
+            const selected = shownCategory === c.value;
+            return (
+              <Pressable
+                key={c.value}
+                accessibilityRole="radio"
+                accessibilityLabel={c.label}
+                accessibilityState={{ selected }}
+                onPress={() => setCategory(c.value)}
+                style={[styles.category, { backgroundColor: selected ? colors.primary : colors.track }]}>
+                <Icon size={18} strokeWidth={1.8} color={selected ? colors.onPrimary : colors.muted} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       {base?.grams ? (
         <Text variant="caption" muted>
           Changing the amount rescales calories and macros.
@@ -204,5 +232,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: space[2] },
   portions: { flexDirection: 'row', gap: space[2] },
   portion: { flex: 1, minHeight: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  categories: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  category: { width: 44, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   footer: { gap: space[2] },
 });
