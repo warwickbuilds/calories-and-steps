@@ -55,6 +55,8 @@ export type FoodValues = {
   proteinG?: number | null;
   carbsG?: number | null;
   fatG?: number | null;
+  /** How sure the AI was; only set for AI estimates. */
+  confidence?: 'low' | 'medium' | 'high' | null;
 };
 
 /** Logs one food as its own meal entry (a picked recent food, a quick add, a scanned product). */
@@ -76,6 +78,34 @@ export async function addFood(input: {
       })
       .returning({ id: meal.id });
     await tx.insert(foodItem).values({ mealId: m.id, ...nullable(input.food), foodRefId: input.foodRefId ?? null });
+  });
+}
+
+/** Logs a meal of several items at once (an AI estimate), keeping what was said and the model's answer. */
+export async function addMeal(input: {
+  day: string;
+  mealType: MealType;
+  source: 'photo' | 'manual';
+  items: FoodValues[];
+  voiceText?: string | null;
+  aiModel?: string | null;
+  aiRawJson?: string | null;
+}) {
+  if (input.items.length === 0) return;
+  await db.transaction(async (tx) => {
+    const [m] = await tx
+      .insert(meal)
+      .values({
+        day: input.day,
+        eatenAt: eatenAtFor(input.day),
+        mealType: input.mealType,
+        source: input.source,
+        voiceText: input.voiceText || null,
+        aiModel: input.aiModel ?? null,
+        aiRawJson: input.aiRawJson ?? null,
+      })
+      .returning({ id: meal.id });
+    await tx.insert(foodItem).values(input.items.map((f) => ({ mealId: m.id, ...nullable(f) })));
   });
 }
 
@@ -113,6 +143,7 @@ const nullable = (f: FoodValues) => ({
   proteinG: f.proteinG ?? null,
   carbsG: f.carbsG ?? null,
   fatG: f.fatG ?? null,
+  ...(f.confidence !== undefined ? { confidence: f.confidence } : {}),
 });
 
 /** Now for today; midday for another day, so past entries sort sensibly. */

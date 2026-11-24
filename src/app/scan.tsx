@@ -1,6 +1,7 @@
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
-import { X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Images, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +19,9 @@ const OVERLAY = { text: '#FFFFFF', guide: 'rgba(255,255,255,0.7)', scrim: 'rgba(
  */
 export default function ScanScreen() {
   const params = useLocalSearchParams<{ meal?: string; day?: string; mode?: string; barcode?: string }>();
-  const [mode, setMode] = useState<'barcode' | 'label'>(params.mode === 'label' ? 'label' : 'barcode');
+  const [mode, setMode] = useState<'barcode' | 'label' | 'meal'>(
+    params.mode === 'label' || params.mode === 'meal' ? params.mode : 'barcode',
+  );
   const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const done = useRef(false);
@@ -31,20 +34,32 @@ export default function ScanScreen() {
     router.replace({ pathname: '/product', params: { ...pass, barcode: r.data } });
   };
 
-  const takeLabel = async () => {
+  const handOver = (uri: string, width: number) => {
+    if (mode === 'meal') {
+      router.replace({ pathname: '/estimate', params: { ...pass, photo: uri, width: String(width) } });
+    } else {
+      router.replace({
+        pathname: '/product',
+        params: { ...pass, photo: uri, width: String(width), ...(params.barcode ? { barcode: params.barcode } : {}) },
+      });
+    }
+  };
+
+  const takePhoto = async () => {
     if (!camera.current || busy) return;
     setBusy(true);
     try {
       const pic = await camera.current.takePictureAsync({ quality: 0.9, shutterSound: false });
-      if (pic?.uri) {
-        router.replace({
-          pathname: '/product',
-          params: { ...pass, photo: pic.uri, width: String(pic.width), ...(params.barcode ? { barcode: params.barcode } : {}) },
-        });
-      }
+      if (pic?.uri) handOver(pic.uri, pic.width);
     } finally {
       setBusy(false);
     }
+  };
+
+  const pickPhoto = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+    const a = res.canceled ? null : res.assets[0];
+    if (a) handOver(a.uri, a.width);
   };
 
   if (!permission) return <View style={styles.black} />;
@@ -56,7 +71,7 @@ export default function ScanScreen() {
           Camera access is needed to scan barcodes and labels
         </Text>
         <Text variant="body" color={OVERLAY.guide} style={styles.centerText}>
-          Nothing is recorded. Label photos are sent to your AI provider to be read, then discarded.
+          Nothing is recorded. Meal and label photos are sent to your AI provider to be read, then discarded.
         </Text>
         <View style={styles.permissionButtons}>
           {permission.canAskAgain ? (
@@ -90,31 +105,43 @@ export default function ScanScreen() {
           </Pressable>
           <View style={styles.title}>
             <Text variant="bodyStrong" color={OVERLAY.text}>
-              {mode === 'barcode' ? 'Scan a barcode' : 'Photograph the nutrition label'}
+              {mode === 'barcode' ? 'Scan a barcode' : mode === 'meal' ? 'Photograph your meal' : 'Photograph the nutrition label'}
             </Text>
             <Text variant="caption" color={OVERLAY.guide}>
               {mode === 'barcode'
                 ? 'Hold the barcode inside the box'
-                : params.barcode
+                : mode === 'meal'
+                  ? 'From above, with the whole plate in view'
+                  : params.barcode
                   ? 'Not in Open Food Facts, so AI will read the label'
                   : 'Fill the frame with the nutrition table'}
             </Text>
           </View>
-          <View style={styles.round} />
+          <View style={styles.spacer} />
         </View>
 
-        <View style={[styles.frame, mode === 'barcode' ? styles.frameBarcode : styles.frameLabel]} pointerEvents="none" />
+        {mode === 'meal' ? (
+          <View />
+        ) : (
+          <View style={[styles.frame, mode === 'barcode' ? styles.frameBarcode : styles.frameLabel]} pointerEvents="none" />
+        )}
 
         <View style={styles.bottom}>
-          {mode === 'label' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Take label photo"
-              disabled={busy}
-              onPress={takeLabel}
-              style={({ pressed }) => [styles.shutter, { opacity: pressed || busy ? 0.6 : 1 }]}>
-              <View style={styles.shutterInner} />
-            </Pressable>
+          {mode !== 'barcode' ? (
+            <View style={styles.shutterRow}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Choose a photo" onPress={pickPhoto} style={styles.round}>
+                <Images size={20} strokeWidth={1.8} color={OVERLAY.text} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={mode === 'meal' ? 'Take meal photo' : 'Take label photo'}
+                disabled={busy}
+                onPress={takePhoto}
+                style={({ pressed }) => [styles.shutter, { opacity: pressed || busy ? 0.6 : 1 }]}>
+                <View style={styles.shutterInner} />
+              </Pressable>
+              <View style={styles.spacer} />
+            </View>
           ) : (
             <Pressable
               accessibilityRole="button"
@@ -151,6 +178,8 @@ const styles = StyleSheet.create({
   frameBarcode: { width: '80%', height: 160 },
   frameLabel: { width: '86%', height: '58%' },
   bottom: { alignItems: 'center', paddingBottom: space[6] },
+  spacer: { width: layout.minTap, height: layout.minTap },
+  shutterRow: { flexDirection: 'row', alignItems: 'center', gap: space[7] },
   switch: {
     minHeight: layout.minTap,
     paddingHorizontal: space[5],

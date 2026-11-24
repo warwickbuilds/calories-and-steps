@@ -14,6 +14,7 @@ A simple, private Android app for tracking what you eat, how much you move and h
 ## What it does
 
 - **Calories and macros.** A daily calorie target worked out from your body and activity, with a goal of hard cut, steady cut, maintain or bulk. Protein, carbs and fat are shown against their own targets.
+- **Photograph a meal.** Take a photo (or pick one), say what's in it out loud or type it, and AI estimates each part of the meal with grams, calories and macros. Check and fix the list, then add it. Works from a description alone too ("two eggs on toast"). Uses your own Google AI key; speech is turned into text on your phone.
 - **Meals.** Log breakfast, lunch, dinner and snacks. Search the foods you've had before and add one in a tap, change the servings or grams, quick add calories in seconds, or copy a meal from yesterday. Tap anything you logged to fix it or move it to another meal.
 - **Barcodes and labels.** Scan a barcode to look the product up in Open Food Facts, pick a serving or type the grams, and add it. If the product isn't there, photograph the nutrition label and AI reads it (using your own Google AI key). Every number can be fixed before adding, and scanned products are remembered on your phone.
 - **Food history.** Step back through earlier days, add or fix food on any of them, and see your 7-day calorie average.
@@ -24,7 +25,7 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Light and dark.** Follows your phone, or pick one.
 - **Updates.** The app tells you when a new version is out.
 
-**Coming next:** photographing a meal and describing it out loud for an AI calorie estimate (using your own Google AI key), step sync from Health Connect, and backup and restore.
+**Coming next:** step sync from Health Connect, and backup and restore.
 
 ## Install
 
@@ -52,8 +53,8 @@ You can change any of this later in Settings (the gear on the Today screen).
 
 - Everything is stored on your phone. There is no account and nothing is uploaded to us.
 - **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Backup and restore are on the way.
-- The app sends only a few things: a daily check with GitHub for a newer version; the barcode number when you scan one, to Open Food Facts; and, when you import weights from screenshots or read a nutrition label, those images to Google AI (Gemini) using your own key. The app doesn't keep the screenshots or label photos. Your key is stored encrypted on the phone and only sent to Google.
-- When AI meal estimates arrive, the photo and description of a meal go to Google AI the same way. With a free Google Gemini key, Google may use those requests to improve its models, so a paid key is recommended.
+- The app sends only a few things: a daily check with GitHub for a newer version; the barcode number when you scan one, to Open Food Facts; and, when you import weights from screenshots, read a nutrition label or estimate a meal, those images and your meal description to Google AI (Gemini) using your own key. The app doesn't keep the screenshots, label photos or meal photos. What you say is turned into text on the phone; audio is never sent or kept. Your key is stored encrypted on the phone and only sent to Google.
+- With a free Google Gemini key, Google may use those requests (including meal photos) to improve its models, so a paid key is recommended.
 
 ---
 
@@ -87,14 +88,14 @@ Wording rule: the app always says "calories", never "kcal".
 | Weight import | Import weight history from another app's screenshots with AI, offered in onboarding and on the Weight tab; provider adapter and Google AI key setup in onboarding and Settings (shared with Phase 3) | Done (PR #7) |
 | 3a. Food log | Add-food screen with search over recent foods, servings and grams, editing logged items, Food tab by day with a 7-day average | Done (PR #8) |
 | 3b. Barcodes and labels | Open Food Facts scanner with a local cache, AI nutrition-label reading when a product isn't found | Done (PR #9) |
-| 3c. AI meal logging | Photo and spoken description meal estimate, review screen, privacy note (adapter and key setup already built) | Next |
-| 4. Steps | Step sync from Health Connect, favourites | Planned |
+| 3c. AI meal logging | Photo and spoken description meal estimate, review screen, privacy note | Done (PR #10) |
+| 4. Steps | Step sync from Health Connect, favourites | Next |
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.4.0** (food log, PR #8) and **v0.5.0** (barcodes and labels, PR #9) are released the same way once merged.
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.4.0** (food log, PR #8), **v0.5.0** (barcodes and labels, PR #9) and **v0.6.0** (photo meal estimates, PR #10) are released the same way once merged.
 
-Phase 3 is split into three releases so each can be tried on the phone: the food log (0.4.0), then barcodes and labels, then photo meal estimates.
+Phase 3 is split into three releases so each can be tried on the phone: the food log (0.4.0), barcodes and labels (0.5.0), then photo meal estimates (0.6.0). 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
 Checked on a real phone: everything up to v0.3.0, including the weight import's AI call with Rick's Gemini key. Not yet checked: anything from Phase 3 on.
 
@@ -134,6 +135,22 @@ The detailed list of what works now.
 - **Search** matches every typed word anywhere in the name. With no match, it offers to quick add the typed name.
 - The "+" on a row adds that serving straight away and shows a tick, so several foods can be added in a row; **Done** closes the screen. Tapping the row opens it first.
 - **Quick add calories** opens the quick-add form for the same meal and day.
+
+### Photo meal estimates
+
+- **Add food → Photo of meal** opens the camera (`src/app/scan.tsx`, meal mode) with a gallery button for a photo taken earlier. **Describe it** skips the photo.
+- **Estimate screen** (`src/app/estimate.tsx`): the photo, then "Anything the photo doesn't show?" with **Describe it out loud** and a text box. Spoken words are added to the text box, which can be edited.
+- **Estimate calories** sends one request: the photo (shrunk to 1080 px JPEG) and the description, with a fixed schema (`src/lib/ai/mealEstimate.ts`). The prompt asks for one item per component, with grams, calories, protein, carbs, fat and a confidence, says the description wins over the photo (amounts, oil, brands, "only ate half"), and asks for hidden fats as their own items. Items with no name, negative numbers or over 5,000 calories or grams are dropped.
+- **Check the estimate**: the total in calories and macros, then each item with its name, grams, calories and macros, all editable. Changing an item's grams rescales its numbers from the AI's figures. Items can be removed or added, and "Change description and re-estimate" goes back with the photo kept (it isn't re-encoded). Low-confidence items are marked.
+- **Add N calories** saves one meal (`source` `photo`, or `manual` without a photo) with all its items. The meal keeps the description (`voice_text`), the provider and model (`ai_model`) and the raw answer (`ai_raw_json`) for the model benchmark later; items keep their `confidence`. The photo itself isn't kept.
+- Without a Google AI key the button becomes "Add your Google AI key" (Settings). A short note under the form says what is sent and to whom.
+- Model: the same default as the other AI features (`gemini-3.6-flash`) until the weighed benchmark picks per-feature defaults.
+
+### Voice input
+
+- `src/components/VoiceButton.tsx` uses `expo-speech-recognition`: tap to start, tap to stop, with interim text shown while talking. It asks for on-device recognition (`requiresOnDeviceRecognition`) whenever the phone supports it, in the phone's language, with punctuation. Only the text is used; the audio isn't recorded or kept.
+- If on-device speech isn't set up for the language, or recognition isn't available, it says so and suggests the keyboard's microphone, which works in the same text box.
+- The config plugin adds the `RECORD_AUDIO` permission and package visibility for Google's speech services (`com.google.android.googlequicksearchbox`, `com.google.android.tts`).
 
 ### Barcodes and labels
 
@@ -198,7 +215,7 @@ The detailed list of what works now.
 - Appearance: System, Light or Dark.
 - AI: the Google AI key, with Save and test, Get a key and Remove key (see [AI provider and key](#ai-provider-and-key)).
 - Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it. Also an "Import weights from screenshots" button.
-- App version, with a "Check for updates" button.
+- About: app version with a "Check for updates" button, and the Open Food Facts credit with a link to its website.
 
 ### Updates
 
@@ -207,10 +224,11 @@ The detailed list of what works now.
 
 ## Versions and changelog
 
-App version: **0.5.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.6.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Phase 3c, photo meal estimates: photo (camera or gallery) plus spoken or typed description, AI estimate per item with grams, calories, macros and confidence, editable review with grams rescaling, describe-only estimates, on-device speech-to-text (expo-speech-recognition, microphone permission). Version 0.6.0 | #10 |
 | 2026-11-24 | Phase 3b, barcodes and labels: barcode scanner, Open Food Facts lookup cached on the phone, servings or grams, editable per-100 g numbers, AI nutrition-label reading for unknown products or straight from Add food, Open Food Facts credit in Settings → About, camera permission text mentions barcodes. Version 0.5.0 | #9 |
 | 2026-11-24 | Phase 3a, food log: add-food screen with search over recent foods and one-tap add, servings and grams rescaling, edit or delete or move any logged item, Food tab by day with a 7-day average, adding food to past days. Version 0.4.0 | #8 |
 | 2026-11-24 | Import weight history from screenshots of another app, read by AI, offered in onboarding and on the Weight tab. Google AI key in onboarding and Settings. Provider-agnostic AI adapter (Gemini, OpenAI, Claude). Version 0.3.0 | #7 |
@@ -238,6 +256,7 @@ App version: **0.5.0** (in `app.json` and `package.json`). Android's `versionCod
 | expo-constants (update check) | ~58.0.16 |
 | expo-image-picker (weight import) | ~58.0.10 |
 | expo-secure-store (AI keys) | ~58.0.3 |
+| expo-speech-recognition (voice descriptions; community module by jamsch) | ~58.0.1 |
 | Release build tools (CI) | Node 22, JDK 17 (Temurin), Gradle from the Expo template |
 | TypeScript | ~6.0.3 |
 | Jest (jest-expo preset) | ^30.5.2 |
@@ -257,13 +276,13 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 
 - **App framework**: Expo with TypeScript, run as a development build (not Expo Go) because of native modules. Routes live in `src/app`.
   - Tabs: Today, Food, Weight, Progress.
-  - Stack screens: settings, add-food (modal), quick-add (modal), food-item (modal: add a recent food or edit a logged one), scan (full screen: barcode or label photo), product (modal), check-in (modal), camera (full screen), check-ins/[id], compare, import-weights.
+  - Stack screens: settings, add-food (modal), quick-add (modal), food-item (modal: add a recent food or edit a logged one), scan (full screen: barcode, label photo or meal photo), product (modal), estimate (modal: meal photo and description to AI estimate), check-in (modal), camera (full screen), check-ins/[id], compare, import-weights.
   - `Stack.Protected` shows onboarding until a profile exists.
 - **Data**: one SQLite file, 8 tables: profile, meal, food_item, food_ref, weight_entry, body_check, body_photo, steps_day. All values are metric; display converts.
   - Live queries need `enableChangeListener` (set in `src/db/client.ts`), and foreign keys are switched on.
   - Migrations in `drizzle/` are bundled into the app (babel inline-import plus a metro `sql` extension) and run at start-up by `useMigrations` in `src/app/_layout.tsx`.
 - **Photos**: taken with expo-camera, saved by expo-image-manipulator as a 1080 px JPEG plus a 240 px thumbnail under `document/photos`. The database stores relative paths only, so backups and restores stay portable. `src/lib/captureStore.ts` hands camera results back to the check-in screen.
-- **AI** (`src/lib/ai/`): one adapter for every AI feature. A feature describes its request once (prompt, images, JSON Schema) as an `AiJsonRequest`; `providers.ts` turns it into a Gemini `generateContent`, OpenAI Responses or Claude Messages call with structured JSON output and low reasoning effort, and parses the answer. Calls use `fetch` straight from the phone, no SDKs. `settings.ts` stores the provider, keys and model overrides in secure store. `weightScreenshot.ts` holds the screenshot prompt and schema, `nutritionLabel.ts` the label prompt, schema and answer checks; `prepareImage.ts` shrinks images to base64 JPEG. Phase 3's meal estimate will add its own prompt and schema on the same adapter.
+- **AI** (`src/lib/ai/`): one adapter for every AI feature. A feature describes its request once (prompt, images, JSON Schema) as an `AiJsonRequest`; `providers.ts` turns it into a Gemini `generateContent`, OpenAI Responses or Claude Messages call with structured JSON output and low reasoning effort, and parses the answer. Calls use `fetch` straight from the phone, no SDKs. `settings.ts` stores the provider, keys and model overrides in secure store. `weightScreenshot.ts` holds the screenshot prompt and schema, `nutritionLabel.ts` the label prompt, schema and answer checks, `mealEstimate.ts` the meal prompt, schema and answer checks; `prepareImage.ts` shrinks images to base64 JPEG. 
 - **Weight import** (`src/app/import-weights.tsx`, `src/lib/weightImport.ts`): the pure functions check each row, merge screenshots and compare with existing weights; `importWeights` in `src/db/queries.ts` saves the ticked rows. `weight_entry.source` gained the value `import` (a TypeScript enum only, so no migration).
 - **Charts**: a small custom SVG line chart (`src/components/LineChart.tsx`) instead of a chart library. Charts use neutral colours, because green and orange are reserved for steps and calories.
 - **Release build** (`app.config.js`, `plugins/`): `app.config.js` adds the `versionCode` and the `withReleaseSigning` config plugin on top of `app.json`. The plugin edits the generated `android/app/build.gradle` so release builds sign with the key named by `ANDROID_KEYSTORE_PATH` and friends, falling back to the debug key when they are not set. `android/` itself is never committed; `expo prebuild` regenerates it.
@@ -298,11 +317,11 @@ docs/screenshots/ README screenshots
 | GitHub Releases | Hosts the APKs. The app reads `api.github.com/repos/<repo>/releases/latest` once a day to offer updates. Needs a public repo (see [Releases](#releases)) | In use |
 | Expo EAS Build | Optional development builds for working on the app. Not used for releases, so the free tier's monthly build limit doesn't matter | Optional |
 | Apple App Store and Google Play | Store release | On hold |
-| Google Gemini (in use); OpenAI and Anthropic Claude (supported by the adapter, not offered in the app yet) | Reading weight screenshots and nutrition labels (now), and AI meal estimates (Phase 3c), using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import, labels) |
+| Google Gemini (in use); OpenAI and Anthropic Claude (supported by the adapter, not offered in the app yet) | Reading weight screenshots and nutrition labels, and estimating meals from a photo and description, using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import, labels, meals) |
 | Open Food Facts | Barcode lookups (`world.openfoodfacts.org/api/v2/product/<barcode>.json`). Free, no key, Open Database License, credited in Settings → About. Each product is fetched once and cached on the phone | In use (from 0.5.0) |
 | Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
 
-The only network calls today are the daily update check, Open Food Facts lookups for scanned barcodes, and the screenshots or label photos the user sends to their AI provider. Photo meal estimates will add one more AI call. Voice notes will be transcribed on the phone and never uploaded.
+The only network calls today are the daily update check, Open Food Facts lookups for scanned barcodes, and the screenshots or label photos the user sends to their AI provider. Speech is recognised on the phone where it supports that; on phones without on-device recognition, Android's speech service may use Google's servers, which is outside the app. Voice notes will be transcribed on the phone and never uploaded.
 
 ## Releases
 
@@ -384,7 +403,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, Today and food-log maths, Open Food Facts and nutrition-label parsing, the weight-import merging and the AI request builders |
+| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, Today and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, the weight-import merging and the AI request builders |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
@@ -403,20 +422,20 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
 - **Open Food Facts**: no key or account. If lookups start failing for every barcode, check the v2 API (`/api/v2/product/<barcode>.json`) is still current and that the `User-Agent` is being sent. Field names used: `product_name`, `generic_name`, `brands`, `serving_quantity`, `nutriments.energy-kcal_100g`, `energy-kj_100g`, `proteins_100g`, `carbohydrates_100g`, `fat_100g`.
 - **AI models**: providers retire model names. When one stops working (Settings → Save and test says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts` and release a new version. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
-- **expo-image-picker** is used without its config plugin on purpose: the plugin's `cameraPermission: false` would block the camera permission the progress photos need, and leaving it out keeps the microphone permission off. Android's photo picker needs no permission. Add the plugin (with `photosPermission`) when iOS returns.
+- **expo-speech-recognition** is a community module (github.com/jamsch/expo-speech-recognition), versioned to match the Expo SDK (58.x for SDK 58). On an SDK upgrade, install the matching major. It has a config plugin in `app.json`.
+- **expo-image-picker** is used without its config plugin on purpose: the plugin's `cameraPermission: false` would block the camera permission the progress photos need, and leaving it out avoids extra permissions (the microphone permission now comes from expo-speech-recognition). Android's photo picker needs no permission. Add the plugin (with `photosPermission`) when iOS returns.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
 
 ## Future enhancements
 
 Everything we've discussed that is not built yet.
 
-**Phase 3c: AI meal logging**
-- Photo plus hold-to-talk voice note, transcribed on the phone, sent in one request to the user's chosen AI provider.
-- Meal and nutrition-panel prompts and schemas on the existing provider adapter. Mid-tier models for meals, the cheapest model for nutrition panels, low reasoning effort.
-- Review and edit screen (edit grams, delete, add items) before saving.
-- A one-time consent screen naming the provider and what is sent, before the first meal photo goes out.
+**AI meal logging, later**
+- Per-feature default models: a mid-tier model for meals and the cheapest for nutrition labels, once the benchmark picks them (everything uses `gemini-3.6-flash` for now).
+- Keep a small meal photo with the logged meal and show it on the Food tab (the `meal.photo_path` column is already there).
+- A full consent screen before the first photo goes out, if the app is ever shared beyond paid-key users (for now a short note under the form, as Rick uses a paid key).
+- Hold-to-talk as well as tap-to-talk, and offering to download the on-device speech model when it's missing.
 - Let the user choose OpenAI or Claude instead of Gemini, and change the model, in Settings. The adapter already supports both; only the screens are missing. Kept out for now to keep setup simple.
-- Gemini privacy note on the consent screen: with a free-tier key, Google may use the photos and descriptions sent to improve its models (and people may review them); a paid key (billing turned on) avoids this, so the note recommends one.
 - A weighed 30-meal benchmark across providers to pick the default models.
 - Swiping left and right between days on the Food tab (arrows for now), and a calendar to jump to a date.
 - Saving a whole meal (several foods) as one reusable item, and logging a meal for several people with a share.

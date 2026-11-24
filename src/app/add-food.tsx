@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Check, FileText, PencilLine, Plus, ScanBarcode, Search, type LucideIcon } from 'lucide-react-native';
+import { Camera, Check, FileText, Mic, PencilLine, Plus, ScanBarcode, Search, type LucideIcon } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -75,6 +75,14 @@ export default function AddFoodScreen() {
         />
       </View>
 
+      <View style={styles.actions}>
+        <ActionTile
+          icon={Camera}
+          label="Photo of meal"
+          onPress={() => router.push({ pathname: '/scan', params: { meal, day, mode: 'meal' } })}
+        />
+        <ActionTile icon={Mic} label="Describe it" onPress={() => router.push({ pathname: '/estimate', params: { meal, day } })} />
+      </View>
       <View style={styles.actions}>
         <ActionTile
           icon={ScanBarcode}

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Calories and Steps",
     "slug": "calories-and-steps",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "caloriesandsteps",
@@ -35,6 +35,17 @@
         {
           "cameraPermission": "Calories and Steps uses the camera to take progress photos and to scan food barcodes and nutrition labels. Progress photos stay on your phone.",
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Calories and Steps uses the microphone so you can describe a meal out loud. Speech is turned into text on your phone and the audio isn't kept.",
+          "speechRecognitionPermission": "Calories and Steps turns what you say about a meal into text.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.tts"
+          ]
         }
       ],
       [
