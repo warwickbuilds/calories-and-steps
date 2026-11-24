@@ -9,6 +9,7 @@ import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
 import { TargetSummary } from '@/components/TargetSummary';
+import { RestoreButton } from '@/components/BackupCard';
 import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
 import { addWeight, saveProfile } from '@/db/queries';
 import {
@@ -151,6 +152,10 @@ export default function Onboarding() {
               { value: 'imperial', label: 'Imperial (lb, in)' },
             ]}
           />
+          <Text variant="label" muted>
+            Used the app before? Restore your backup file instead of setting up again.
+          </Text>
+          <RestoreButton variant="secondary" />
         </View>
       ) : null}
 

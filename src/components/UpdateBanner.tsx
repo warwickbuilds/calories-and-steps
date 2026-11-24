@@ -19,7 +19,7 @@ export function UpdateBanner() {
         <View style={styles.text}>
           <Text variant="bodyStrong">Version {update.version} is available</Text>
           <Text variant="caption" muted>
-            Download the APK and open it to install. Your data stays in place.
+            Download the APK and open it to install. Your data stays in place, but a backup first (Settings) is a good idea.
           </Text>
         </View>
       </View>

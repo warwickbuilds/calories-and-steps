@@ -3,6 +3,7 @@ import { Plus, Settings } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { BackupReminder } from '@/components/BackupCard';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
 import { AddButton, Card, DualRings, IconButton, ProgressBar, Screen, Text } from '@/components/ui';
@@ -27,6 +28,7 @@ export default function TodayScreen() {
       title="Today"
       right={<IconButton icon={Settings} accessibilityLabel="Settings" onPress={() => router.push('/settings')} />}>
       <UpdateBanner />
+      <BackupReminder />
       <RingsCard day={today} />
       <MacrosCard day={today} />
       <MealsCard day={today} />

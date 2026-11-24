@@ -8,6 +8,7 @@ import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
 import { AiKeyCard } from '@/components/AiKeyCard';
+import { BackupCard } from '@/components/BackupCard';
 import { StepsAccessCard } from '@/components/StepsAccessCard';
 import { TargetSummary } from '@/components/TargetSummary';
 import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
@@ -138,10 +139,8 @@ export default function SettingsScreen() {
           <Text variant="bodyStrong">Stored on this phone only</Text>
           <Text variant="label" muted>
             There is no account or cloud copy. Uninstalling the app, or clearing its storage, deletes your meals,
-            weights, check-ins and photos for good. Installing a new version over the top keeps everything.
-          </Text>
-          <Text variant="label" muted>
-            Backup export and restore arrive in a later update.
+            weights, check-ins and photos for good, unless you have a backup. Installing a new version over the top
+            keeps everything.
           </Text>
           <Button
             variant="secondary"
@@ -149,6 +148,7 @@ export default function SettingsScreen() {
             onPress={() => router.push('/import-weights')}
           />
         </Card>
+        <BackupCard />
       </Section>
 
       <AppVersionSection />
@@ -183,7 +183,7 @@ function AppVersionSection() {
         {result?.status === 'update' ? (
           <>
             <Text variant="label" muted>
-              Version {result.update.version} is available. Download the APK and open it to install over this one.
+              Version {result.update.version} is available. Download the APK and open it to install over this one. Your data stays, but backing up first is a good idea.
             </Text>
             <Button label="Download" onPress={() => Linking.openURL(result.update.downloadUrl)} />
           </>

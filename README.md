@@ -24,8 +24,9 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Steps.** Your steps come from Health Connect (Android's health app, which gathers them from your phone, watch or fitness apps). Today's ring fills towards your daily target (5,000 to 25,000), and the Steps tab shows today hour by hour, the last 7 days as bars against your target, and your 7-day total.
 - **Light and dark.** Follows your phone, or pick one.
 - **Updates.** The app tells you when a new version is out.
+- **Backup and restore.** Save everything (meals, weights, check-ins, photos and settings) to one file on Google Drive, by email or in a folder on the phone, and restore it after reinstalling or on a new phone. Today reminds you every two weeks.
 
-**Coming next:** backup and restore, and more step history.
+**Coming next:** more step history, and smaller downloads.
 
 ## Install
 
@@ -45,6 +46,8 @@ A simple, private Android app for tracking what you eat, how much you move and h
 5. Optionally paste a Google AI (Gemini) key and tap **Save and test**. It's needed for AI features such as importing weight history. [Get a key here](https://aistudio.google.com/apikey).
 6. Optionally import your weight history from another app's screenshots, or skip and do it later from the Weight tab.
 
+Reinstalling or on a new phone? Tap **Restore from a backup** on the first page instead, and pick your backup file.
+
 <p align="center"><img src="docs/screenshots/onboarding-goal.png" width="200" alt="Choosing a goal during setup, with the daily calorie target shown" /></p>
 
 You can change any of this later in Settings (the gear on the Today screen).
@@ -52,7 +55,8 @@ You can change any of this later in Settings (the gear on the Today screen).
 ## Your data and privacy
 
 - Everything is stored on your phone. There is no account and nothing is uploaded to us.
-- **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Backup and restore are on the way.
+- **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Make a backup in **Settings → Your data** and keep it off the phone (Google Drive, email) so you can restore it.
+- A backup file holds all your data and progress photos, unencrypted, so keep it somewhere private. It doesn't include your AI key. The app only writes it where you choose; nothing is uploaded by the app itself.
 - Steps are read from Health Connect on the phone. The app only asks to read steps, never writes anything, and steps never leave the phone. You can take access away any time in Health Connect.
 - The app sends only a few things: a daily check with GitHub for a newer version; the barcode number when you scan one, to Open Food Facts; and, when you import weights from screenshots, read a nutrition label or estimate a meal, those images and your meal description to Google AI (Gemini) using your own key. The app doesn't keep the screenshots, label photos or meal photos. What you say is turned into text on the phone; audio is never sent or kept. Your key is stored encrypted on the phone and only sent to Google.
 - With a free Google Gemini key, Google may use those requests (including meal photos) to improve its models, so a paid key is recommended.
@@ -94,10 +98,11 @@ Wording rule: the app always says "calories", never "kcal".
 | Weight chart upgrade | Change for the chosen period above the chart, weigh-ins as the main line, faint trend and projection to the goal in every period, coloured 5 kg milestones, one trend-based change everywhere | Done (PR #9) |
 | Millilitres for drinks | Each food is measured in g or ml: detected from Open Food Facts, AI labels and AI meal estimates, switchable on every amount field, kept on logged items and recent foods | Done (PR #10, 0.8.0) |
 | Food icons | A small line icon for each food's category (dairy, meat, fish, eggs, bread and grains, fruit, vegetables, sauces and oils, snacks and sweets, drinks, meals, other) beside logged foods and recent foods; category from Open Food Facts, the AI or the name, changeable in the food form | Done (PR #13, 0.11.0) |
-| 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
+| 5a. Backup | Zip export (share sheet or a folder) and restore, in Settings and on the first onboarding page, with a two-week reminder on Today | Done (PR #14, 0.14.0) |
+| 5b. Polish | Empty and offline states, app icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.6.0** (all of Phase 3, PR #8) is released the same way. **v0.7.0** (the weight chart upgrade, PR #9) is released the same way. **v0.8.0** (ml for drinks, PR #10) follows once merged, and **v0.11.0** (food icons, PR #13) after it. **v0.13.0** (PR #12) fixes spoken descriptions being lost when you tap stop.
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.6.0** (all of Phase 3, PR #8) is released the same way. **v0.7.0** (the weight chart upgrade, PR #9) is released the same way. **v0.8.0** (ml for drinks, PR #10) follows once merged, and **v0.11.0** (food icons, PR #13) after it. **v0.13.0** (PR #12) fixes spoken descriptions being lost when you tap stop. **v0.14.0** (backup and restore) follows once merged.
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
@@ -250,8 +255,17 @@ Called "Food" before 0.12.0; the route is still `/food`.
 - Daily steps: the step target slider and the Health Connect card (connect, sync now, manage access).
 - Appearance: System, Light or Dark.
 - AI: the Google AI key, with Save and test, Get a key and Remove key (see [AI provider and key](#ai-provider-and-key)).
-- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it. Also an "Import weights from screenshots" button.
+- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it unless there's a backup, while installing a new version over the top keeps it. An "Import weights from screenshots" button, and the Backup card (see [Backup and restore](#backup-and-restore)).
 - About: app version with a "Check for updates" button, and the Open Food Facts credit with a link to its website.
+
+### Backup and restore
+
+- **Settings → Your data → Backup** shows the date of the last backup and three buttons. **Back up and share** makes the file and opens Android's share sheet (Google Drive, Gmail, Files and so on). **Save to a folder on this phone** asks for a folder (for example Downloads) and saves it there. **Restore from a backup** picks a file.
+- The file is `calories-and-steps-backup-YYYY-MM-DD.zip` with `manifest.json` (format, app version, schema version, export time, counts), `data.json` (every row of all 8 tables) and `photos/` (progress photos and thumbnails, stored without recompressing).
+- Restore reads and checks the whole file first, then asks: "The backup from 24 Nov 2026 has 212 foods logged, 45 weigh-ins, 6 check-ins and 9 photos. Everything on this phone now will be replaced by it." Only after **Replace** does it swap the data, in one database transaction, then the photos folder. A file from a newer app version is refused with "Update the app, then restore it." Backups from older versions restore, with any newer columns taking their defaults.
+- The first onboarding page has **Restore from a backup** too, so a reinstall doesn't need setting up again. Restoring there goes straight to Today.
+- **Reminder**: Today shows "Time for a backup" 14 days after the last backup, or 14 days after setting up if there's never been one. **Back up** opens the share sheet; **Later** hides it for 3 days. The update card and Settings' update text suggest backing up before installing a new APK.
+- Not in the backup: the AI key (kept in the phone's secure storage), the update-check cache and the backup date itself.
 
 ### Updates
 
@@ -260,10 +274,11 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ## Versions and changelog
 
-App version: **0.13.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.14.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Backup and restore: one zip file with all data and photos, shared through the share sheet or saved to a folder, restored from Settings or the first onboarding page after a confirmation that lists what's inside. Two-week backup reminder on Today, and update cards suggest a backup first. New packages expo-sharing and fflate. No schema change. Version 0.14.0 | #14 |
 | 2026-11-24 | Fix: tapping stop on "Describe it out loud" showed "Speech recognition stopped" and threw away what you'd said. Now the words heard so far go into the text box and no error shows after a stop you made. Version 0.13.0 (0.12.0 is taken by the steps PR) | #12 |
 | 2026-11-24 | Food icons: a small grey line icon (lucide) beside every logged food on the Food tab and every recent food in Add food, one of 12 categories. Barcode products take it from Open Food Facts' `categories_tags`, AI label reads and meal estimates return a category, and anything else (quick adds, older entries) is guessed from the name. Change it under **Type** in the food form. New `category` column on `food_ref` and `food_item` (migration 0004, nullable, no backfill needed). Version 0.11.0 | #13 |
 | 2026-11-24 | Millilitres for drinks: every food is measured in g or ml. Barcode products pick ml from Open Food Facts' serving and pack units, AI label reads and meal estimates return a unit, and every amount field has a g ⇄ ml switch. Shown as "250 ml" on the Food tab and in recent foods. New `unit` column on `food_ref` and `food_item` (migration 0003, existing rows become g). Version 0.8.0 | #10 |
@@ -294,6 +309,8 @@ App version: **0.13.0** (in `app.json` and `package.json`). Android's `versionCo
 | react-native-svg | ^15.16.0 |
 | expo-camera (photos and barcode scanning) / expo-image-manipulator / expo-file-system | ~58.0.14 / ~58.0.16 / ~58.0.14 |
 | expo-constants (update check) | ~58.0.16 |
+| expo-sharing (backup share sheet; its config plugin is only for receiving shares, so it isn't added) | ~58.0.23 |
+| fflate (backup zip, pure JavaScript, streaming) | ^0.8.3 |
 | expo-image-picker (weight import) | ~58.0.10 |
 | expo-secure-store (AI keys) | ~58.0.3 |
 | expo-speech-recognition (voice descriptions; community module by jamsch) | ~58.0.1 |
@@ -331,6 +348,7 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 - **Weight import** (`src/app/import-weights.tsx`, `src/lib/weightImport.ts`): the pure functions check each row, merge screenshots and compare with existing weights; `importWeights` in `src/db/queries.ts` saves the ticked rows. `weight_entry.source` gained the value `import` (a TypeScript enum only, so no migration).
 - **Charts**: a small custom SVG line chart (`src/components/LineChart.tsx`) instead of a chart library. It draws the readings as the main line, an optional faint dashed trend and projection, a dotted goal line, gridlines with values in a left gutter, coloured markers and guide lines. `src/components/WeightChart.tsx` builds the Weight tab's chart block (period change, chart, milestone chips) from the trend passed in as a prop, so it can be previewed without the database. Charts use neutral colours, because green and orange are reserved for steps and calories; weight milestones have their own four colours (`milestone1`–`milestone4` in `src/theme/colors.ts`, picked with `milestoneColor`).
 - **Release build** (`app.config.js`, `plugins/`): `app.config.js` adds the `versionCode` and the `withReleaseSigning` config plugin on top of `app.json`. The plugin edits the generated `android/app/build.gradle` so release builds sign with the key named by `ANDROID_KEYSTORE_PATH` and friends, falling back to the debug key when they are not set. `android/` itself is never committed; `expo prebuild` regenerates it.
+- **Backup** (`src/lib/backup.ts`, `src/db/backup.ts`, `src/lib/backupState.ts`, `src/components/BackupCard.tsx`): `lib/backup.ts` is pure and tested (format, manifest, file checks, safe photo names, the plain-words summary, when the reminder is due). `db/backup.ts` does the work: export reads every table through Drizzle (so rows are in the app's own shape) and streams a zip with fflate into `cache/backup/`, writing one photo at a time through a file handle. Restore unzips into `document/photos-incoming/` (only `photos/<name>.jpg` entries are written, so a crafted zip can't write elsewhere), checks the manifest against `SCHEMA_VERSION` (the number of migrations in `drizzle/`), and after confirmation deletes and re-inserts every table in one transaction (children first, then parents, 50 rows per insert), then renames `photos` to `photos-old`, `photos-incoming` to `photos`, and deletes the old folder. The last backup date and the reminder snooze live in `backup-state.json` in the document folder, outside the database so a restore doesn't overwrite them. `BACKUP_TABLES` in `lib/backup.ts` must list every table.
 - **Update check** (`src/lib/updates.ts`, `src/lib/version.ts`, `src/components/UpdateBanner.tsx`): compares the installed version (`expo-constants`) with the latest GitHub release of `extra.releasesRepo` in `app.json`, caching the result and any dismissed version in `update-check.json` in the document folder.
 - **Design system**: tokens in `src/theme` (colours for light and dark, spacing, radius, type scale). Space Grotesk for numbers and headings, Inter for text, lucide icons. Font scaling is capped at 1.3×.
 - **Food log** (`src/lib/food.ts`, `src/db/meals.ts`): recent foods are worked out from logged items (`recentItemsQuery`, then `recentFoods` de-duplicates by name), so no food table has to be kept in sync. Each add makes its own `meal` row with one `food_item`; `updateFoodItem` moves an item between meals; `dailyCaloriesQuery` sums calories per day for the 7-day average. Pure helpers for search, scaling, day labels and the average are tested on their own. No schema change, so no migration.
@@ -472,6 +490,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **expo-speech-recognition** is a community module (github.com/jamsch/expo-speech-recognition), versioned to match the Expo SDK (58.x for SDK 58). On an SDK upgrade, install the matching major. It has a config plugin in `app.json`.
 - **expo-image-picker** is used without its config plugin on purpose: the plugin's `cameraPermission: false` would block the camera permission the progress photos need, and leaving it out avoids extra permissions (the microphone permission now comes from expo-speech-recognition). Android's photo picker needs no permission. Add the plugin (with `photosPermission`) when iOS returns.
 - **Health Connect**: react-native-health-connect is a community module with its own config plugin (listed in `app.json` plugins; the old `expo-health-connect` package must not be installed alongside it). It needs `minSdkVersion` 26, set through `expo-build-properties`. On an Expo SDK upgrade, check its README for the supported React Native version. If Google Play is ever used, Health Connect access has to be declared in the Play Console first; sideloaded APKs don't need that. To test on a phone: install the APK, connect from Today, then walk (or add steps in another app that writes to Health Connect) and open the Steps tab.
+- **Backup and new tables**: when a migration adds a table, add it to `BACKUP_TABLES` in `src/lib/backup.ts` (in insert order) and to `TABLES` in `src/db/backup.ts`, or it won't be backed up. New columns need nothing: older backups restore with the column's default. Raise `BACKUP_FORMAT` only if the file layout itself changes, and keep reading the old format. Before a release that changes the schema, check that a backup from the previous release restores.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
 - **Weight change numbers**: every "change" shown (Today's header, the big number on the Weight tab, the Change card) must come from `periodChange` in `src/lib/weight.ts`, so they stay on the same trend basis. Don't compare raw weigh-ins anywhere else.
 - **Previewing a chart on web**: the quickest way to look at chart changes without seeding a database is a temporary route that renders `WeightChart` with a made-up trend (`withTrend` over generated points), with the other routes moved out of `src/app` while it runs (they import the database), then restart Metro with `--clear`. Put everything back before committing.
@@ -524,10 +543,17 @@ Everything we've discussed that is not built yet.
 **Food, later**
 - Favourites (pin a food to the top of the recent list).
 
-**Phase 5: backup and polish**
-- Export a single zip (database, manifest and photos) through the share sheet, and import it back.
-- A reminder to back up every couple of weeks, showing the date of the last backup, plus a nudge to export before installing an update by hand.
+**Phase 5: polish**
 - Empty states, offline error handling, app icons.
+
+**Backup, later**
+- An optional password to encrypt the backup file.
+- Choosing what to restore (for example only weights), or merging a backup with what's on the phone instead of replacing it.
+- A progress bar for very large backups (many years of photos).
+
+**Progress check-ins, later** (body fat and photos shipped in PR #3; gaps noticed 2026-11-24)
+- Backdating a check-in, and editing one after saving.
+- Saving photos on their own, without measuring.
 
 **After the MVP**
 - Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.
