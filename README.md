@@ -26,7 +26,7 @@ A simple, private Android app for tracking what you eat, how much you move and h
 
 ## Install
 
-1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk`.
+1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk` (about 143 MB, so use Wi-Fi).
 2. Open the downloaded file. Android asks whether your browser (or Files app) may install unknown apps. Tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**. You only need to do this once for that browser or app.
 3. **Play Protect** may say the app is unrecognised or "unsafe" because it isn't from the Play Store. Tap **More details → Install anyway**. If it offers to scan the app, that's fine too.
 4. Open the app and set up your profile.
@@ -48,10 +48,10 @@ You can change any of this later in Settings (the gear on the Today screen).
 
 ## Your data and privacy
 
-- Everything is stored on your phone. There is no account and nothing is uploaded.
+- Everything is stored on your phone. There is no account and nothing is uploaded to us.
 - **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Backup and restore are on the way.
-- The app sends only two things: a daily check with GitHub for a newer version, and, when you import weights from screenshots, those screenshots to the AI provider you chose, using your own key. The app doesn't keep the screenshots.
-- When AI meal estimates arrive, the photo and description of a meal go to the AI provider you choose, using your own key. With a free Google Gemini key, Google may use those requests to improve its models, so a paid key is recommended.
+- The app sends only two things: a daily check with GitHub for a newer version, and, when you import weights from screenshots, those screenshots to Google AI (Gemini) using your own key. The app doesn't keep the screenshots. Your key is stored encrypted on the phone and only sent to Google.
+- When AI meal estimates arrive, the photo and description of a meal go to Google AI the same way. With a free Google Gemini key, Google may use those requests to improve its models, so a paid key is recommended.
 
 ---
 
@@ -88,7 +88,9 @@ Wording rule: the app always says "calories", never "kcal".
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
-The app has not yet been installed on a phone. The first signed APK comes from tagging `v0.2.0` once the release key secrets are set up (see [Releases](#releases)).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) is released the same way once PR #7 is merged.
+
+Not yet checked on a real phone: the weight import's AI call (it needs a Google AI key), and anything from Phase 3 on.
 
 ## Features
 
@@ -158,7 +160,8 @@ The detailed list of what works now.
 
 - Every profile field, units, goal mode, target date and step target.
 - Appearance: System, Light or Dark.
-- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it.
+- AI: the Google AI key, with Save and test, Get a key and Remove key (see [AI provider and key](#ai-provider-and-key)).
+- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it. Also an "Import weights from screenshots" button.
 - App version, with a "Check for updates" button.
 
 ### Updates
@@ -173,6 +176,7 @@ App version: **0.3.0** (in `app.json` and `package.json`). Android's `versionCod
 | Date | Change | PR |
 | --- | --- | --- |
 | 2026-11-24 | Import weight history from screenshots of another app, read by AI, offered in onboarding and on the Weight tab. Google AI key in onboarding and Settings. Provider-agnostic AI adapter (Gemini, OpenAI, Claude). Version 0.3.0 | #7 |
+| 2026-11-24 | **v0.2.0 released**: first signed APK (143 MB), published from the Releases page | – |
 | 2026-11-24 | Release workflow also attaches the APK to a release made on GitHub's Releases page | #6 |
 | 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. README split into a public part (features, screenshots, install) and a developer part. Version 0.2.0 | #5 |
 | 2026-11-23 | README brought fully up to date; rule added to keep it current with every PR | #4 |
@@ -268,26 +272,34 @@ APKs are built and signed by GitHub Actions (`.github/workflows/android-release.
 
 Android only installs an update if it is signed with the same key as the installed app. **If the key is lost, no update can ever install over the existing app again**, and the only way forward is uninstalling, which wipes the data. So make it once, keep two backups, and never commit it.
 
-1. Make the key on your computer (needs a JDK; Android Studio includes one, or install Temurin 17). Pick a strong password when it asks:
+1. Make the key on your computer. `keytool` comes with a JDK: Android Studio includes one, or install Temurin 17. Pick a strong password when it asks. `-dname` fills in the certificate's name, so keytool doesn't ask its "What is your first and last name?" questions. The real key uses the alias `calories`.
 
-   ```bash
-   keytool -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks \
-     -alias calories-and-steps -keyalg RSA -keysize 4096 -validity 36500 \
-     -dname "CN=Calories and Steps"
-   ```
+   - **Windows (PowerShell).** `keytool` usually isn't on the PATH, so call Android Studio's copy by its full path. Keep it on one line, because PowerShell doesn't use `\` to continue lines:
+
+     ```powershell
+     & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks -alias calories -keyalg RSA -keysize 4096 -validity 36500 -dname "CN=Calories and Steps"
+     ```
+
+   - **macOS / Linux:**
+
+     ```bash
+     keytool -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks \
+       -alias calories -keyalg RSA -keysize 4096 -validity 36500 \
+       -dname "CN=Calories and Steps"
+     ```
 
 2. Back it up: save the `.jks` file and the password in your password manager, and a second copy somewhere offline (for example a USB stick). Don't put it in the repo folder.
 3. Encode it for GitHub:
    - macOS / Linux: `base64 -i calories-and-steps-release.jks | tr -d '\n' > keystore.txt`
    - Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("calories-and-steps-release.jks")) | Set-Content keystore.txt`
-4. Get the certificate fingerprint: `keytool -list -v -keystore calories-and-steps-release.jks -alias calories-and-steps` and copy the `SHA256:` line.
+4. Get the certificate fingerprint: `keytool -list -v -keystore calories-and-steps-release.jks -alias calories` and copy the `SHA256:` line. On Windows, use the same full `keytool.exe` path as in step 1.
 5. In GitHub, open the repo's **Settings → Secrets and variables → Actions → New repository secret** and add:
 
    | Secret | Value |
    | --- | --- |
    | `ANDROID_KEYSTORE_BASE64` | Contents of `keystore.txt` |
    | `ANDROID_KEYSTORE_PASSWORD` | The password |
-   | `ANDROID_KEY_ALIAS` | `calories-and-steps` |
+   | `ANDROID_KEY_ALIAS` | The alias from step 1 (`calories`) |
    | `ANDROID_KEY_PASSWORD` | The password (same as above) |
    | `ANDROID_CERT_SHA256` | The SHA256 fingerprint (optional, but the build then refuses to publish an APK signed with any other key) |
 
@@ -299,6 +311,19 @@ Android only installs an update if it is signed with the same key as the install
 1. In a PR, bump `version` in `app.json` and `package.json` (for example 0.2.0 → 0.3.0) and add a changelog row.
 2. After it merges, either push a tag (`git tag v0.3.0 origin/main && git push origin v0.3.0`), or on GitHub open **Releases → Draft a new release**, type `v0.3.0` as a new tag on `main`, and publish. In the second case the release appears straight away and the APK is added to it when the build finishes.
 3. The workflow checks the tag matches `app.json`, runs the tests, builds and signs the APK, checks the signature and publishes the release with the APK attached. It takes about 15 to 25 minutes.
+
+The current release key's certificate SHA-256 is `07aea4df8cd30a8827dce11db1083b4ded20f0a36a98d58120da397011ae18c8` (alias `calories`). Every release must show this same fingerprint. The release page lists it, and `ANDROID_CERT_SHA256` makes the build refuse any other key.
+
+### How v0.2.0 was released (2026-11-24)
+
+1. PR #5 (the release pipeline) was merged and the repo was made public.
+2. Pushing tags isn't possible from Claude's cloud sessions, so PR #6 made the workflow also run when a release is published on GitHub's **Releases** page, and attach the APK to it.
+3. Rick created the key with the Windows command above, added the secrets, then used **Releases → Draft a new release** with the new tag `v0.2.0` on `main`.
+4. GitHub Actions built and signed `calories-and-steps-0.2.0.apk` in about 20 minutes and attached it to the release.
+5. The APK is **143 MB**, because it's a universal build with native code for every phone chip type (arm64, 32-bit arm, x86, x86_64).
+6. Anyone who installed the earlier test APK from a PR build has to uninstall it first. Those builds use the debug key, so they can't be updated by a release.
+
+Use the same Releases-page steps for v0.3.0 and later releases.
 
 Pull requests that change the build set-up (`app.json`, `app.config.js`, `plugins/`, dependencies or the workflow) also build the APK, without releasing it, and keep it as a build artifact for 7 days. **Run workflow** on the Actions tab does the same for any branch.
 
@@ -373,6 +398,7 @@ Everything we've discussed that is not built yet.
 **After the MVP**
 - Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.
 - Download and open the update APK from inside the app instead of through the browser.
+- Smaller APKs: build one APK per phone chip type (ABI split), or arm64 only, which covers modern phones. That's about a third of today's 143 MB universal APK. The update check would then have to pick the right file.
 - A small key-holding relay (with App Attest and Play Integrity) so people can use the AI without their own key.
 - Signing in with OpenRouter instead of pasting a key.
 - Automatic Google Drive backup.
