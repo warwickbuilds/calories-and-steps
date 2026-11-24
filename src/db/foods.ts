@@ -31,6 +31,8 @@ export async function saveFoodRef(food: Per100g, source: 'off' | 'panel' | 'cust
     carbsPer100g: food.carbsPer100g,
     fatPer100g: food.fatPer100g,
     servingG: food.servingG,
+    unit: food.unit,
+    category: food.category ?? null,
     source,
     barcode,
   };
