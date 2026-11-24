@@ -12,7 +12,7 @@ import { prepareImage } from '@/lib/ai/prepareImage';
 import { AI_PROVIDERS, AiError, requestJson } from '@/lib/ai/providers';
 import { useAiSettings } from '@/lib/ai/settings';
 import { toLocalDateString } from '@/lib/dates';
-import { macroLine, scaleNutrition } from '@/lib/food';
+import { macroLine, scaleNutrition, type FoodUnit } from '@/lib/food';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { parseDecimal } from '@/lib/units';
 import { appendSpoken } from '@/lib/voice';
@@ -23,6 +23,7 @@ type Row = {
   key: number;
   name: string;
   grams: string;
+  unit: FoodUnit;
   calories: string;
   protein: string;
   carbs: string;
@@ -43,6 +44,7 @@ const toRow = (i: EstimatedItem): Row => ({
   key: nextKey++,
   name: i.name,
   grams: str(i.grams),
+  unit: i.unit,
   calories: str(i.calories),
   protein: str(i.proteinG),
   carbs: str(i.carbsG),
@@ -121,6 +123,9 @@ export default function EstimateScreen() {
   const items = (rows ?? []).map((r) => ({
     name: r.name.trim(),
     grams: num(r.grams),
+    unit: r.unit,
+    // The AI's category, unless the item was renamed (then the icon follows the new name).
+    category: r.base && r.name.trim() === r.base.name ? r.base.category : null,
     calories: num(r.calories) ?? 0,
     proteinG: num(r.protein),
     carbsG: num(r.carbs),
@@ -182,8 +187,8 @@ export default function EstimateScreen() {
               {macroLine(total)}
             </Text>
             <Text variant="caption" muted>
-              An AI estimate. Check the amounts, especially anything marked low confidence. Changing grams rescales that
-              item.
+              An AI estimate. Check the amounts, especially anything marked low confidence. Changing an amount rescales
+              that item.
             </Text>
           </Card>
           {rows.map((r) => (
@@ -212,7 +217,14 @@ export default function EstimateScreen() {
                 </Text>
               ) : null}
               <View style={styles.row}>
-                <NumberField label="Amount" unit="g" value={r.grams} onChangeText={(t) => changeGrams(r, t)} />
+                <NumberField
+                  label="Amount"
+                  unit={r.unit}
+                  onUnitPress={() => update(r.key, { unit: r.unit === 'g' ? 'ml' : 'g' })}
+                  unitHint="Switches between grams and millilitres"
+                  value={r.grams}
+                  onChangeText={(t) => changeGrams(r, t)}
+                />
                 <NumberField label="Calories" value={r.calories} onChangeText={(t) => update(r.key, { calories: t })} />
               </View>
               <View style={styles.row}>
@@ -230,7 +242,7 @@ export default function EstimateScreen() {
               onPress={() =>
                 setRows((rs) => [
                   ...(rs ?? []),
-                  { key: nextKey++, name: '', grams: '', calories: '', protein: '', carbs: '', fat: '', confidence: null, base: null },
+                  { key: nextKey++, name: '', grams: '', unit: 'g', calories: '', protein: '', carbs: '', fat: '', confidence: null, base: null },
                 ])
               }
             />

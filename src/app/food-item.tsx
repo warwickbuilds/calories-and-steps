@@ -7,6 +7,7 @@ import { addFood, deleteFoodItem, updateFoodItem } from '@/db/meals';
 import { useFoodItem } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
 import type { Nutrition } from '@/lib/food';
+import { isFoodCategory, type FoodCategory } from '@/lib/foodCategory';
 import { isLocalDate, isMealType } from '@/lib/today';
 
 /**
@@ -59,13 +60,13 @@ function EditItem({ id }: { id: number }) {
   );
 }
 
-function parseFood(json: string | undefined): ({ name: string } & Nutrition) | null {
+function parseFood(json: string | undefined): ({ name: string; category: FoodCategory | null } & Nutrition) | null {
   if (!json) return null;
   try {
     const f = JSON.parse(json);
     if (typeof f?.name !== 'string' || typeof f?.calories !== 'number') return null;
     const n = (v: unknown) => (typeof v === 'number' ? v : null);
-    return { name: f.name, calories: f.calories, proteinG: n(f.proteinG), carbsG: n(f.carbsG), fatG: n(f.fatG), grams: n(f.grams) };
+    return { name: f.name, calories: f.calories, proteinG: n(f.proteinG), carbsG: n(f.carbsG), fatG: n(f.fatG), grams: n(f.grams), unit: f.unit === 'ml' ? 'ml' : 'g', category: isFoodCategory(f.category) ? f.category : null };
   } catch {
     return null;
   }

@@ -2,11 +2,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { FoodIcon } from '@/components/FoodIcon';
 import { AddButton, Card, IconButton, Screen, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { useDayItems, useDayTotals, useTargets, useWeekAverage } from '@/hooks/data';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
-import { dayLabel, macroLine } from '@/lib/food';
+import { dayLabel, formatAmount, macroLine } from '@/lib/food';
 import { MEAL_TYPES, formatNumber, isLocalDate } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
@@ -97,12 +98,15 @@ export default function FoodScreen() {
                   accessibilityHint="Opens it to change or delete"
                   onPress={() => router.push({ pathname: '/food-item', params: { id: String(r.id) } })}
                   style={({ pressed }) => [styles.row, { borderTopColor: colors.line, opacity: pressed ? 0.6 : 1 }]}>
-                  <Text variant="bodyMedium">{r.name}</Text>
-                  <Text variant="caption" muted>
-                    {formatNumber(r.calories)} calories
-                    {r.grams != null ? ` · ${formatNumber(r.grams)} g` : ''}
-                    {macros ? ` · ${macros}` : ''}
-                  </Text>
+                  <FoodIcon food={r} />
+                  <View style={styles.rowText}>
+                    <Text variant="bodyMedium">{r.name}</Text>
+                    <Text variant="caption" muted>
+                      {formatNumber(r.calories)} calories
+                      {r.grams != null ? ` · ${formatAmount(r.grams, r.unit)}` : ''}
+                      {macros ? ` · ${macros}` : ''}
+                    </Text>
+                  </View>
                 </Pressable>
               );
             })}
@@ -131,6 +135,13 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   dot: { width: 8, height: 8, borderRadius: 4 },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  row: { gap: 2, paddingTop: space[2], borderTopWidth: StyleSheet.hairlineWidth },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    paddingTop: space[2],
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  rowText: { flex: 1, gap: 2 },
   pill: { alignSelf: 'flex-start', height: 28, borderRadius: 14, paddingHorizontal: space[3], justifyContent: 'center' },
 });

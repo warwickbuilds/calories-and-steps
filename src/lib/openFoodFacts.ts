@@ -4,7 +4,8 @@
  * food_ref table, so each product is fetched once.
  */
 
-import { scaleNutrition, type Nutrition } from './food';
+import { scaleNutrition, type FoodUnit, type Nutrition } from './food';
+import { categoryFromOffTags, type FoodCategory } from './foodCategory';
 
 export interface Per100g {
   name: string;
@@ -13,8 +14,15 @@ export interface Per100g {
   proteinPer100g: number | null;
   carbsPer100g: number | null;
   fatPer100g: number | null;
-  /** Grams in one serving, when the product says. */
+  /** One serving, in `unit`, when the product says. */
   servingG: number | null;
+  /**
+   * What the "per 100" numbers are per: 100 g, or 100 ml for drinks. The
+   * field names keep "g" for history; with 'ml' they mean per 100 ml.
+   */
+  unit: FoodUnit;
+  /** For the food's icon; null when unknown (the name is used instead). */
+  category?: FoodCategory | null;
 }
 
 const KJ_PER_CALORIE = 4.184;
@@ -28,6 +36,28 @@ const round1 = (n: number | null) => (n == null ? null : Math.round(n * 10) / 10
 
 /** Valid EAN-13, EAN-8, UPC-A or UPC-E digits (length only; scanners already check the digit). */
 export const isBarcode = (code: string) => /^\d{8}$|^\d{12,14}$/.test(code);
+
+const ML = /^(ml|cl|dl|l|fl\.?\s?oz)$/i;
+const ML_IN_TEXT = /\d\s*(ml|cl|dl|l|litres?|liters?|fl\.?\s?oz)\b/i;
+const G_IN_TEXT = /\d\s*(g|kg|mg|oz)\b/i;
+
+/**
+ * Whether Open Food Facts measures this product in ml. It keeps nutrition
+ * under "_100g" keys even for drinks, where they are really per 100 ml, so
+ * the unit comes from the serving and pack size. Grams when unclear.
+ */
+export function offUnit(p: any): FoodUnit {
+  const unitField = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const servingUnit = unitField(p?.serving_quantity_unit);
+  if (servingUnit) return ML.test(servingUnit) ? 'ml' : 'g';
+  const servingText = typeof p?.serving_size === 'string' ? p.serving_size : '';
+  if (ML_IN_TEXT.test(servingText) && !G_IN_TEXT.test(servingText)) return 'ml';
+  if (G_IN_TEXT.test(servingText)) return 'g';
+  const packUnit = unitField(p?.product_quantity_unit);
+  if (packUnit) return ML.test(packUnit) ? 'ml' : 'g';
+  const packText = typeof p?.quantity === 'string' ? p.quantity : '';
+  return ML_IN_TEXT.test(packText) && !G_IN_TEXT.test(packText) ? 'ml' : 'g';
+}
 
 /**
  * Turns an Open Food Facts v2 product response into per-100 g numbers.
@@ -54,11 +84,16 @@ export function parseOffProduct(json: any): Per100g | null {
     carbsPer100g: round1(num(n.carbohydrates_100g)),
     fatPer100g: round1(num(n.fat_100g)),
     servingG: serving && serving > 0 && serving < 5000 ? serving : null,
+    unit: offUnit(p),
+    category: categoryFromOffTags(p.categories_tags),
   };
 }
 
-/** What `grams` of a per-100 g food comes to. */
-export function nutritionFor(food: Omit<Per100g, 'name' | 'brand' | 'servingG'>, grams: number): Nutrition {
+/** What `grams` (or ml, for a drink) of a per-100 food comes to. */
+export function nutritionFor(
+  food: Omit<Per100g, 'name' | 'brand' | 'servingG' | 'unit' | 'category'>,
+  grams: number,
+): Nutrition {
   return scaleNutrition(
     {
       calories: food.caloriesPer100g,
@@ -77,7 +112,8 @@ export function displayName(food: Pick<Per100g, 'name' | 'brand'>): string {
   return `${food.brand} ${food.name}`;
 }
 
-export const OFF_FIELDS = 'product_name,generic_name,brands,nutriments,serving_quantity';
+export const OFF_FIELDS =
+  'product_name,generic_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,quantity,product_quantity_unit,categories_tags';
 
 export function offUrl(barcode: string) {
   return `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${OFF_FIELDS}`;

@@ -3,11 +3,12 @@ import { Camera, Check, FileText, Mic, PencilLine, Plus, ScanBarcode, Search, ty
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { FoodIcon } from '@/components/FoodIcon';
 import { AddButton, Button, Card, Screen, Segmented, Text } from '@/components/ui';
 import { addFood } from '@/db/meals';
 import { useRecentFoods } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
-import { dayLabel, macroLine, searchFoods, type RecentFood } from '@/lib/food';
+import { dayLabel, formatAmount, macroLine, searchFoods, type RecentFood } from '@/lib/food';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
@@ -40,6 +41,8 @@ export default function AddFoodScreen() {
           carbsG: f.carbsG,
           fatG: f.fatG,
           grams: f.grams,
+          unit: f.unit,
+          category: f.category,
         }),
       },
     });
@@ -48,7 +51,16 @@ export default function AddFoodScreen() {
     await addFood({
       day,
       mealType: meal,
-      food: { name: f.name, calories: f.calories, proteinG: f.proteinG, carbsG: f.carbsG, fatG: f.fatG, grams: f.grams },
+      food: {
+        name: f.name,
+        calories: f.calories,
+        proteinG: f.proteinG,
+        carbsG: f.carbsG,
+        fatG: f.fatG,
+        grams: f.grams,
+        unit: f.unit,
+        category: f.category,
+      },
     });
     setAdded((s) => new Set(s).add(f.name));
   };
@@ -117,6 +129,7 @@ export default function AddFoodScreen() {
               <View
                 key={f.name}
                 style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+                <FoodIcon food={f} />
                 <Pressable
                   style={styles.rowText}
                   accessibilityRole="button"
@@ -125,7 +138,7 @@ export default function AddFoodScreen() {
                   <Text variant="bodyMedium">{f.name}</Text>
                   <Text variant="caption" muted>
                     {formatNumber(f.calories)} calories
-                    {f.grams != null ? ` · ${formatNumber(f.grams)} g` : ''}
+                    {f.grams != null ? ` · ${formatAmount(f.grams, f.unit)}` : ''}
                     {macros ? ` · ${macros}` : ''}
                   </Text>
                 </Pressable>

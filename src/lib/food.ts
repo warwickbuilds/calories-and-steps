@@ -1,23 +1,33 @@
 /** Pure helpers behind the food log: recent foods, search, scaling and day labels. */
 
 import { addDays, formatShortDate, fromLocalDateString, toLocalDateString } from './dates';
+import type { FoodCategory } from './foodCategory';
+
+/** Grams for food, millilitres for drinks. */
+export type FoodUnit = 'g' | 'ml';
+
+export const isFoodUnit = (v: unknown): v is FoodUnit => v === 'g' || v === 'ml';
 
 export interface Nutrition {
   calories: number;
   proteinG: number | null;
   carbsG: number | null;
   fatG: number | null;
+  /** The amount, in `unit` (grams unless it says ml). */
   grams: number | null;
+  unit?: FoodUnit;
 }
 
 export interface LoggedFood extends Nutrition {
   name: string;
+  category?: FoodCategory | null;
   /** When the meal it belongs to was eaten (ISO). */
   eatenAt: string;
 }
 
 export interface RecentFood extends Nutrition {
   name: string;
+  category: FoodCategory | null;
   lastEatenAt: string;
   /** How many times it was logged among the rows looked at. */
   timesLogged: number;
@@ -48,6 +58,8 @@ export function recentFoods(rows: LoggedFood[], limit = 50): RecentFood[] {
       carbsG: r.carbsG,
       fatG: r.fatG,
       grams: r.grams,
+      unit: r.unit ?? 'g',
+      category: r.category ?? null,
       lastEatenAt: r.eatenAt,
       timesLogged: 1,
     });
@@ -76,7 +88,13 @@ export function scaleNutrition(n: Nutrition, factor: number): Nutrition {
     carbsG: s(n.carbsG),
     fatG: s(n.fatG),
     grams: n.grams == null ? null : Math.round(n.grams * factor),
+    ...(n.unit ? { unit: n.unit } : {}),
   };
+}
+
+/** "250 ml" or "40 g". */
+export function formatAmount(amount: number, unit: FoodUnit | null | undefined = 'g'): string {
+  return `${Math.round(amount).toLocaleString('en-US')} ${unit ?? 'g'}`;
 }
 
 /** "Today", "Yesterday", "Tomorrow" or a short date such as "Fri 20 Nov". */
