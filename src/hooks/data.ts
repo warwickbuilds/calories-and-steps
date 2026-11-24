@@ -100,10 +100,11 @@ export function useWeightTrend() {
 export interface CheckIn {
   id: number;
   measuredAt: string;
-  neckCm: number;
-  waistCm: number;
+  /** Neck, waist and body fat are null for a photos-only check-in. */
+  neckCm: number | null;
+  waistCm: number | null;
   hipCm: number | null;
-  bodyFatPct: number;
+  bodyFatPct: number | null;
   weightKg: number | null;
   photos: Partial<Record<Pose, { path: string; thumbPath: string | null }>>;
 }

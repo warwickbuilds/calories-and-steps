@@ -33,7 +33,9 @@ export default function CompareScreen() {
   const units = profile.unitPref;
 
   const summary = (c: CheckIn) =>
-    `${c.bodyFatPct.toFixed(1)}%${c.weightKg != null ? ` · ${formatWeight(c.weightKg, units)}` : ''}`;
+    [c.bodyFatPct != null ? `${c.bodyFatPct.toFixed(1)}%` : null, c.weightKg != null ? formatWeight(c.weightKg, units) : null]
+      .filter(Boolean)
+      .join(' · ');
 
   return (
     <Screen edges={[]}>
