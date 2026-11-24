@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AiKeyCard } from '@/components/AiKeyCard';
+import { StepsAccessCard } from '@/components/StepsAccessCard';
 import { AgeField } from '@/components/fields/AgeField';
 import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
@@ -258,6 +259,10 @@ export default function Onboarding() {
           <Card>
             <StepTargetSlider value={d.stepTarget} onChange={(v) => set('stepTarget', v)} />
           </Card>
+          <Text variant="body" muted>
+            Steps are read from Health Connect. You can connect now or later from Today.
+          </Text>
+          <StepsAccessCard compact />
         </View>
       ) : null}
     </Screen>
