@@ -1,4 +1,4 @@
-import { availableUpdate, compareVersions, parseVersion } from '../version';
+import { availableUpdate, compareVersions, parseVersion, pickApk } from '../version';
 
 describe('parseVersion', () => {
   it('reads plain and tag forms', () => {
@@ -46,5 +46,31 @@ describe('availableUpdate', () => {
     expect(availableUpdate('0.3.0', { ...release, prerelease: true })).toBeNull();
     expect(availableUpdate('0.3.0', { ...release, draft: true })).toBeNull();
     expect(availableUpdate(null, release)).toBeNull();
+  });
+});
+
+describe('pickApk', () => {
+  const arm64 = { name: 'calories-and-steps-0.16.0-arm64.apk', browser_download_url: 'https://x/arm64.apk' };
+  const universal = { name: 'calories-and-steps-0.16.0-universal.apk', browser_download_url: 'https://x/universal.apk' };
+  const assets = [arm64, universal];
+
+  it('gives 64-bit ARM phones the small APK', () => {
+    expect(pickApk(assets, ['arm64-v8a', 'armeabi-v7a', 'armeabi'])).toBe(arm64);
+  });
+  it('gives 32-bit, x86 and unknown phones the universal APK', () => {
+    expect(pickApk(assets, ['armeabi-v7a', 'armeabi'])).toBe(universal);
+    expect(pickApk(assets, ['x86_64', 'x86'])).toBe(universal);
+    expect(pickApk(assets, null)).toBe(universal);
+    expect(pickApk(assets)).toBe(universal);
+  });
+  it('uses the only APK of an older release', () => {
+    const single = { name: 'calories-and-steps-0.14.0.apk', browser_download_url: 'https://x/one.apk' };
+    expect(pickApk([single], ['arm64-v8a'])).toBe(single);
+    expect(pickApk([single], null)).toBe(single);
+  });
+  it('flows into the update offer', () => {
+    const release = { tag_name: 'v0.16.0', html_url: 'https://x/page', assets };
+    expect(availableUpdate('0.15.0', release, ['arm64-v8a'])?.downloadUrl).toBe('https://x/arm64.apk');
+    expect(availableUpdate('0.15.0', release, ['armeabi-v7a'])?.downloadUrl).toBe('https://x/universal.apk');
   });
 });

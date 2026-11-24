@@ -2,7 +2,7 @@
   "expo": {
     "name": "Calories and Steps",
     "slug": "calories-and-steps",
-    "version": "0.14.0",
+    "version": "0.16.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "caloriesandsteps",
@@ -37,7 +37,8 @@
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "useLegacyPackaging": true
           }
         }
       ],
