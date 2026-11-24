@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="Calories and Steps: track food, steps, weight and body fat, privately on your phone">
+  <style>
+    .bg { fill: #F6F7F5; }
+    .card { fill: #FFFFFF; }
+    .title { fill: #111312; }
+    .sub { fill: #5B615D; }
+    .track { stroke: #E6E8E4; }
+    .steps { stroke: #1F9D55; }
+    .cal { stroke: #F26A1B; }
+    .chip { fill: #EEF0EC; }
+    .chiptext { fill: #3A403C; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0D0F0E; }
+      .card { fill: #171A18; }
+      .title { fill: #F3F5F2; }
+      .sub { fill: #A3AAA5; }
+      .track { stroke: #2A2F2C; }
+      .steps { stroke: #B6F24A; }
+      .cal { stroke: #FF8A4C; }
+      .chip { fill: #222724; }
+      .chiptext { fill: #D3D8D4; }
+    }
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="360" rx="28"/>
+  <!-- rings: outer = steps, inner = calories -->
+  <g transform="translate(200 180) rotate(-90)" fill="none" stroke-linecap="round">
+    <circle class="track" r="110" stroke-width="26"/>
+    <circle class="steps" r="110" stroke-width="26" stroke-dasharray="483.8 691.2"/>
+    <circle class="track" r="72" stroke-width="26"/>
+    <circle class="cal" r="72" stroke-width="26" stroke-dasharray="361.9 452.4"/>
+  </g>
+  <text class="title" x="380" y="150" font-size="68" font-weight="700" letter-spacing="-1.5">Calories and Steps</text>
+  <text class="sub" x="382" y="198" font-size="27">Food, steps, weight and body fat. Private, on your phone.</text>
+  <g font-size="20" font-weight="600">
+    <rect class="chip" x="382" y="236" width="170" height="44" rx="22"/>
+    <text class="chiptext" x="467" y="265" text-anchor="middle">No account</text>
+    <rect class="chip" x="566" y="236" width="150" height="44" rx="22"/>
+    <text class="chiptext" x="641" y="265" text-anchor="middle">No ads</text>
+    <rect class="chip" x="730" y="236" width="180" height="44" rx="22"/>
+    <text class="chiptext" x="820" y="265" text-anchor="middle">Data stays local</text>
+    <rect class="chip" x="924" y="236" width="180" height="44" rx="22"/>
+    <text class="chiptext" x="1014" y="265" text-anchor="middle">Open source</text>
+  </g>
+</svg>

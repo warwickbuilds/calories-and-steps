@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an idea for the app
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [Future enhancements](https://github.com/warwickbuilds/calories-and-steps#future-enhancements) first: your idea may already be planned.
+        The app keeps everything on the phone, with no accounts or tracking, so ideas need to fit that.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: The problem or goal, in your own words. "I want to see my steps for the whole month" is perfect.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could the app help?
+      description: Your idea for how it could work. Sketches and screenshots of other apps are welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you do today instead?

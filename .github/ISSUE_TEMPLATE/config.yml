@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/warwickbuilds/calories-and-steps/security/advisories/new
+    about: Please report security problems privately, not as a public issue.
+  - name: How to install the app
+    url: https://github.com/warwickbuilds/calories-and-steps#install
+    about: Download the APK and install it on an Android phone.
