@@ -1,15 +1,22 @@
 import { Tabs } from 'expo-router';
-import { Activity, House, Scale, Utensils, type LucideIcon } from 'lucide-react-native';
-import type { ColorValue } from 'react-native';
+import { Activity, Flame, Footprints, House, Scale, type LucideIcon } from 'lucide-react-native';
+import { Pressable, StyleSheet, View, type ColorValue, type PressableProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
+import { useStepsAutoSync } from '@/hooks/steps';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, layout } from '@/theme/tokens';
 
+/** The current tab's icon sits in a solid pill (text colour, icon in the background colour). */
 function icon(Icon: LucideIcon) {
-  return function TabIcon({ color }: { color: ColorValue }) {
-    return <Icon size={22} strokeWidth={1.8} color={String(color)} />;
+  return function TabIcon({ focused, color }: { focused: boolean; color: ColorValue }) {
+    const { colors } = useTheme();
+    return (
+      <View style={[styles.pill, focused && { backgroundColor: colors.text }]}>
+        <Icon size={20} strokeWidth={focused ? 2.2 : 1.8} color={focused ? colors.bg : String(color)} />
+      </View>
+    );
   };
 }
 
@@ -27,15 +34,24 @@ function label(title: string) {
   };
 }
 
+/** Tab button with no ripple or fade: the pill moving to the new tab is the only feedback. */
+function TabButton(props: Record<string, unknown>) {
+  const { ref: _ref, android_ripple: _ripple, pressColor: _pc, pressOpacity: _po, hoverEffect: _he, ...rest } = props;
+  return <Pressable {...(rest as PressableProps)} />;
+}
+
 export default function TabLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  // Reads steps from Health Connect on open and whenever the app comes back to the front.
+  useStepsAutoSync();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.muted,
+        tabBarButton: (props) => <TabButton {...props} />,
         tabBarStyle: {
           backgroundColor: colors.bg,
           borderTopColor: colors.line,
@@ -46,7 +62,14 @@ export default function TabLayout() {
         sceneStyle: { backgroundColor: colors.bg },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarLabel: label('Today'), tabBarIcon: icon(House) }} />
-      <Tabs.Screen name="food" options={{ title: 'Food', tabBarLabel: label('Food'), tabBarIcon: icon(Utensils) }} />
+      <Tabs.Screen
+        name="food"
+        options={{ title: 'Calories', tabBarLabel: label('Calories'), tabBarIcon: icon(Flame) }}
+      />
+      <Tabs.Screen
+        name="steps"
+        options={{ title: 'Steps', tabBarLabel: label('Steps'), tabBarIcon: icon(Footprints) }}
+      />
       <Tabs.Screen name="weight" options={{ title: 'Weight', tabBarLabel: label('Weight'), tabBarIcon: icon(Scale) }} />
       <Tabs.Screen
         name="progress"
@@ -55,3 +78,7 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: { width: 52, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+});
