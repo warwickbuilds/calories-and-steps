@@ -97,7 +97,7 @@ Wording rule: the app always says "calories", never "kcal".
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.6.0** (all of Phase 3, PR #8) is released the same way. **v0.7.0** (the weight chart upgrade, PR #9) is released the same way. **v0.8.0** (ml for drinks, PR #10) follows once merged, then **v0.11.0** (food icons, PR #13), then **v0.12.0** (step sync, PR #11).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.6.0** (all of Phase 3, PR #8) is released the same way. **v0.7.0** (the weight chart upgrade, PR #9) is released the same way. **v0.8.0** (ml for drinks, PR #10) follows once merged, and **v0.11.0** (food icons, PR #13) after it. **v0.13.0** (PR #12) fixes spoken descriptions being lost when you tap stop.
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
@@ -154,6 +154,8 @@ The detailed list of what works now.
 ### Voice input
 
 - `src/components/VoiceButton.tsx` uses `expo-speech-recognition`: tap to start, tap to stop, with interim text shown while talking. It asks for on-device recognition (`requiresOnDeviceRecognition`) whenever the phone supports it, in the phone's language, with punctuation. Only the text is used; the audio isn't recorded or kept.
+- Tapping stop keeps what you said. Some phones' on-device recognisers end with an error (often `client`) instead of a final result when you tap stop, so the last words heard are put into the text box when listening ends, and no error is shown after a stop you made. Errors like "microphone off" still show. The rules live in `src/lib/voice.ts` (tested in `src/lib/__tests__/voice.test.ts`).
+- Spoken text is added after anything already in the box, so you can talk, stop, and talk again.
 - If on-device speech isn't set up for the language, or recognition isn't available, it says so and suggests the keyboard's microphone, which works in the same text box.
 - The config plugin adds the `RECORD_AUDIO` permission and package visibility for Google's speech services (`com.google.android.googlequicksearchbox`, `com.google.android.tts`).
 
@@ -258,11 +260,11 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ## Versions and changelog
 
-App version: **0.12.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.13.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
-| 2026-11-24 | Phase 4, steps: step sync from Health Connect (react-native-health-connect, `READ_STEPS` only), Steps tab with today by hour, last 7 days against the target and the 7-day total, Today's steps ring, connect flow for missing, outdated or refused Health Connect, Health Connect card in onboarding and Settings. Food tab renamed Calories, new tab bar highlight (solid pill) and no press ripple. Minimum Android raised to 8.0 (API 26). Version 0.12.0 | #11 |
+| 2026-11-24 | Fix: tapping stop on "Describe it out loud" showed "Speech recognition stopped" and threw away what you'd said. Now the words heard so far go into the text box and no error shows after a stop you made. Version 0.13.0 (0.12.0 is taken by the steps PR) | #12 |
 | 2026-11-24 | Food icons: a small grey line icon (lucide) beside every logged food on the Food tab and every recent food in Add food, one of 12 categories. Barcode products take it from Open Food Facts' `categories_tags`, AI label reads and meal estimates return a category, and anything else (quick adds, older entries) is guessed from the name. Change it under **Type** in the food form. New `category` column on `food_ref` and `food_item` (migration 0004, nullable, no backfill needed). Version 0.11.0 | #13 |
 | 2026-11-24 | Millilitres for drinks: every food is measured in g or ml. Barcode products pick ml from Open Food Facts' serving and pack units, AI label reads and meal estimates return a unit, and every amount field has a g ⇄ ml switch. Shown as "250 ml" on the Food tab and in recent foods. New `unit` column on `food_ref` and `food_item` (migration 0003, existing rows become g). Version 0.8.0 | #10 |
 | 2026-11-24 | Weight chart upgrade: change for the chosen period as a big number above the chart, weigh-ins as the main line, faint dashed trend and projection to the goal in every period, goal always shown, coloured milestones every 5 kg lost with chips, gridline values. The header, chart and Change card now all use the trend, and periods longer than your history show the change since your first weigh-in instead of a dash. Version 0.7.0 | #9 |
