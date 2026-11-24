@@ -1,5 +1,6 @@
 const { androidVersionCode } = require('../versionCode');
 const { addReleaseSigning } = require('../withReleaseSigning');
+const { addAbiSplits } = require('../withAbiSplits');
 
 describe('androidVersionCode', () => {
   it('always goes up with the version', () => {
@@ -43,5 +44,29 @@ describe('addReleaseSigning', () => {
   it('runs only once', () => {
     const once = addReleaseSigning(gradle);
     expect(addReleaseSigning(once)).toBe(once);
+  });
+});
+
+describe('addAbiSplits', () => {
+  const gradle = `apply plugin: "com.android.application"
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    defaultConfig {
+        versionCode 1
+    }
+}`;
+
+  it('builds an arm64 APK and a universal APK', () => {
+    const out = addAbiSplits(gradle);
+    expect(out).toMatch(/android \{\n\s+splits \{/);
+    expect(out).toContain("include 'arm64-v8a'");
+    expect(out).toContain('universalApk true');
+  });
+  it('only adds the splits once', () => {
+    expect(addAbiSplits(addAbiSplits(gradle))).toBe(addAbiSplits(gradle));
+  });
+  it('fails loudly when the template changes', () => {
+    expect(() => addAbiSplits('plugins { }')).toThrow();
   });
 });

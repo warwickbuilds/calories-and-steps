@@ -37,13 +37,33 @@ export interface AvailableUpdate {
   pageUrl: string;
 }
 
+type ReleaseAsset = NonNullable<ReleaseInfo['assets']>[number];
+
+/**
+ * Picks the APK for this phone. Releases from 0.16.0 on carry two:
+ * "…-arm64.apk" (64-bit ARM only, much smaller) and "…-universal.apk" (every
+ * chip). Phones that list arm64-v8a get the small one; everything else, or a
+ * phone whose chips we couldn't read, gets the universal one. Older releases
+ * have a single APK, which is used as is.
+ */
+export function pickApk(assets: ReleaseInfo['assets'], abis?: readonly string[] | null): ReleaseAsset | undefined {
+  const apks = (assets ?? []).filter((a) => a.name.toLowerCase().endsWith('.apk'));
+  const arm64 = apks.find((a) => a.name.toLowerCase().endsWith('-arm64.apk'));
+  if (arm64 && abis?.includes('arm64-v8a')) return arm64;
+  return apks.find((a) => a.name.toLowerCase().endsWith('-universal.apk')) ?? apks.find((a) => a !== arm64) ?? arm64;
+}
+
 /** Returns the update to offer, or null when the installed version is current. */
-export function availableUpdate(installed: string | null | undefined, release: ReleaseInfo): AvailableUpdate | null {
+export function availableUpdate(
+  installed: string | null | undefined,
+  release: ReleaseInfo,
+  abis?: readonly string[] | null
+): AvailableUpdate | null {
   if (release.draft || release.prerelease) return null;
   const latest = parseVersion(release.tag_name);
   const current = parseVersion(installed);
   if (!latest || !current || compareVersions(latest, current) <= 0) return null;
-  const apk = release.assets?.find((a) => a.name.toLowerCase().endsWith('.apk'));
+  const apk = pickApk(release.assets, abis);
   return {
     version: latest.join('.'),
     downloadUrl: apk?.browser_download_url ?? release.html_url,
