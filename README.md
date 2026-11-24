@@ -387,6 +387,7 @@ Several PRs can merge between two releases, so not every version number gets its
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Future enhancements: Rick's new ideas added (reminders to log calories, more colour themes, step and calorie graph changes, image cropping fixes, home-screen widgets for steps and calories, and a knowledge and inspiration section with his key messages). No app change, still 0.16.0 | #19 |
 | 2026-11-24 | Fix: weight totals now use your actual weigh-ins instead of the smoothed trend, which lagged behind (logging 77.0 kg from 97.0 showed "19.2 kg down" and the 20 kg milestone "0.8 to go"). The big number above the chart, the Change card, "this week" on Today and Weight, the milestone chips and dots, and the goal's "to lose" all measure from weigh-ins; the trend still draws the dashed line and drives the goal projection and BMI. Version 0.17.0 | #20 |
 | 2026-11-24 | Open source: MIT `LICENSE` (and `license` in `package.json`), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md` (private reporting, how keys and the keystore stay out of the repo, checking an APK's signature), issue forms for bugs and ideas, a pull request template, and a new CI workflow (`ci.yml`) running the tests, typecheck, lint and Android bundle on every pull request and push to main. README gets a banner, badges, a contents list, highlights, a screenshot gallery with the Steps tab in light and dark, a tech stack and contributing, security, license and acknowledgements sections. No app change, still 0.16.0 | #18 |
 | 2026-11-24 | README checked against everything merged today: changelog rows added for steps (#11) and check-in polish (#16), a table of which versions were released, the status summary, architecture (APK splits, update check), services and APK sizes brought up to date. No app change, still 0.16.0 | #17 |
@@ -674,13 +675,38 @@ Everything we've discussed that is not built yet.
 - Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year), daily average, days on target, best day and streaks. The helpers for averages, days on target, best day and streak are already in `src/lib/steps.ts` (`stepsSummary`, tested) but not shown yet.
 - Tap a bar to see that day's or hour's exact steps.
 - Reading older history with Health Connect's history permission (more than 30 days before access was given).
-- Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and a home-screen widget.
+- Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and for the home-screen widgets (see Widgets, later).
 - Entering steps by hand for days without a phone or watch.
 - Weight from smart scales through Health Connect.
 - Apple Health when iOS returns.
 
 **Food, later**
 - Favourites (pin a food to the top of the recent list).
+
+**Reminders, later**
+- Notifications to remind you to log calories (Rick, 2026-11-24), for example when a meal time passes with nothing logged. Local notifications on the phone, no server.
+
+**Look and feel, later**
+- Additional colour themes beyond light and dark (Rick, 2026-11-24). Green stays for steps and orange for calories in every theme.
+
+**Step and calorie graphs, later**
+- Rework the step and calorie graphs (Rick, 2026-11-24: "graph modification for step and calories"). What to change is still to be worked out with Rick; see also the step analytics above.
+
+**Photos, later**
+- Fix image cropping issues (Rick, 2026-11-24). Which photos crop badly (check-in photos, meal photos or screenshots) is still to be confirmed with Rick.
+
+**Widgets, later**
+- Home-screen widgets for steps and calories (Rick, 2026-11-24), showing today's steps against the target and calories left. Up-to-date steps on a widget need background sync (see Steps, later).
+
+**Knowledge and inspiration, later**
+- A help and inspiration section (Rick, 2026-11-24): YouTube links, some funny ones, and men's health. Built around Rick's key messages, kept in his words:
+  - Get lean first, then build muscle if needed.
+  - You have way more fat than you think.
+  - A 500 calorie deficit plus 10k steps is the game changer.
+  - Same meals, with simple variety.
+  - Don't stress a day off.
+  - Don't compound blow-outs, just get back to it.
+  - Being lean with muscle feels so good.
 
 **Phase 5: polish**
 - Empty states, offline error handling, app icons.
@@ -707,7 +733,6 @@ Everything we've discussed that is not built yet.
 - A small key-holding relay (with App Attest and Play Integrity) so people can use the AI without their own key.
 - Signing in with OpenRouter instead of pasting a key.
 - Automatic Google Drive backup.
-- Home-screen widgets.
 - Adding active calories burned to the daily calorie budget.
 
 ## Contributing
