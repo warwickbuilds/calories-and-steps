@@ -136,3 +136,11 @@ describe('totalSteps', () => {
     expect(totalSteps([{ steps: null }])).toBeNull();
   });
 });
+
+describe('accessMessage', () => {
+  it('returns a retry prompt for transient Health Connect errors instead of Play Store install', () => {
+    const msg = accessMessage('error');
+    expect(msg.action).toBe('Try again');
+    expect(msg.title).toMatch(/Health Connect/i);
+  });
+});

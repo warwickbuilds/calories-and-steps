@@ -39,11 +39,11 @@ export async function getStepsAccess(): Promise<StepsAccess> {
     const status = await getSdkStatus(PROVIDER);
     if (status === SdkAvailabilityStatus.SDK_UNAVAILABLE) return 'not-installed';
     if (status === SdkAvailabilityStatus.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) return 'update-required';
-    if (!(await ensureInitialized())) return 'not-installed';
+    if (!(await ensureInitialized())) return 'error';
     const granted = await getGrantedPermissions();
     return hasStepsRead(granted) ? 'granted' : 'not-granted';
   } catch {
-    return 'not-installed';
+    return 'error';
   }
 }
 

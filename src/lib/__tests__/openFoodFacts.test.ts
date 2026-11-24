@@ -1,5 +1,5 @@
 import { parseLabelAnswer } from '../ai/nutritionLabel';
-import { displayName, isBarcode, nutritionFor, offUnit, offUrl, parseOffProduct } from '../openFoodFacts';
+import { displayName, isBarcode, lookupBarcode, nutritionFor, offUnit, offUrl, parseOffProduct } from '../openFoodFacts';
 
 describe('parseOffProduct', () => {
   it('reads per-100 g values', () => {
@@ -169,5 +169,45 @@ describe('offUnit', () => {
     expect(offUnit({})).toBe('g');
     expect(offUnit(null)).toBe('g');
     expect(offUnit({ quantity: 'Large' })).toBe('g');
+  });
+});
+
+describe('lookupBarcode', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('returns offline when the request times out', async () => {
+    global.fetch = jest.fn(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        }),
+    ) as unknown as typeof fetch;
+
+    await expect(lookupBarcode('9300675024235', '0.18.0', undefined, 25)).resolves.toEqual({ kind: 'offline' });
+  });
+
+  it('rethrows caller-initiated AbortError', async () => {
+    global.fetch = jest.fn(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
+        }),
+    ) as unknown as typeof fetch;
+
+    const ac = new AbortController();
+    const pending = lookupBarcode('9300675024235', '0.18.0', ac.signal, 5000);
+    ac.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
   });
 });

@@ -65,6 +65,9 @@ export default function ProductScreen() {
   const [category, setCategory] = useState<FoodCategory | null>(null);
   const [saving, setSaving] = useState(false);
   const started = useRef(false);
+  const abort = useRef<AbortController | null>(null);
+
+  useEffect(() => () => abort.current?.abort(), []);
 
   const fill = (f: Per100g | FoodRef, from: Origin, id: number | null) => {
     setName(f.name);
@@ -84,19 +87,26 @@ export default function ProductScreen() {
   };
 
   const readLabel = async (uri: string, width: number | undefined) => {
+    if (!ai?.apiKey) {
+      setStep({ kind: 'no-key' });
+      return;
+    }
+    abort.current?.abort();
+    const controller = new AbortController();
+    abort.current = controller;
+    setStep({ kind: 'loading', message: 'Reading the label…' });
     try {
       const image = await prepareImage(uri, width);
-      if (!ai?.apiKey) {
-        setStep({ kind: 'no-key' });
-        return;
-      }
-      const answer = await requestJson(ai.provider, ai.model, ai.apiKey, nutritionLabelRequest(image));
+      if (controller.signal.aborted) return;
+      const answer = await requestJson(ai.provider, ai.model, ai.apiKey, nutritionLabelRequest(image), controller.signal);
+      if (controller.signal.aborted) return;
       const read = parseLabelAnswer(answer);
       if (!read) {
         setStep({ kind: 'read-failed', message: 'That didn’t look like a nutrition label. Try again with the table filling the frame.' });
         return;
       }
       const cached = barcode ? await findByBarcode(barcode) : null;
+      if (controller.signal.aborted) return;
       fill(
         { ...read, name: read.name ?? cached?.name ?? '', brand: cached?.brand ?? null, category: read.category ?? cached?.category ?? null },
         'panel',
@@ -104,28 +114,42 @@ export default function ProductScreen() {
       );
       setEdited(true); // Not saved yet: saving on Add caches it under the barcode.
     } catch (e) {
+      if (controller.signal.aborted || (e as Error)?.name === 'AbortError') return;
       setStep({ kind: 'read-failed', message: e instanceof AiError ? e.message : 'Couldn’t read the label. Try again.' });
     }
   };
 
   const lookUp = async (code: string) => {
-    const cached = await findByBarcode(code);
-    if (cached) {
-      fill(cached, cached.source, cached.id);
-      return;
-    }
-    const result = await lookupBarcode(code, installedVersion() ?? '0');
-    if (result.kind === 'found') {
-      const id = await saveFoodRef(result.food, 'off', code);
-      fill(result.food, 'off', id);
-    } else {
-      setStep({ kind: result.kind });
+    abort.current?.abort();
+    const controller = new AbortController();
+    abort.current = controller;
+    try {
+      const cached = await findByBarcode(code);
+      if (controller.signal.aborted) return;
+      if (cached) {
+        fill(cached, cached.source, cached.id);
+        return;
+      }
+      const result = await lookupBarcode(code, installedVersion() ?? '0', controller.signal);
+      if (controller.signal.aborted) return;
+      if (result.kind === 'found') {
+        const id = await saveFoodRef(result.food, 'off', code);
+        if (controller.signal.aborted) return;
+        fill(result.food, 'off', id);
+      } else {
+        setStep({ kind: result.kind });
+      }
+    } catch (e) {
+      if (controller.signal.aborted || (e as Error)?.name === 'AbortError') return;
+      setStep({ kind: 'offline' });
     }
   };
 
   useEffect(() => {
     // Label reading needs the saved key, which loads asynchronously.
-    if (started.current || (params.photo && ai === null)) return;
+    if (params.photo && ai === null) return;
+    const retryAfterKey = started.current && params.photo && step.kind === 'no-key' && !!ai?.apiKey;
+    if (started.current && !retryAfterKey) return;
     started.current = true;
     const photo = params.photo;
     const width = params.width ? Number(params.width) : undefined;

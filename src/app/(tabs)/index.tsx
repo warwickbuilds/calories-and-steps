@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { Plus, Settings } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BackupReminder } from '@/components/BackupCard';
@@ -10,6 +10,7 @@ import { AddButton, Card, DualRings, IconButton, ProgressBar, Screen, Text } fro
 import { copyMeal } from '@/db/meals';
 import { useDayTotals, useProfile, useTargets } from '@/hooks/data';
 import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
+import { useToday } from '@/hooks/useToday';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { takeImportRequest } from '@/lib/onboardingIntent';
 import { MEAL_TYPES, caloriesReadout, formatNumber, stepsAccessibility, type MealType } from '@/lib/today';
@@ -17,14 +18,14 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
 
 export default function TodayScreen() {
-  const today = toLocalDateString();
+  const today = useToday();
   useEffect(() => {
     // Chosen on the last onboarding step.
     if (takeImportRequest()) router.push('/import-weights');
   }, []);
   return (
     <Screen
-      eyebrow={formatLongDate()}
+      eyebrow={formatLongDate(fromLocalDateString(today))}
       title="Today"
       right={<IconButton icon={Settings} accessibilityLabel="Settings" onPress={() => router.push('/settings')} />}>
       <UpdateBanner />
@@ -186,9 +187,19 @@ function MealsCard({ day }: { day: string }) {
   const totals = useDayTotals(day);
   const yesterday = toLocalDateString(addDays(fromLocalDateString(day), -1));
   const yesterdayTotals = useDayTotals(yesterday);
+  const [copying, setCopying] = useState<MealType | null>(null);
 
   const openQuickAdd = (meal: MealType) => router.push({ pathname: '/quick-add', params: { meal, day } });
   const openAddFood = (meal: MealType) => router.push({ pathname: '/add-food', params: { meal, day } });
+  const handleCopy = async (meal: MealType) => {
+    if (copying) return;
+    setCopying(meal);
+    try {
+      await copyMeal(meal, yesterday, day);
+    } finally {
+      setCopying(null);
+    }
+  };
 
   return (
     <Card style={styles.mealsCard}>
@@ -214,7 +225,8 @@ function MealsCard({ day }: { day: string }) {
                   <Pill
                     label="Same as yesterday"
                     accessibilityLabel={`Same ${m.label.toLowerCase()} as yesterday`}
-                    onPress={() => copyMeal(m.value, yesterday, day)}
+                    disabled={copying === m.value}
+                    onPress={() => handleCopy(m.value)}
                   />
                 ) : null}
                 <Pill
@@ -241,20 +253,23 @@ function Pill({
   label,
   onPress,
   accessibilityLabel,
+  disabled,
 }: {
   label: string;
   onPress: () => void;
   accessibilityLabel: string;
+  disabled?: boolean;
 }) {
   const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      disabled={disabled}
       onPress={onPress}
       hitSlop={{ top: 8, bottom: 8 }}>
       {({ pressed }) => (
-        <View style={[styles.pill, { backgroundColor: colors.track, opacity: pressed ? 0.7 : 1 }]}>
+        <View style={[styles.pill, { backgroundColor: colors.track, opacity: pressed || disabled ? 0.7 : 1 }]}>
           <Text variant="caption" muted>
             {label}
           </Text>

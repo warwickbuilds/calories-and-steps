@@ -77,6 +77,15 @@ describe('describeBackup', () => {
     });
     expect(describeBackup(m)).toBe('2 foods logged, 1 weigh-in, 3 check-ins and 6 photos');
   });
+  it('prefers exact bodyPhoto row count when present', () => {
+    const m = makeManifest({
+      rows: rowsWith({ bodyPhoto: [{}, {}, {}] }),
+      photoCount: 5,
+      appVersion: null,
+      schemaVersion: 5,
+    });
+    expect(describeBackup(m)).toBe('3 photos');
+  });
   it('handles an empty backup', () => {
     const m = makeManifest({ rows: rowsWith({}), photoCount: 0, appVersion: null, schemaVersion: 5 });
     expect(describeBackup(m)).toBe('your settings only');
@@ -109,7 +118,7 @@ describe('backupDue', () => {
 
 // The same streaming zip calls src/db/backup.ts uses, end to end.
 describe('zip round trip', () => {
-  it('writes and reads back manifest, data and a photo', () => {
+  it('writes and streams back manifest, data and a photo in chunks', () => {
     const chunks: Uint8Array[] = [];
     const zip = new Zip((err, chunk) => {
       if (err) throw err;
@@ -117,10 +126,10 @@ describe('zip round trip', () => {
     });
     const text = new ZipDeflate('data.json', { level: 6 });
     zip.add(text);
-    text.push(strToU8('{"a":1}'), true);
+    text.push(strToU8('{"a":1,"long":"' + 'x'.repeat(200) + '"}'), true);
     const photo = new ZipPassThrough('photos/p.jpg');
     zip.add(photo);
-    photo.push(new Uint8Array([1, 2, 3]), true);
+    photo.push(new Uint8Array([1, 2, 3, 4, 5]), true);
     zip.end();
     const bytes = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
     let o = 0;
@@ -134,14 +143,18 @@ describe('zip round trip', () => {
       const parts: Uint8Array[] = [];
       f.ondata = (err, d, final) => {
         if (err) throw err;
-        parts.push(d);
+        if (d.length > 0) parts.push(d);
         if (final) out[f.name] = parts.length === 1 ? parts[0] : new Uint8Array(parts.flatMap((p) => [...p]));
       };
       f.start();
     });
     unzip.register(UnzipInflate);
-    unzip.push(bytes, true);
-    expect(strFromU8(out['data.json'])).toBe('{"a":1}');
-    expect([...out['photos/p.jpg']]).toEqual([1, 2, 3]);
+    // Feed in tiny chunks followed by an empty final push, matching src/db/backup.ts.
+    for (let i = 0; i < bytes.length; i += 17) {
+      unzip.push(bytes.subarray(i, i + 17), false);
+    }
+    unzip.push(new Uint8Array(0), true);
+    expect(JSON.parse(strFromU8(out['data.json']))).toEqual({ a: 1, long: 'x'.repeat(200) });
+    expect([...out['photos/p.jpg']]).toEqual([1, 2, 3, 4, 5]);
   });
 });

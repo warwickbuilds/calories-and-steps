@@ -32,11 +32,20 @@ async function testKey(apiKey: string, model: string) {
  * Paste your own Google AI (Gemini) API key. Used in onboarding, Settings
  * and on the import screen when no key is saved yet.
  */
-export function AiKeyCard({ title = 'Google AI key', onSaved }: { title?: string; onSaved?: () => void }) {
+export function AiKeyCard({
+  title = 'Google AI key',
+  onSaved,
+  showModelOverride = false,
+}: {
+  title?: string;
+  onSaved?: () => void;
+  showModelOverride?: boolean;
+}) {
   const { colors } = useTheme();
   const [key, setKey] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null);
-  const [model, setModel] = useState<string>(info.defaultModel);
+  const [modelOverride, setModelOverride] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
@@ -44,19 +53,22 @@ export function AiKeyCard({ title = 'Google AI key', onSaved }: { title?: string
     loadAiSettings(PROVIDER).then((s) => {
       setKey(s.apiKey ?? '');
       setSavedKey(s.apiKey);
-      setModel(s.model);
+      setModelOverride(s.modelOverride ?? '');
+      if (s.modelOverride) setShowAdvanced(true);
     });
   }, []);
 
   const saveAndTest = async () => {
     const trimmed = key.trim();
+    const override = modelOverride.trim() || null;
+    const effectiveModel = override ?? info.defaultModel;
     setBusy(true);
     setMessage(null);
     try {
-      await saveAiSettings({ provider: PROVIDER, apiKey: trimmed, modelOverride: null });
+      await saveAiSettings({ provider: PROVIDER, apiKey: trimmed, modelOverride: override });
       setSavedKey(trimmed);
       onSaved?.();
-      await testKey(trimmed, model);
+      await testKey(trimmed, effectiveModel);
       setMessage({ text: 'Saved. The key works.' });
     } catch (e) {
       setMessage({
@@ -72,13 +84,14 @@ export function AiKeyCard({ title = 'Google AI key', onSaved }: { title?: string
     await saveAiSettings({ provider: PROVIDER, apiKey: null, modelOverride: null });
     setKey('');
     setSavedKey(null);
+    setModelOverride('');
     setMessage({ text: 'Key removed.' });
   };
 
   return (
     <Card title={title}>
       <Text variant="label" muted>
-        AI features (like reading weight screenshots, and soon meal photos) use your own Google AI key, so you pay
+        AI features (meal estimates, nutrition labels and weight screenshots) use your own Google AI key, so you pay
         Google directly. The key is stored encrypted on this phone.
       </Text>
       <TextInput
@@ -98,9 +111,40 @@ export function AiKeyCard({ title = 'Google AI key', onSaved }: { title?: string
         ]}
       />
       <Text variant="caption" muted>
-        With a free key, Google may use what you send (such as screenshots) to improve its models, and people may
-        review it. A paid key (billing turned on) avoids this.
+        With a free key, Google may use what you send (such as meal photos and screenshots) to improve its models, and
+        people may review it. A paid key (billing turned on) avoids this.
       </Text>
+      {showModelOverride ? (
+        <View style={styles.advanced}>
+          <Button
+            variant="ghost"
+            label={showAdvanced ? 'Hide model override' : 'Model override'}
+            onPress={() => setShowAdvanced((v) => !v)}
+          />
+          {showAdvanced ? (
+            <View style={styles.field}>
+              <Text variant="label" muted>
+                Model name (leave empty for default: {info.defaultModel})
+              </Text>
+              <TextInput
+                value={modelOverride}
+                onChangeText={setModelOverride}
+                placeholder={info.defaultModel}
+                placeholderTextColor={colors.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxFontSizeMultiplier={MAX_FONT_SCALE}
+                accessibilityLabel="Model override"
+                style={[
+                  styles.input,
+                  typeScale.body,
+                  { color: colors.text, backgroundColor: colors.bg, borderColor: colors.line },
+                ]}
+              />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       {message ? (
         <Text variant="label" color={message.error ? colors.danger : undefined} muted={!message.error}>
           {message.text}
@@ -122,5 +166,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space[4],
     minHeight: layout.minTap + 4,
   },
+  advanced: { gap: space[2] },
+  field: { gap: space[1] },
   row: { flexDirection: 'row', gap: space[2], flexWrap: 'wrap' },
 });

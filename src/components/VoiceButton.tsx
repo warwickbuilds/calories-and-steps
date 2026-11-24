@@ -1,6 +1,6 @@
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { Mic, Square } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui';
@@ -34,6 +34,17 @@ export function VoiceButton({ onText }: { onText: (text: string) => void }) {
   const pending = useRef('');
   /** True once the user taps stop, so the phone's "error" on stopping isn't shown. */
   const userStopped = useRef(false);
+  const listeningRef = useRef(false);
+
+  useEffect(
+    () => () => {
+      if (listeningRef.current) {
+        userStopped.current = true;
+        ExpoSpeechRecognitionModule.abort();
+      }
+    },
+    [],
+  );
 
   const flushPending = () => {
     const text = pending.current.trim();
@@ -41,8 +52,12 @@ export function VoiceButton({ onText }: { onText: (text: string) => void }) {
     if (text) onText(text);
   };
 
-  useSpeechRecognitionEvent('start', () => setListening(true));
+  useSpeechRecognitionEvent('start', () => {
+    listeningRef.current = true;
+    setListening(true);
+  });
   useSpeechRecognitionEvent('end', () => {
+    listeningRef.current = false;
     flushPending();
     userStopped.current = false;
     setListening(false);

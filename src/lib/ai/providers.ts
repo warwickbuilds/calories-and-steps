@@ -217,6 +217,8 @@ export function errorForStatus(provider: AiProvider, status: number, detail?: st
   return new AiError(`${name} returned an error (${status})${detail ? `: ${detail}` : ''}.`, 'other');
 }
 
+export const DEFAULT_AI_TIMEOUT_MS = 60_000;
+
 /** Sends one request and returns the parsed JSON answer. */
 export async function requestJson(
   provider: AiProvider,
@@ -224,19 +226,39 @@ export async function requestJson(
   apiKey: string,
   req: AiJsonRequest,
   signal?: AbortSignal,
+  timeoutMs = DEFAULT_AI_TIMEOUT_MS,
 ): Promise<unknown> {
   const http = buildRequest(provider, model, apiKey, req);
+  const controller = new AbortController();
+  let timedOut = false;
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  }
+  const timer =
+    timeoutMs > 0
+      ? setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
   let res: Response;
   try {
     res = await fetch(http.url, {
       method: 'POST',
       headers: http.headers,
       body: JSON.stringify(http.body),
-      signal,
+      signal: controller.signal,
     });
   } catch (e) {
-    if ((e as Error)?.name === 'AbortError') throw e;
+    if (timedOut) throw new AiError('The AI request timed out. Try again.', 'network');
+    if (signal?.aborted || (e as Error)?.name === 'AbortError') throw e;
     throw new AiError('Couldn’t reach the AI provider. Check your connection.', 'network');
+  } finally {
+    if (timer) clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
   }
   let body: any = null;
   try {

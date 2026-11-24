@@ -25,7 +25,7 @@ export function WeightField({
   label?: string;
   units: UnitSystem;
   valueKg: number | null;
-  onChangeKg: (kg: number | null) => void;
+  onChangeKg: (kg: number | null, empty: boolean) => void;
   onSubmitEditing?: () => void;
   placeholder?: string;
 }) {
@@ -53,9 +53,10 @@ export function WeightField({
       onSubmitEditing={onSubmitEditing}
       onChangeText={(t) => {
         setText(t);
+        const empty = t.trim() === '';
         const v = parseDecimal(t);
         const next = v == null ? null : fromDisplayWeight(v, units);
-        onChangeKg(inRange(next, LIMITS.weightKg) ? next : null);
+        onChangeKg(inRange(next, LIMITS.weightKg) ? next : null, empty);
       }}
     />
   );

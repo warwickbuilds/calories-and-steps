@@ -51,6 +51,7 @@ export default function CheckInDetail() {
           <Segmented value={pose} onChange={setPose} options={POSES} />
           <PhotoThumb
             path={check.photos[pose]?.path}
+            fit="contain"
             accessibilityLabel={`${pose} photo`}
           />
         </Card>
