@@ -99,7 +99,7 @@ Wording rule: the app always says "calories", never "kcal".
 | Millilitres for drinks | Each food is measured in g or ml: detected from Open Food Facts, AI labels and AI meal estimates, switchable on every amount field, kept on logged items and recent foods | Done (PR #10, 0.8.0) |
 | Food icons | A small line icon for each food's category (dairy, meat, fish, eggs, bread and grains, fruit, vegetables, sauces and oils, snacks and sweets, drinks, meals, other) beside logged foods and recent foods; category from Open Food Facts, the AI or the name, changeable in the food form | Done (PR #13, 0.11.0) |
 | 5a. Backup | Zip export (share sheet or a folder) and restore, in Settings and on the first onboarding page, with a two-week reminder on Today | Done (PR #14, 0.14.0) |
-| Check-in polish | Backdate and edit check-ins, save photos without measuring, add photos from the gallery | Done (PR #15, 0.15.0) |
+| Check-in polish | Backdate and edit check-ins, save photos without measuring, add photos from the gallery | Done (PR #16, 0.15.0) |
 | 5b. Polish | Empty and offline states, app icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
@@ -281,7 +281,7 @@ App version: **0.15.0** (in `app.json` and `package.json`). Android's `versionCo
 
 | Date | Change | PR |
 | --- | --- | --- |
-| 2026-11-24 | Check-in polish: a date field to backdate check-ins, **Edit check-in** on the detail screen (date, measurements, weight, photos), photos-only check-ins (no measurements), and photos from the gallery as well as the camera. Neck, waist and body fat become nullable (migration 0005, which rebuilds `body_check` and `body_photo` and keeps every row and photo). Backups from 0.15.0 need 0.15.0 or later to restore. Version 0.15.0 | #15 |
+| 2026-11-24 | Check-in polish: a date field to backdate check-ins, **Edit check-in** on the detail screen (date, measurements, weight, photos), photos-only check-ins (no measurements), and photos from the gallery as well as the camera. Neck, waist and body fat become nullable (migration 0005, which rebuilds `body_check` and `body_photo` and keeps every row and photo). Backups from 0.15.0 need 0.15.0 or later to restore. Version 0.15.0 | #16 |
 | 2026-11-24 | Backup and restore: one zip file with all data and photos, shared through the share sheet or saved to a folder, restored from Settings or the first onboarding page after a confirmation that lists what's inside. Two-week backup reminder on Today, and update cards suggest a backup first. New packages expo-sharing and fflate. No schema change. Version 0.14.0 | #14 |
 | 2026-11-24 | Fix: tapping stop on "Describe it out loud" showed "Speech recognition stopped" and threw away what you'd said. Now the words heard so far go into the text box and no error shows after a stop you made. Version 0.13.0 (0.12.0 is taken by the steps PR) | #12 |
 | 2026-11-24 | Food icons: a small grey line icon (lucide) beside every logged food on the Food tab and every recent food in Add food, one of 12 categories. Barcode products take it from Open Food Facts' `categories_tags`, AI label reads and meal estimates return a category, and anything else (quick adds, older entries) is guessed from the name. Change it under **Type** in the food form. New `category` column on `food_ref` and `food_item` (migration 0004, nullable, no backfill needed). Version 0.11.0 | #13 |
