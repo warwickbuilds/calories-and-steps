@@ -83,8 +83,18 @@ export function trendOn(points: TrendPoint[], day: string): number | null {
   return found;
 }
 
+/** Weigh-in on or just before a given day, or null when there's nothing that early. */
+export function weighInOn(points: WeightPoint[], day: string): number | null {
+  let found: number | null = null;
+  for (const p of points) {
+    if (p.day <= day) found = p.kg;
+    else break;
+  }
+  return found;
+}
+
 export interface PeriodChange {
-  /** kg change of the trend over the period, or null when there isn't enough history. */
+  /** kg change between weigh-ins over the period, or null when there isn't enough history. */
   kg: number | null;
   /** Day the change is measured from. */
   fromDay: string | null;
@@ -100,17 +110,19 @@ export interface PeriodChange {
 const NO_CHANGE: PeriodChange = { kg: null, fromDay: null, fromKg: null, toKg: null, partial: false };
 
 /**
- * Trend change over the last `days` (null = all time). Measured on the trend
- * line everywhere in the app, so the header, the chart and the Change card
- * always agree. When the history is shorter than the period the change runs
- * from the first weigh-in and `partial` is set.
+ * Change in actual weigh-ins over the last `days` (null = all time): from the
+ * weigh-in on or just before the period's start to the latest one, so a new
+ * reading shows straight away. The header, the Change card and "this week"
+ * all use it, so they always agree. When the history is shorter than the
+ * period the change runs from the first weigh-in and `partial` is set. (The
+ * smoothed trend is kept for the chart line and the goal projection.)
  */
-export function periodChange(points: TrendPoint[], days: number | null, today: Date = new Date()): PeriodChange {
+export function periodChange(points: WeightPoint[], days: number | null, today: Date = new Date()): PeriodChange {
   if (points.length < 2) return NO_CHANGE;
   const latest = points[points.length - 1];
   const first = points[0];
   let fromDay = first.day;
-  let fromKg = first.trend;
+  let fromKg = first.kg;
   let partial = false;
   if (days != null) {
     const start = toLocalDateString(addDays(today, -days));
@@ -118,19 +130,19 @@ export function periodChange(points: TrendPoint[], days: number | null, today: D
       partial = true;
     } else {
       fromDay = start;
-      fromKg = trendOn(points, start) ?? first.trend;
+      fromKg = weighInOn(points, start) ?? first.kg;
     }
   }
   if (fromDay >= latest.day) return NO_CHANGE;
-  return { kg: latest.trend - fromKg, fromDay, fromKg, toKg: latest.trend, partial };
+  return { kg: latest.kg - fromKg, fromDay, fromKg, toKg: latest.kg, partial };
 }
 
 export interface ChangeRow extends PeriodChange {
   label: string;
 }
 
-/** Trend change over the last week, month, 6 months, year and all time. */
-export function changeRows(points: TrendPoint[], today: Date = new Date()): ChangeRow[] {
+/** Weigh-in change over the last week, month, 6 months, year and all time. */
+export function changeRows(points: WeightPoint[], today: Date = new Date()): ChangeRow[] {
   const periods: [string, number | null][] = [
     ['Week', 7],
     ['Month', 30],
@@ -146,27 +158,28 @@ export interface Milestone {
   amountKg: number;
   /** The weight that marks the milestone. */
   weightKg: number;
-  /** First day the trend passed it, or null for the next one still to reach. */
+  /** First day a weigh-in reached it, or null for the next one still to reach. */
   reachedDay: string | null;
-  /** The trend on that day (at or just past `weightKg`), for placing a marker on the line. */
-  reachedTrendKg: number | null;
+  /** That weigh-in (at or just past `weightKg`), for placing a marker on the line. */
+  reachedKg: number | null;
 }
 
 /**
- * Round-number milestones from the starting weight (every `stepKg`, so 5, 10,
- * 15 kg...) in the direction the trend has moved. Uses the trend so a single
- * low reading doesn't count. Returns every milestone reached plus the next one.
+ * Round-number milestones from the first weigh-in (every `stepKg`, so 5, 10,
+ * 15 kg...) in the direction your weight has moved. Uses actual weigh-ins, so
+ * the chips match the "kg down" headline and a new reading counts at once.
+ * Returns every milestone reached plus the next one.
  */
-export function milestones(points: TrendPoint[], stepKg = 5): Milestone[] {
+export function milestones(points: WeightPoint[], stepKg = 5): Milestone[] {
   if (points.length < 2 || stepKg <= 0) return [];
-  const start = points[0].trend;
-  const latest = points[points.length - 1].trend;
+  const start = points[0].kg;
+  const latest = points[points.length - 1].kg;
   const dir = latest <= start ? -1 : 1;
   const out: Milestone[] = [];
   for (let n = 1; n < 1000; n++) {
     const weightKg = start + dir * n * stepKg;
-    const hit = points.find((p) => (dir < 0 ? p.trend <= weightKg : p.trend >= weightKg));
-    out.push({ amountKg: n * stepKg, weightKg, reachedDay: hit?.day ?? null, reachedTrendKg: hit?.trend ?? null });
+    const hit = points.find((p) => (dir < 0 ? p.kg <= weightKg + 1e-9 : p.kg >= weightKg - 1e-9));
+    out.push({ amountKg: n * stepKg, weightKg, reachedDay: hit?.day ?? null, reachedKg: hit?.kg ?? null });
     if (!hit) break;
   }
   return out;
