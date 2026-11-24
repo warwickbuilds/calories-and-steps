@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Plus, Settings } from 'lucide-react-native';
+import { useEffect } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { UpdateBanner } from '@/components/UpdateBanner';
@@ -8,12 +9,17 @@ import { AddButton, Card, DualRings, IconButton, ProgressBar, Screen, Text } fro
 import { copyMeal } from '@/db/meals';
 import { useDayTotals, useProfile, useTargets } from '@/hooks/data';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
+import { takeImportRequest } from '@/lib/onboardingIntent';
 import { MEAL_TYPES, caloriesReadout, formatNumber, stepsAccessibility, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
 
 export default function TodayScreen() {
   const today = toLocalDateString();
+  useEffect(() => {
+    // Chosen on the last onboarding step.
+    if (takeImportRequest()) router.push('/import-weights');
+  }, []);
   return (
     <Screen
       eyebrow={formatLongDate()}

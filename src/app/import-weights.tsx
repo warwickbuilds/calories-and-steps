@@ -187,7 +187,7 @@ export default function ImportWeightsScreen() {
             <Button label={`Choose screenshots (up to ${MAX_SCREENSHOTS})`} onPress={pickAndRead} />
             <Text variant="caption" muted>
               The screenshots are sent to {provider.company} {provider.label} with your API key and aren’t kept by
-              this app. You can change provider in Settings.
+              this app. You can change the key in Settings.
             </Text>
           </>
         ) : (

@@ -1,171 +1,121 @@
 import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, TextInput, View } from 'react-native';
 
-import { Button, Card, Segmented, Text } from '@/components/ui';
-import { AI_PROVIDERS, AiError, requestJson, type AiProvider } from '@/lib/ai/providers';
+import { Button, Card, Text } from '@/components/ui';
+import { AI_PROVIDERS, AiError, requestJson } from '@/lib/ai/providers';
 import { loadAiSettings, saveAiSettings } from '@/lib/ai/settings';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
 
-const PROVIDERS = (Object.keys(AI_PROVIDERS) as AiProvider[]).map((p) => ({ value: p, label: AI_PROVIDERS[p].label }));
+// Kept simple for now: Google Gemini only. The adapter also supports OpenAI
+// and Claude, and a model override; their settings come back in a later update.
+const PROVIDER = 'gemini' as const;
+const info = AI_PROVIDERS[PROVIDER];
+
+/** Sends a tiny request to check the key works. */
+async function testKey(apiKey: string, model: string) {
+  await requestJson(PROVIDER, model, apiKey, {
+    prompt: 'Reply with {"ok": true}.',
+    images: [],
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['ok'],
+      properties: { ok: { type: 'boolean' } },
+    },
+    schemaName: 'key_test',
+    maxOutputTokens: 1000,
+  });
+}
 
 /**
- * Pick an AI provider and paste your own API key. Used in Settings and on
- * the import screen when no key is saved yet.
+ * Paste your own Google AI (Gemini) API key. Used in onboarding, Settings
+ * and on the import screen when no key is saved yet.
  */
-export function AiKeyCard({ onSaved }: { onSaved?: () => void }) {
+export function AiKeyCard({ title = 'Google AI key', onSaved }: { title?: string; onSaved?: () => void }) {
   const { colors } = useTheme();
-  const [provider, setProvider] = useState<AiProvider>('gemini');
   const [key, setKey] = useState('');
-  const [model, setModel] = useState('');
   const [savedKey, setSavedKey] = useState<string | null>(null);
-  const [showModel, setShowModel] = useState(false);
-  const [busy, setBusy] = useState<'save' | 'test' | null>(null);
+  const [model, setModel] = useState<string>(info.defaultModel);
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
-  const load = (p?: AiProvider) =>
-    loadAiSettings(p).then((s) => {
-      setProvider(s.provider);
+  useEffect(() => {
+    loadAiSettings(PROVIDER).then((s) => {
       setKey(s.apiKey ?? '');
       setSavedKey(s.apiKey);
-      setModel(s.modelOverride ?? '');
-      setMessage(null);
+      setModel(s.model);
     });
-
-  useEffect(() => {
-    load();
   }, []);
 
-  const info = AI_PROVIDERS[provider];
-
-  const save = async () => {
-    setBusy('save');
-    try {
-      await saveAiSettings({ provider, apiKey: key, modelOverride: model });
-      setSavedKey(key.trim() || null);
-      setMessage({ text: key.trim() ? 'Saved.' : 'Key removed.' });
-      if (key.trim()) onSaved?.();
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const test = async () => {
-    setBusy('test');
+  const saveAndTest = async () => {
+    const trimmed = key.trim();
+    setBusy(true);
     setMessage(null);
     try {
-      await requestJson(provider, model.trim() || info.defaultModel, key.trim(), {
-        prompt: 'Reply with {"ok": true}.',
-        images: [],
-        schema: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['ok'],
-          properties: { ok: { type: 'boolean' } },
-        },
-        schemaName: 'key_test',
-        maxOutputTokens: 1000,
-      });
-      setMessage({ text: `${info.label} answered. The key works.` });
+      await saveAiSettings({ provider: PROVIDER, apiKey: trimmed, modelOverride: null });
+      setSavedKey(trimmed);
+      onSaved?.();
+      await testKey(trimmed, model);
+      setMessage({ text: 'Saved. The key works.' });
     } catch (e) {
-      setMessage({ text: e instanceof AiError ? e.message : 'Something went wrong.', error: true });
+      setMessage({
+        text: `Saved, but the test failed: ${e instanceof AiError ? e.message : 'something went wrong.'}`,
+        error: true,
+      });
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
-  const inputStyle = [
-    styles.input,
-    typeScale.body,
-    { color: colors.text, backgroundColor: colors.bg, borderColor: colors.line },
-  ];
+  const remove = async () => {
+    await saveAiSettings({ provider: PROVIDER, apiKey: null, modelOverride: null });
+    setKey('');
+    setSavedKey(null);
+    setMessage({ text: 'Key removed.' });
+  };
 
   return (
-    <Card title="AI provider">
+    <Card title={title}>
       <Text variant="label" muted>
-        AI features use your own API key, so you pay the provider directly and nothing goes through anyone else.
-        The key is stored encrypted on this phone.
+        AI features (like reading weight screenshots, and soon meal photos) use your own Google AI key, so you pay
+        Google directly. The key is stored encrypted on this phone.
       </Text>
-      <Segmented value={provider} onChange={(p) => load(p)} options={PROVIDERS} />
-      <View style={styles.field}>
-        <Text variant="label" muted>
-          {info.label} API key
-        </Text>
-        <TextInput
-          value={key}
-          onChangeText={setKey}
-          placeholder={info.keyHint}
-          placeholderTextColor={colors.muted}
-          autoCapitalize="none"
-          autoCorrect={false}
-          secureTextEntry
-          maxFontSizeMultiplier={MAX_FONT_SCALE}
-          accessibilityLabel={`${info.label} API key`}
-          style={inputStyle}
-        />
-      </View>
-      {showModel ? (
-        <View style={styles.field}>
-          <Text variant="label" muted>
-            Model (leave blank for {info.defaultModel})
-          </Text>
-          <TextInput
-            value={model}
-            onChangeText={setModel}
-            placeholder={info.defaultModel}
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxFontSizeMultiplier={MAX_FONT_SCALE}
-            accessibilityLabel="Model name"
-            style={inputStyle}
-          />
-        </View>
-      ) : null}
-      {provider === 'gemini' ? (
-        <Text variant="caption" muted>
-          With a free Gemini key, Google may use what you send (such as screenshots and meal photos) to improve its
-          models, and people may review it. A paid key (billing turned on) avoids this.
-        </Text>
-      ) : null}
+      <TextInput
+        value={key}
+        onChangeText={setKey}
+        placeholder={info.keyHint}
+        placeholderTextColor={colors.muted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        secureTextEntry
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
+        accessibilityLabel="Google AI API key"
+        style={[
+          styles.input,
+          typeScale.body,
+          { color: colors.text, backgroundColor: colors.bg, borderColor: colors.line },
+        ]}
+      />
+      <Text variant="caption" muted>
+        With a free key, Google may use what you send (such as screenshots) to improve its models, and people may
+        review it. A paid key (billing turned on) avoids this.
+      </Text>
       {message ? (
         <Text variant="label" color={message.error ? colors.danger : undefined} muted={!message.error}>
           {message.text}
         </Text>
       ) : null}
+      <Button label="Save and test" loading={busy} disabled={busy || !key.trim()} onPress={saveAndTest} />
       <View style={styles.row}>
-        <View style={styles.flex}>
-          <Button
-            label="Save"
-            loading={busy === 'save'}
-            disabled={busy != null || (!key.trim() && !savedKey)}
-            onPress={save}
-          />
-        </View>
-        <View style={styles.flex}>
-          <Button
-            variant="secondary"
-            label="Test key"
-            loading={busy === 'test'}
-            disabled={busy != null || !key.trim()}
-            onPress={test}
-          />
-        </View>
-      </View>
-      <View style={styles.row}>
-        <Button variant="ghost" label={`Get a ${info.label} key`} onPress={() => Linking.openURL(info.keyUrl)} />
-        <Button
-          variant="ghost"
-          label={showModel ? 'Hide model' : 'Change model'}
-          onPress={() => setShowModel(!showModel)}
-        />
+        <Button variant="ghost" label="Get a key" onPress={() => Linking.openURL(info.keyUrl)} />
+        {savedKey ? <Button variant="ghost" label="Remove key" onPress={remove} /> : null}
       </View>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  field: { gap: space[1] },
   input: {
     borderWidth: 1,
     borderRadius: radius.md,
@@ -173,5 +123,4 @@ const styles = StyleSheet.create({
     minHeight: layout.minTap + 4,
   },
   row: { flexDirection: 'row', gap: space[2], flexWrap: 'wrap' },
-  flex: { flex: 1 },
 });

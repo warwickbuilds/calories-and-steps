@@ -16,13 +16,13 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Calories and macros.** A daily calorie target worked out from your body and activity, with a goal of hard cut, steady cut, maintain or bulk. Protein, carbs and fat are shown against their own targets.
 - **Meals.** Log breakfast, lunch, dinner and snacks. Quick add calories in seconds, or copy a meal from yesterday.
 - **Weight.** A quick weigh-in on the home screen, charts from a week to all time, a smoothed trend line that ignores water swings, change over each period, and a projection of when you'll reach your goal.
-- **Bring your weight history with you.** Screenshot the weight list in your old app (Lose It!, MyFitnessPal, a smart-scale app or anything that shows dates and weights), pick the screenshots, and AI reads every entry. You check and fix the list before anything is saved, and duplicates are skipped. Uses your own Google Gemini, OpenAI or Claude key.
+- **Bring your weight history with you.** Screenshot the weight list in your old app (Lose It!, MyFitnessPal, a smart-scale app or anything that shows dates and weights), pick the screenshots, and AI reads every entry. You check and fix the list before anything is saved, and duplicates are skipped. Offered when you first set up the app, and any time from the Weight tab. Uses your own Google AI (Gemini) key.
 - **Body fat.** Body fat (Navy method) check-ins from a tape measure, with lean and fat mass, plain BMI alongside, and front, side and back photos you can line up and compare side by side.
 - **Steps.** A daily step target from 5,000 to 25,000 (step sync from Health Connect is coming).
 - **Light and dark.** Follows your phone, or pick one.
 - **Updates.** The app tells you when a new version is out.
 
-**Coming next:** photograph a meal and describe it out loud for an AI calorie estimate (using your own Google Gemini, OpenAI or Claude key), barcode scanning, reading nutrition labels, step sync from Health Connect, and backup and restore.
+**Coming next:** photograph a meal and describe it out loud for an AI calorie estimate (using your own Google AI key), barcode scanning, reading nutrition labels, step sync from Health Connect, and backup and restore.
 
 ## Install
 
@@ -39,6 +39,8 @@ A simple, private Android app for tracking what you eat, how much you move and h
 2. Enter your sex, age and height, then your current weight and an optional goal weight.
 3. Choose how active you are and your goal (hard cut, steady cut, maintain or bulk). You'll see your daily calorie target and macros straight away.
 4. Set a daily step target.
+5. Optionally paste a Google AI (Gemini) key and tap **Save and test**. It's needed for AI features such as importing weight history. [Get a key here](https://aistudio.google.com/apikey).
+6. Optionally import your weight history from another app's screenshots, or skip and do it later from the Weight tab.
 
 <p align="center"><img src="docs/screenshots/onboarding-goal.png" width="200" alt="Choosing a goal during setup, with the daily calorie target shown" /></p>
 
@@ -80,7 +82,7 @@ Wording rule: the app always says "calories", never "kcal".
 | --- | --- | --- |
 | 1. Foundation | Onboarding, profile, targets, Today screen, settings, database | Done (PR #1, #2) |
 | 2. Weight and body fat | Weight charts, change cards, goal projection, Navy check-ins with photos | Done (PR #3) |
-| Weight import | Import weight history from another app's screenshots with AI; provider adapter and API key setup (shared with Phase 3) | Done (PR #7) |
+| Weight import | Import weight history from another app's screenshots with AI, offered in onboarding and on the Weight tab; provider adapter and Google AI key setup in onboarding and Settings (shared with Phase 3) | Done (PR #7) |
 | 3. AI meal logging | Photo and voice meal estimate, review screen, consent screen (adapter and key setup already built) | Next |
 | 4. Barcode, panels and steps | Open Food Facts scanner, nutrition-panel reading, favourites, step sync | Planned |
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
@@ -94,7 +96,7 @@ The detailed list of what works now.
 
 ### Profile and targets
 
-- Onboarding asks for units, sex, age, height, current and goal weight, activity level, goal mode and daily step target.
+- Onboarding asks for units, sex, age, height, current and goal weight, activity level, goal mode and daily step target. Two optional steps follow: a Google AI key (with Save and test), then "Your weight history", which offers the screenshot import. Choosing **Import my weight history** saves the profile and opens the import screen straight after (handed over through `src/lib/onboardingIntent.ts`, because saving the profile swaps onboarding for the tabs). **Skip for now** goes to Today.
 - Age is stored as the age entered plus the date it was entered, and goes up by one on each anniversary. There is no date of birth.
 - Daily calorie target: Mifflin-St Jeor maintenance × activity level, then a flat daily offset for the goal:
   - Hard cut: 800 calories below maintenance
@@ -142,8 +144,9 @@ The detailed list of what works now.
 
 ### AI provider and key
 
-- Settings → AI: choose Gemini (default), OpenAI or Claude, paste a key, **Test key**, and optionally change the model. "Get a key" opens the provider's key page. The Gemini free-tier privacy note is shown under the key field.
-- Keys, the provider choice and model overrides are kept in expo-secure-store (Android Keystore), not in the database.
+- Kept simple for now (Rick, 2026-11-24): one Google AI (Gemini) key, entered in onboarding (optional) or Settings → AI, and on the import screen if none is saved. **Save and test** stores the key and sends a tiny test request. "Get a key" opens Google AI Studio, and "Remove key" deletes it. The free-tier privacy note is shown under the key field.
+- The adapter underneath already supports OpenAI and Claude and a model override (`saveAiSettings` takes a provider and model). The screens just don't offer them yet.
+- Keys are kept in expo-secure-store (Android Keystore), not in the database.
 
 ### Progress tab
 
@@ -169,7 +172,7 @@ App version: **0.3.0** (in `app.json` and `package.json`). Android's `versionCod
 
 | Date | Change | PR |
 | --- | --- | --- |
-| 2026-11-24 | Import weight history from screenshots of another app, read by AI. Provider-agnostic AI adapter (Gemini, OpenAI, Claude) and API key settings. Version 0.3.0 | #7 |
+| 2026-11-24 | Import weight history from screenshots of another app, read by AI, offered in onboarding and on the Weight tab. Google AI key in onboarding and Settings. Provider-agnostic AI adapter (Gemini, OpenAI, Claude). Version 0.3.0 | #7 |
 | 2026-11-24 | Release workflow also attaches the APK to a release made on GitHub's Releases page | #6 |
 | 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. README split into a public part (features, screenshots, install) and a developer part. Version 0.2.0 | #5 |
 | 2026-11-23 | README brought fully up to date; rule added to keep it current with every PR | #4 |
@@ -251,7 +254,7 @@ docs/screenshots/ README screenshots
 | GitHub Releases | Hosts the APKs. The app reads `api.github.com/repos/<repo>/releases/latest` once a day to offer updates. Needs a public repo (see [Releases](#releases)) | In use |
 | Expo EAS Build | Optional development builds for working on the app. Not used for releases, so the free tier's monthly build limit doesn't matter | Optional |
 | Apple App Store and Google Play | Store release | On hold |
-| Google Gemini (default), OpenAI, Anthropic Claude | Reading weight screenshots (now), and AI meal and nutrition-panel estimates (Phase 3), using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`, changeable in Settings. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import) |
+| Google Gemini (in use); OpenAI and Anthropic Claude (supported by the adapter, not offered in the app yet) | Reading weight screenshots (now), and AI meal and nutrition-panel estimates (Phase 3), using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import) |
 | Open Food Facts | Barcode lookups. Free, no key, results cached locally | Phase 4 |
 | Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
 
@@ -333,7 +336,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **Screenshots** (`docs/screenshots`): taken from the web build at 390×844, 2× scale, with Playwright. `metro.config.js` adds `wasm` as an asset so expo-sqlite's web worker bundles. On web the database must be opened with `openDatabaseAsync` once before the app loads, so use a temporary entry file that does that (and seeds sample weights and check-ins) and points `main` at it while capturing. Don't commit that entry. Retake them when a screen changes noticeably.
 - **Release key**: lives only in GitHub secrets and Rick's backups. If GitHub secrets are ever lost, re-add them from the backup. If the key itself is lost, a new key means every phone has to uninstall (and lose data) once, so take a backup export first.
 - **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
-- **AI models**: providers retire model names. When one stops working (Settings → Test key says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts`; users can also type another model under **Change model**. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
+- **AI models**: providers retire model names. When one stops working (Settings → Save and test says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts` and release a new version. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
 - **expo-image-picker** is used without its config plugin on purpose: the plugin's `cameraPermission: false` would block the camera permission the progress photos need, and leaving it out keeps the microphone permission off. Android's photo picker needs no permission. Add the plugin (with `photosPermission`) when iOS returns.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
 
@@ -345,7 +348,8 @@ Everything we've discussed that is not built yet.
 - Photo plus hold-to-talk voice note, transcribed on the phone, sent in one request to the user's chosen AI provider.
 - Meal and nutrition-panel prompts and schemas on the existing provider adapter. Mid-tier models for meals, the cheapest model for nutrition panels, low reasoning effort.
 - Review and edit screen (edit grams, delete, add items) before saving.
-- A guided "get your key" step in onboarding (the key card with a test button already exists in Settings), and a one-time consent screen naming the provider and what is sent.
+- A one-time consent screen naming the provider and what is sent, before the first meal photo goes out.
+- Let the user choose OpenAI or Claude instead of Gemini, and change the model, in Settings. The adapter already supports both; only the screens are missing. Kept out for now to keep setup simple.
 - Gemini privacy note on the consent screen: with a free-tier key, Google may use the photos and descriptions sent to improve its models (and people may review them); a paid key (billing turned on) avoids this, so the note recommends one.
 - A weighed 30-meal benchmark across providers to pick the default models.
 - Food log tab with day-by-day history, swiping between days and a weekly calorie average.
