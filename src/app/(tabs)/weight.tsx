@@ -70,9 +70,9 @@ function ChangeCards({ units }: { units: UnitSystem }) {
         ))}
       </View>
       <Text variant="caption" muted>
-        All changes use your trend line, which smooths out day-to-day water swings, so the numbers here, on the chart
-        and under today’s weight always match. Where your history is shorter than the period, the change runs from your
-        first weigh-in.
+        Changes run between your actual weigh-ins, so the numbers here, above the chart and under today’s weight always
+        match. Where your history is shorter than the period, the change runs from your first weigh-in. The dashed
+        trend line on the chart smooths out day-to-day water swings and drives the goal projection.
       </Text>
     </Card>
   );
@@ -98,7 +98,7 @@ function GoalCard() {
   }
 
   const p = projectGoal(trend, goal);
-  const toGo = latest ? goal - latest.trend : null;
+  const toGo = latest ? goal - latest.kg : null;
   let headline: string;
   let detail: string | null = null;
   switch (p.kind) {

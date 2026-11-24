@@ -83,7 +83,7 @@ export function WeightChart({
     .filter(({ m }) => m.reachedDay != null && firstShown != null && m.reachedDay >= firstShown)
     .map(({ m, i }) => ({
       t: fromLocalDateString(m.reachedDay!).getTime(),
-      value: toDisplayWeight(m.reachedTrendKg ?? m.weightKg, units),
+      value: toDisplayWeight(m.reachedKg ?? m.weightKg, units),
       color: milestoneColor(colors, i),
       label: `${lostDir(trend) ? '−' : '+'}${Math.round(toDisplayWeight(m.amountKg, units))}`,
     }));
@@ -105,7 +105,7 @@ export function WeightChart({
             {change.partial || range === 'All'
               ? `Since you started, ${sinceText(change.fromDay!)}`
               : PERIOD_WORDS[range]}
-            {` · trend ${toDisplayWeight(change.fromKg!, units).toFixed(1)} → ${toDisplayWeight(change.toKg!, units).toFixed(1)} ${unit}`}
+            {` · ${toDisplayWeight(change.fromKg!, units).toFixed(1)} → ${toDisplayWeight(change.toKg!, units).toFixed(1)} ${unit}`}
           </Text>
         </View>
       ) : null}
@@ -129,8 +129,8 @@ export function WeightChart({
   );
 }
 
-/** True when the trend has gone down from the start (milestones count weight lost). */
-const lostDir = (trend: TrendPoint[]) => trend.length < 2 || trend[trend.length - 1].trend <= trend[0].trend;
+/** True when weight has gone down since the first weigh-in (milestones count weight lost). */
+const lostDir = (trend: TrendPoint[]) => trend.length < 2 || trend[trend.length - 1].kg <= trend[0].kg;
 
 const PERIOD_WORDS: Record<WeightRange, string> = {
   '1W': 'Past week',
@@ -150,7 +150,7 @@ function Milestones({ marks, trend, units }: { marks: Milestone[]; trend: TrendP
       {marks.map((m, i) => {
         const amount = `${Math.round(toDisplayWeight(m.amountKg, units))} ${unit} ${lost ? 'lost' : 'gained'}`;
         const color = milestoneColor(colors, i);
-        const toGo = latest ? Math.abs(latest.trend - m.weightKg) : 0;
+        const toGo = latest ? Math.abs(latest.kg - m.weightKg) : 0;
         return (
           <View
             key={m.amountKg}

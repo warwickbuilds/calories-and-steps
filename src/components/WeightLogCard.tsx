@@ -35,7 +35,7 @@ export function WeightLogCard() {
   const dirty = text != null && text !== prefill;
 
   const change = useMemo(() => {
-    // Same trend-based number as the Weight tab's chart and Change card.
+    // Same weigh-in based number as the Weight tab's headline and Change card.
     const kgChange = periodChange(trend, 7).kg;
     return weeklyChangeText(kgChange == null ? null : toDisplayWeight(kgChange, units));
   }, [trend, units]);

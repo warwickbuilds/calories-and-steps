@@ -67,7 +67,7 @@ describe('inRange', () => {
 });
 
 describe('changeRows', () => {
-  it('reports trend change and measures short histories from the first weigh-in', () => {
+  it('reports weigh-in change and measures short histories from the first weigh-in', () => {
     const pts = withTrend(steadyLoss(40));
     const rows = changeRows(pts, today);
     expect(rows.map((r) => r.label)).toEqual(['Week', 'Month', '6 months', 'Year', 'All time']);
@@ -78,12 +78,33 @@ describe('changeRows', () => {
     expect(rows[2].partial).toBe(true);
     expect(rows[2].fromDay).toBe(day(-39));
     expect(rows[3].kg).toBeCloseTo(rows[4].kg!);
-    expect(rows[4].kg).toBeCloseTo(pts[pts.length - 1].trend - 90);
+    expect(rows[4].kg).toBeCloseTo(pts[pts.length - 1].kg - 90);
   });
 
   it('agrees with periodChange, which the header and chart use', () => {
     const pts = withTrend(steadyLoss(40));
     expect(changeRows(pts, today)[0].kg).toBe(periodChange(pts, 7, today).kg);
+  });
+
+  it('uses the latest weigh-in, not the lagging trend', () => {
+    // 97 kg down to 77.0 today: the trend is still above 77, the total is 20.
+    const pts = withTrend(Array.from({ length: 300 }, (_, i) => ({ day: day(i - 299), kg: 97 - (20 * i) / 299 })));
+    const all = periodChange(pts, null, today);
+    expect(pts[pts.length - 1].trend).toBeGreaterThan(77.5);
+    expect(all.kg).toBeCloseTo(-20);
+    expect(all.fromKg).toBe(97);
+    expect(all.toKg).toBeCloseTo(77);
+  });
+
+  it('measures a period from the weigh-in on or before its start', () => {
+    const pts = withTrend([
+      { day: day(-10), kg: 80 },
+      { day: day(-6), kg: 79 },
+      { day: day(0), kg: 78.5 },
+    ]);
+    // Week starts at day -7: the last weigh-in on or before it is day -10.
+    expect(periodChange(pts, 7, today).fromKg).toBe(80);
+    expect(periodChange(pts, 7, today).kg).toBeCloseTo(-1.5);
   });
 
   it('has nothing to say with a single weigh-in', () => {
@@ -94,16 +115,28 @@ describe('changeRows', () => {
 });
 
 describe('milestones', () => {
-  it('lists every 5 kg reached on the trend, then the next one', () => {
-    // 90 kg down 0.1 a day for 200 days: about 19 kg on the trend.
+  it('lists every 5 kg reached by a weigh-in, then the next one', () => {
+    // 90 kg down 0.1 a day for 200 days: 19.9 kg down.
     const pts = withTrend(steadyLoss(200));
     const m = milestones(pts, 5);
     expect(m.map((x) => x.amountKg)).toEqual([5, 10, 15, 20]);
     expect(m.map((x) => x.weightKg)).toEqual([85, 80, 75, 70]);
     expect(m.slice(0, 3).every((x) => x.reachedDay != null)).toBe(true);
     expect(m[3].reachedDay).toBeNull();
-    // The trend lags the readings a little, so 5 kg comes just after day 50.
-    expect(m[0].reachedDay! > day(-200 + 50)).toBe(true);
+    // Weigh-ins count straight away, so 5 kg comes on the 50th day after the first.
+    expect(m[0].reachedDay).toBe(day(50 - 199));
+    expect(m[0].reachedKg).toBeCloseTo(85);
+  });
+
+  it('counts a milestone the day you log it', () => {
+    const pts = withTrend([
+      { day: day(-60), kg: 97 },
+      { day: day(-1), kg: 77.4 },
+      { day: day(0), kg: 77.0 },
+    ]);
+    const m = milestones(pts, 5);
+    expect(m.map((x) => x.amountKg)).toEqual([5, 10, 15, 20, 25]);
+    expect(m[3].reachedDay).toBe(day(0));
   });
 
   it('counts up when gaining', () => {

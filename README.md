@@ -51,7 +51,7 @@ A simple, private Android app for tracking what you eat, how much you move and h
 | 📸 **Snap a meal** | Photograph a plate, say what's in it, and AI estimates every part with calories and macros. |
 | 🔎 **Scan a barcode** | Look products up in Open Food Facts, or let AI read the nutrition label. |
 | 👟 **Steps, automatically** | Read from Health Connect, with today by the hour and the last 7 days against your target. |
-| ⚖️ **Weight that makes sense** | A smoothed trend, change over any period, 5 kg milestones and a projected goal date. |
+| ⚖️ **Weight that makes sense** | Real change from your weigh-ins over any period, 5 kg milestones, a smoothed trend and a projected goal date. |
 | 📏 **Body fat (Navy method)** | Tape-measure check-ins, BMI alongside, and lined-up progress photos to compare. |
 | 🔒 **Private by design** | No account, no tracking, no cloud. Your AI key, your data, your phone. Backups are a file you keep. |
 
@@ -193,6 +193,7 @@ Full versions are in [Main dependency versions](#main-dependency-versions).
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 | Open source | MIT license, contributing guide, code of conduct, security policy, issue and pull request templates, CI checks on every pull request, README banner, badges and screenshot gallery | Done (PR #18) |
 | Smaller APKs | A small arm64 APK plus a universal one, compressed native libraries, update check picks the right file | Done (PR #15, 0.16.0) |
+| Weight totals from weigh-ins | "kg down", the Change card, "this week", milestones and "to lose" use your actual weigh-ins, so a new reading counts straight away; the trend stays for the chart line and projection | In review (0.17.0) |
 
 **v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix) and **v0.14.0** (backup and restore). Everything since, check-in polish (0.15.0) and the smaller APKs, is merged and goes out as **v0.16.0**. See [which versions were released](#versions-and-changelog).
 
@@ -227,7 +228,7 @@ The detailed list of what works now.
   - "Quick add" enters calories and optional grams and macros.
   - "Same as yesterday" copies yesterday's items for that meal. It is hidden when that meal was empty yesterday.
 - Tapping a meal's name opens the Calories tab on that day.
-- "Weight today" card for a quick weigh-in, with the trend change over the past week (the same number as the Weight tab).
+- "Weight today" card for a quick weigh-in, with the change over the past week from your weigh-ins (the same number as the Weight tab).
 
 ### Add food
 
@@ -307,12 +308,12 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ### Weight tab
 
-- Period picker: 1W, 1M, 6M, 1Y and All. Above the chart, the change in that period as a big number ("17.9 kg down"), with what it's measured from ("Past month · trend 80.7 → 78.5 kg", or "Since you started, 6 Jan 2026" when the history is shorter than the period or All is picked).
+- Period picker: 1W, 1M, 6M, 1Y and All. Above the chart, the change in that period as a big number ("17.9 kg down"), with what it's measured from ("Past month · 80.7 → 78.5 kg", from the weigh-in on or just before the period's start to your latest one, or "Since you started, 6 Jan 2026" when the history is shorter than the period or All is picked).
 - Chart: the main line joins your actual daily weigh-ins (several on one day are averaged), with dots when there are few enough to see. The smoothed trend (exponential smoothing, 10% per day, so water swings don't dominate) is a faint dashed line underneath, and carries on as a straight dashed projection to the goal at the current four-week rate, ending in an open circle on the projected date. The goal is a dotted line, shown in every period. Round values sit in a left gutter with faint gridlines, and a legend explains the lines.
 - Projection length: in 6M, 1Y and All the chart runs on to the projected goal date. In 1W and 1M it stops after another week or month, so your recent weigh-ins keep at least half the chart.
-- Milestones: every 5 kg (10 lb in imperial) lost from your first weigh-in, judged on the trend so one light morning doesn't count. Each one reached is a coloured dot on the chart labelled "−5", "−10" and so on, placed on the day the trend passed it, and a chip under the chart with the date. The next one is a hollow chip with how much is left and a faint line in its colour on the chart. Milestones count up instead if the trend is going up. Colours cycle blue, violet, magenta and crimson (never green or orange).
+- Milestones: every 5 kg (10 lb in imperial) lost from your first weigh-in, judged on your actual weigh-ins so they match the big number and count the day you log them. Each one reached is a coloured dot on the chart labelled "−5", "−10" and so on, placed on the first weigh-in that reached it, and a chip under the chart with the date. The next one is a hollow chip with how much is left and a faint line in its colour on the chart. Milestones count up instead if your weight is going up. Colours cycle blue, violet, magenta and crimson (never green or orange).
 - Change card: last week, month, 6 months, year and all time. When your history is shorter than a period, that row shows the change since your first weigh-in and says so ("Year (since 6 Jan)") instead of a dash.
-- One basis everywhere: the header's "0.3 down this week", the big number above the chart and the Change card all measure the trend line, so they always agree. (Before 0.7.0 the header compared two raw weigh-ins and could disagree.)
+- One basis everywhere: the header's "0.3 down this week", the big number above the chart, the Change card, the milestone chips and the goal's "to lose" all measure your actual weigh-ins, so they always agree and a new reading shows straight away. (From 0.7.0 to 0.16.0 they used the smoothed trend, which lags: 77.0 kg logged showed "19.2 kg down" instead of 20.) The trend still draws the dashed line, the projection and BMI.
 - Goal projection from the last four weeks of the trend, plus the weekly rate needed for an optional target date.
 - Plain BMI and a weight history list.
 - "Import from screenshots" button under History (also in Settings → Your data). See [Weight import](#weight-import).
@@ -369,7 +370,7 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ## Versions and changelog
 
-App version: **0.16.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.17.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 Several PRs can merge between two releases, so not every version number gets its own release. Each release includes everything merged before it.
 
@@ -382,9 +383,11 @@ Several PRs can merge between two releases, so not every version number gets its
 | 0.12.0 (steps) | Not tagged; shipped in 0.13.0 |
 | 0.15.0 (check-in polish) | Not tagged; ships in 0.16.0 |
 | 0.16.0 (smaller APKs) | Next release, once tagged |
+| 0.17.0 (weight totals from weigh-ins) | In review |
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Fix: weight totals now use your actual weigh-ins instead of the smoothed trend, which lagged behind (logging 77.0 kg from 97.0 showed "19.2 kg down" and the 20 kg milestone "0.8 to go"). The big number above the chart, the Change card, "this week" on Today and Weight, the milestone chips and dots, and the goal's "to lose" all measure from weigh-ins; the trend still draws the dashed line and drives the goal projection and BMI. Version 0.17.0 | #20 |
 | 2026-11-24 | Open source: MIT `LICENSE` (and `license` in `package.json`), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md` (private reporting, how keys and the keystore stay out of the repo, checking an APK's signature), issue forms for bugs and ideas, a pull request template, and a new CI workflow (`ci.yml`) running the tests, typecheck, lint and Android bundle on every pull request and push to main. README gets a banner, badges, a contents list, highlights, a screenshot gallery with the Steps tab in light and dark, a tech stack and contributing, security, license and acknowledgements sections. No app change, still 0.16.0 | #18 |
 | 2026-11-24 | README checked against everything merged today: changelog rows added for steps (#11) and check-in polish (#16), a table of which versions were released, the status summary, architecture (APK splits, update check), services and APK sizes brought up to date. No app change, still 0.16.0 | #17 |
 | 2026-11-24 | Check-in polish: date a check-in back (up to today), edit any check-in later (date, measurements, weight and photos), save photos without measuring, and pick photos from the gallery as well as the camera. Neck, waist and body fat become nullable (migration 0005 rebuilds `body_check` and `body_photo` so no photos are lost). Version 0.15.0 | #16 |
@@ -468,7 +471,7 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 - **Food log** (`src/lib/food.ts`, `src/db/meals.ts`): recent foods are worked out from logged items (`recentItemsQuery`, then `recentFoods` de-duplicates by name), so no food table has to be kept in sync. Each add makes its own `meal` row with one `food_item`; `updateFoodItem` moves an item between meals; `dailyCaloriesQuery` sums calories per day for the 7-day average. Pure helpers for search, scaling, day labels and the average are tested on their own. No schema change, so no migration.
 - **Barcodes** (`src/lib/openFoodFacts.ts`, `src/db/foods.ts`): `lookupBarcode` calls the Open Food Facts v2 product API asking only for the fields used, with a `User-Agent` naming the app as Open Food Facts asks. `parseOffProduct` turns the answer into per-100 g numbers (kJ converted when calories are missing). Products, label reads and corrections live in the existing `food_ref` table (`source` is `off`, `panel` or `custom`), saved by `saveFoodRef`, which updates in place when the barcode is already cached.
 - **Steps** (`src/lib/healthConnect.ts`, `src/hooks/steps.ts`, `src/db/steps.ts`, `src/lib/steps.ts`): `healthConnect.ts` wraps react-native-health-connect (availability, permission, daily totals with `aggregateGroupByPeriod`, hourly totals with `aggregateGroupByDuration`, opening Health Connect or its Play Store page) and is the only file that imports it. `hooks/steps.ts` holds the shared sync state (access, syncing, last sync, today's hours) as a tiny store read with `useSyncExternalStore`; `useStepsAutoSync` in the tabs layout syncs on open and on return to the front; `connectSteps` is the connect button. Daily totals go into the existing `steps_day` table (`source` = `health_connect`), so no migration; screens read it with live queries (`useDaySteps`, `useStepsHistory`). Pure helpers in `lib/steps.ts` (buckets to days and hours, history, totals, summary stats, status messages) are tested. `StepsChart` draws the bars. The Health Connect config plugin adds the permission-rationale intent filter and activity alias to the manifest; `android.permissions` in `app.json` adds `READ_STEPS`.
-- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, `periodChange` and change rows, milestones, projection and `projectionLine`), `steps.ts`, `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
+- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, `periodChange` and change rows from weigh-ins, milestones, projection and `projectionLine` from the trend), `steps.ts`, `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
 
 ### Folder layout
 
@@ -627,7 +630,7 @@ CI (`.github/workflows/ci.yml`) runs `npm test`, `npm run typecheck`, `npm run l
 - **Health Connect**: react-native-health-connect is a community module with its own config plugin (listed in `app.json` plugins; the old `expo-health-connect` package must not be installed alongside it). It needs `minSdkVersion` 26, set through `expo-build-properties`. On an Expo SDK upgrade, check its README for the supported React Native version. If Google Play is ever used, Health Connect access has to be declared in the Play Console first; sideloaded APKs don't need that. To test on a phone: install the APK, connect from Today, then walk (or add steps in another app that writes to Health Connect) and open the Steps tab.
 - **Backup and new tables**: when a migration adds a table, add it to `BACKUP_TABLES` in `src/lib/backup.ts` (in insert order) and to `TABLES` in `src/db/backup.ts`, or it won't be backed up. New columns need nothing: older backups restore with the column's default. Raise `BACKUP_FORMAT` only if the file layout itself changes, and keep reading the old format. Before a release that changes the schema, check that a backup from the previous release restores.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
-- **Weight change numbers**: every "change" shown (Today's header, the big number on the Weight tab, the Change card) must come from `periodChange` in `src/lib/weight.ts`, so they stay on the same trend basis. Don't compare raw weigh-ins anywhere else.
+- **Weight change numbers**: every "change" shown (Today's header, the big number on the Weight tab, the Change card) must come from `periodChange` in `src/lib/weight.ts`, so they stay on the same weigh-in basis (from the weigh-in on or before the period's start to the latest). Milestones use weigh-ins too. Use `.trend` only for the chart's dashed line, the projection and BMI.
 - **Previewing a chart on web**: the quickest way to look at chart changes without seeding a database is a temporary route that renders `WeightChart` with a made-up trend (`withTrend` over generated points), with the other routes moved out of `src/app` while it runs (they import the database), then restart Metro with `--clear`. Put everything back before committing.
 
 ## Future enhancements
@@ -649,6 +652,7 @@ Everything we've discussed that is not built yet.
 - Pinch or swipe to pan through history, and a custom date range.
 - Choose the milestone step (for example 2 kg or 10 kg) and celebrate a milestone with a short message the day it's reached.
 - Show the projection's likely range (a faint band) instead of a single line.
+- An option to show totals on the smoothed trend instead of weigh-ins, for people who prefer the steadier number.
 
 **Weight import, later**
 - Import a CSV file for apps that do export, and weight history from Health Connect.
