@@ -75,5 +75,14 @@
       "/node_modules/",
       "/drizzle/"
     ]
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/warwickbuilds/calories-and-steps.git"
+  },
+  "homepage": "https://github.com/warwickbuilds/calories-and-steps#readme",
+  "bugs": {
+    "url": "https://github.com/warwickbuilds/calories-and-steps/issues"
   }
 }

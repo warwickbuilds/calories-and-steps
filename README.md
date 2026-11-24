@@ -1,15 +1,74 @@
-# Calories and Steps
-
-A simple, private Android app for tracking what you eat, how much you move and how your body changes. No account, no ads, no cloud: everything stays on your phone.
-
 <p align="center">
-  <img src="docs/screenshots/today.png" width="200" alt="Today screen with the steps and calories rings, macros and meals" />
-  <img src="docs/screenshots/weight.png" width="200" alt="Weight screen with a one-month chart, trend line and change over time" />
-  <img src="docs/screenshots/progress.png" width="200" alt="Progress screen with Navy-method body fat, check-ins and a body-fat chart" />
-  <img src="docs/screenshots/today-dark.png" width="200" alt="Today screen in dark mode" />
+  <img src="docs/banner.svg" width="100%" alt="Calories and Steps: food, steps, weight and body fat, private on your phone" />
 </p>
 
-**[Download the latest APK](https://github.com/warwickbuilds/calories-and-steps/releases/latest)** · Android only · Free and open source
+<p align="center">
+  <a href="https://github.com/warwickbuilds/calories-and-steps/releases/latest"><img src="https://img.shields.io/github/v/release/warwickbuilds/calories-and-steps?style=for-the-badge&label=Latest&logo=github" alt="Latest release" /></a>
+  <a href="https://github.com/warwickbuilds/calories-and-steps/releases"><img src="https://img.shields.io/github/downloads/warwickbuilds/calories-and-steps/total?style=for-the-badge&label=Downloads&logo=android&logoColor=white" alt="Total downloads" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/warwickbuilds/calories-and-steps?style=for-the-badge&label=License" alt="MIT License" /></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/warwickbuilds/calories-and-steps/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/warwickbuilds/calories-and-steps/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white" alt="CI status" /></a>
+  <a href="https://github.com/warwickbuilds/calories-and-steps/actions/workflows/android-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/warwickbuilds/calories-and-steps/android-release.yml?style=flat-square&label=APK%20build&logo=android&logoColor=white" alt="APK build status" /></a>
+  <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 8.0 and newer" />
+  <img src="https://img.shields.io/badge/Expo-SDK%2058-000020?style=flat-square&logo=expo&logoColor=white" alt="Expo SDK 58" />
+  <img src="https://img.shields.io/badge/React%20Native-0.88-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React Native 0.88" />
+  <img src="https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/SQLite-on%20device-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite on the device" />
+  <img src="https://img.shields.io/badge/AI-bring%20your%20own%20Gemini%20key-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Bring your own Gemini key" />
+  <img src="https://img.shields.io/badge/privacy-no%20account%20%C2%B7%20no%20tracking-555?style=flat-square" alt="No account, no tracking" />
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="Pull requests welcome" /></a>
+  <a href="https://github.com/warwickbuilds/calories-and-steps/commits/main"><img src="https://img.shields.io/github/last-commit/warwickbuilds/calories-and-steps?style=flat-square&label=Last%20commit" alt="Last commit" /></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/warwickbuilds/calories-and-steps/releases/latest"><b>Download the latest APK</b></a> ·
+  <a href="#install">Install guide</a> ·
+  <a href="#what-it-does">Features</a> ·
+  <a href="#your-data-and-privacy">Privacy</a> ·
+  <a href="#for-developers">For developers</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
+
+A simple, private Android app for tracking what you eat, how much you move and how your body changes. No account, no ads, no cloud: everything stays on your phone. Free and open source under the [MIT License](LICENSE).
+
+## Contents
+
+- [Highlights](#highlights)
+- [Screenshots](#screenshots)
+- [What it does](#what-it-does)
+- [Install](#install)
+- [Getting started](#getting-started)
+- [Your data and privacy](#your-data-and-privacy)
+- [For developers](#for-developers): [tech stack](#tech-stack), [status](#status), [features in detail](#features), [changelog](#versions-and-changelog), [architecture](#architecture), [services](#services), [releases](#releases), [running it](#running-it), [maintenance](#maintenance), [future enhancements](#future-enhancements)
+- [Contributing](#contributing), [security](#security), [license](#license) and [acknowledgements](#acknowledgements)
+
+## Highlights
+
+| | |
+| --- | --- |
+| 📸 **Snap a meal** | Photograph a plate, say what's in it, and AI estimates every part with calories and macros. |
+| 🔎 **Scan a barcode** | Look products up in Open Food Facts, or let AI read the nutrition label. |
+| 👟 **Steps, automatically** | Read from Health Connect, with today by the hour and the last 7 days against your target. |
+| ⚖️ **Weight that makes sense** | A smoothed trend, change over any period, 5 kg milestones and a projected goal date. |
+| 📏 **Body fat (Navy method)** | Tape-measure check-ins, BMI alongside, and lined-up progress photos to compare. |
+| 🔒 **Private by design** | No account, no tracking, no cloud. Your AI key, your data, your phone. Backups are a file you keep. |
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/today.png" width="190" alt="Today screen with the steps and calories rings, macros and meals" /><br /><sub><b>Today</b>: rings, macros and meals</sub></td>
+    <td align="center"><img src="docs/screenshots/steps.png" width="190" alt="Steps tab with today's steps by hour and the last 7 days against the target" /><br /><sub><b>Steps</b>: by the hour and the week</sub></td>
+    <td align="center"><img src="docs/screenshots/weight.png" width="190" alt="Weight screen with a one-month chart, trend line and change over time" /><br /><sub><b>Weight</b>: trend, change and goal</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/progress.png" width="190" alt="Progress screen with Navy-method body fat, check-ins and a body-fat chart" /><br /><sub><b>Progress</b>: body fat and photos</sub></td>
+    <td align="center"><img src="docs/screenshots/today-dark.png" width="190" alt="Today screen in dark mode" /><br /><sub><b>Dark mode</b>: Today</sub></td>
+    <td align="center"><img src="docs/screenshots/steps-dark.png" width="190" alt="Steps tab in dark mode" /><br /><sub><b>Dark mode</b>: Steps</sub></td>
+  </tr>
+</table>
 
 ## What it does
 
@@ -72,8 +131,37 @@ Everything below is about how the app is built, released and maintained.
 
 Wording rule: the app always says "calories", never "kcal".
 
-## Contents
+## Tech stack
 
+<p>
+  <img src="https://img.shields.io/badge/Expo-000020?style=flat-square&logo=expo&logoColor=white" alt="Expo" />
+  <img src="https://img.shields.io/badge/React%20Native-20232A?style=flat-square&logo=react&logoColor=61DAFB" alt="React Native" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Drizzle%20ORM-C5F74F?style=flat-square&logo=drizzle&logoColor=black" alt="Drizzle ORM" />
+  <img src="https://img.shields.io/badge/Jest-C21325?style=flat-square&logo=jest&logoColor=white" alt="Jest" />
+  <img src="https://img.shields.io/badge/ESLint-4B32C3?style=flat-square&logo=eslint&logoColor=white" alt="ESLint" />
+  <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions" />
+  <img src="https://img.shields.io/badge/Google%20Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Google Gemini" />
+  <img src="https://img.shields.io/badge/Health%20Connect-4285F4?style=flat-square&logo=google&logoColor=white" alt="Health Connect" />
+  <img src="https://img.shields.io/badge/Open%20Food%20Facts-FF8714?style=flat-square&logo=openfoodfacts&logoColor=white" alt="Open Food Facts" />
+</p>
+
+| Layer | What's used |
+| --- | --- |
+| App | Expo SDK 58 (development build, not Expo Go), React Native 0.88, React 19, TypeScript, Expo Router |
+| Data | SQLite on the phone through expo-sqlite and Drizzle ORM, with migrations bundled into the app |
+| UI | Custom design tokens, Space Grotesk and Inter fonts, lucide icons, Reanimated rings, custom SVG charts |
+| Phone features | expo-camera (photos and barcodes), expo-speech-recognition (on-device speech), react-native-health-connect (steps), expo-secure-store (AI key) |
+| AI | One provider-agnostic adapter over plain `fetch` (Google Gemini in the app; OpenAI and Claude supported underneath) |
+| Quality | Jest (jest-expo), TypeScript, ESLint, and a CI workflow on every pull request |
+| Releases | GitHub Actions builds and signs the APKs with Gradle and publishes them to GitHub Releases |
+
+Full versions are in [Main dependency versions](#main-dependency-versions).
+
+## Developer contents
+
+- [Tech stack](#tech-stack)
 - [Status](#status)
 - [Features](#features)
 - [Versions and changelog](#versions-and-changelog)
@@ -83,6 +171,7 @@ Wording rule: the app always says "calories", never "kcal".
 - [Running it](#running-it)
 - [Maintenance](#maintenance)
 - [Future enhancements](#future-enhancements)
+- [Contributing](#contributing), [Security](#security), [License](#license), [Acknowledgements](#acknowledgements)
 
 ## Status
 
@@ -102,6 +191,7 @@ Wording rule: the app always says "calories", never "kcal".
 | Check-in polish | Backdate and edit check-ins, save photos without measuring, add photos from the gallery | Done (PR #16, 0.15.0) |
 | 5b. Polish | Empty and offline states, app icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
+| Open source | MIT license, contributing guide, code of conduct, security policy, issue and pull request templates, CI checks on every pull request, README banner, badges and screenshot gallery | Done (PR #18) |
 | Smaller APKs | A small arm64 APK plus a universal one, compressed native libraries, update check picks the right file | Done (PR #15, 0.16.0) |
 
 **v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix) and **v0.14.0** (backup and restore). Everything since, check-in polish (0.15.0) and the smaller APKs, is merged and goes out as **v0.16.0**. See [which versions were released](#versions-and-changelog).
@@ -295,6 +385,7 @@ Several PRs can merge between two releases, so not every version number gets its
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Open source: MIT `LICENSE` (and `license` in `package.json`), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SECURITY.md` (private reporting, how keys and the keystore stay out of the repo, checking an APK's signature), issue forms for bugs and ideas, a pull request template, and a new CI workflow (`ci.yml`) running the tests, typecheck, lint and Android bundle on every pull request and push to main. README gets a banner, badges, a contents list, highlights, a screenshot gallery with the Steps tab in light and dark, a tech stack and contributing, security, license and acknowledgements sections. No app change, still 0.16.0 | #18 |
 | 2026-11-24 | README checked against everything merged today: changelog rows added for steps (#11) and check-in polish (#16), a table of which versions were released, the status summary, architecture (APK splits, update check), services and APK sizes brought up to date. No app change, still 0.16.0 | #17 |
 | 2026-11-24 | Check-in polish: date a check-in back (up to today), edit any check-in later (date, measurements, weight and photos), save photos without measuring, and pick photos from the gallery as well as the camera. Neck, waist and body fat become nullable (migration 0005 rebuilds `body_check` and `body_photo` so no photos are lost). Version 0.15.0 | #16 |
 | 2026-11-24 | Smaller downloads: each release now has a small `-arm64.apk` (64-bit ARM phones, almost all of them) and a `-universal.apk` (every phone), built in one Gradle run with ABI splits (`plugins/withAbiSplits.js`). Native libraries are now compressed inside the APK (`useLegacyPackaging` through expo-build-properties), which shrinks both: the test build made a 30 MB arm64 APK and a 60 MB universal one, down from 143 MB. The in-app update check picks the right APK for the phone with expo-device. The universal APK is uploaded first, so older app versions, which take the first APK they find, still get one that runs everywhere. Version 0.16.0 (0.15.0 is taken by the check-in polish PR) | #15 |
@@ -392,14 +483,20 @@ src/theme/        Design tokens (colors.ts, tokens.ts) and the theme provider
 drizzle/          Generated migrations, bundled into the app
 plugins/          Expo config plugins and helpers for the Android release build
 docs/screenshots/ README screenshots
-.github/workflows Android release workflow (android-release.yml)
+docs/banner.svg   README banner (switches with light and dark mode)
+.github/workflows CI checks (ci.yml) and the Android release workflow (android-release.yml)
+.github/          Issue forms (ISSUE_TEMPLATE/) and the pull request template
+LICENSE           MIT License
+CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md   How to contribute, community rules, reporting security problems
 ```
 
 ## Services
 
 | Service | Used for | State |
 | --- | --- | --- |
-| GitHub | Code and pull requests | In use |
+| GitHub | Code, pull requests, issues (bug and idea forms) and private security reports | In use |
+| GitHub Actions (CI) | Runs the tests, typecheck, lint and Android bundle on every pull request and push to main (`ci.yml`). Free for public repos | In use |
+| shields.io | The badges at the top of this README (release, downloads, license, build status). Only the README uses it, never the app | In use (README only) |
 | GitHub Actions | Builds, signs and publishes the release APKs (arm64 and universal) on every `v*` tag (`android-release.yml`). Holds the release key as secrets. Free for this use | In use |
 | GitHub Releases | Hosts the APKs. The app reads `api.github.com/repos/<repo>/releases/latest` once a day to offer updates. Needs a public repo (see [Releases](#releases)) | In use |
 | Expo EAS Build | Optional development builds for working on the app. Not used for releases, so the free tier's monthly build limit doesn't matter | Optional |
@@ -506,9 +603,14 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
 | `npx expo export -p android` | Bundles the app, a quick check that everything resolves. (The web bundle fails on expo-sqlite's wasm file; the app doesn't target web) |
 
+CI (`.github/workflows/ci.yml`) runs `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export -p android` on every pull request and push to `main`.
+
 ## Maintenance
 
-- **Before every PR**: run `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export -p android`, and update this README (see `CLAUDE.md`).
+- **Before every PR**: run `npm test`, `npm run typecheck`, `npm run lint` and `npx expo export -p android`, and update this README (see `CLAUDE.md`). CI runs the same four checks; a red CI badge means `main` needs fixing.
+- **README badges**: the release, downloads, license, CI and build badges update themselves. The Android, Expo SDK, React Native and TypeScript badges at the top are typed in by hand, so change them when `minSdkVersion`, the Expo SDK, React Native or TypeScript is upgraded. The banner is `docs/banner.svg`; its colours match `src/theme/colors.ts`.
+- **Community files**: `CONTRIBUTING.md` repeats the ground rules and the four checks, and `SECURITY.md` lists the release certificate fingerprint. Keep both in step when the checks, the rules or the release key change. The issue forms list the app's areas; add a new one when a big feature ships.
+- **Repo settings** (on GitHub, not in the code): the description, website and topics in the **About** box (gear icon on the repo's main page), and **Settings → Code security → Private vulnerability reporting** switched on so `SECURITY.md`'s **Report a vulnerability** button works.
 - **Adding a package**: use `npx expo install <package>` so it matches the SDK. If that can't reach Expo's servers, read the right version from `node -e 'console.log(require("expo/bundledNativeModules.json")["<package>"])'` and `npm install` it.
 - **Native modules**: after adding one, add its config plugin to `app.json` if it has one, then make a new EAS development build.
 - **Database changes**: edit `src/db/schema.ts`, run `npm run db:generate`, and check the SQL it writes into `drizzle/`. drizzle-kit asks about renames interactively and fails when it can't, so do a rename as two migrations (add the new column, then drop the old one) and hand-add any data backfill. Never edit a migration that has shipped. SQLite can't change a column's NOT NULL, so drizzle-kit rebuilds the table with `PRAGMA foreign_keys=OFF`, but that pragma does nothing inside the migration transaction and foreign keys are on, so dropping a parent table would cascade-delete its children. Rebuild children too (park their rows in a plain copy first), as `0005_body_check_optional.sql` does, and test the SQL against a copy of the old schema with foreign keys on.
@@ -587,6 +689,13 @@ Everything we've discussed that is not built yet.
 **Progress check-ins, later**
 - Read the date from a gallery photo's EXIF data and suggest it as the check-in date.
 
+**Open source, later**
+- Dependabot or Renovate for dependency updates (grouped around Expo SDK upgrades, since Expo pins most versions).
+- GitHub Discussions for questions and ideas, and good-first-issue labels.
+- A listing on F-Droid or IzzyOnDroid, so people can install and update without GitHub. F-Droid needs reproducible builds and no Google-only parts, so it needs a check of Health Connect and the speech service.
+- Translations, once the app's text is moved into string files.
+- A real app icon and logo (the launcher icon is still Expo's default; see Phase 5).
+
 **After the MVP**
 - Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.
 - Download and open the update APK from inside the app instead of through the browser.
@@ -596,3 +705,29 @@ Everything we've discussed that is not built yet.
 - Automatic Google Drive backup.
 - Home-screen widgets.
 - Adding active calories burned to the daily calorie budget.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the ground rules (data stays on the phone, "calories" never "kcal", green only for steps and orange only for calories, every PR updates this README) and how to run the checks. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+- [Report a bug](https://github.com/warwickbuilds/calories-and-steps/issues/new?template=bug_report.yml)
+- [Suggest an idea](https://github.com/warwickbuilds/calories-and-steps/issues/new?template=feature_request.yml)
+
+## Security
+
+Please report security problems privately through the repo's [Security tab](https://github.com/warwickbuilds/calories-and-steps/security), not as a public issue. [SECURITY.md](SECURITY.md) explains what's in scope, how keys and the release keystore are kept out of the repo, and how to check an APK's signature.
+
+## License
+
+[MIT](LICENSE) © 2026 warwickbuilds. You're free to use, change and share the code, as long as the copyright notice comes with it.
+
+Food data from Open Food Facts is under the [Open Database License](https://opendatacommons.org/licenses/odbl/1-0/). The Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org) (CC BY 4.0).
+
+## Acknowledgements
+
+- [Open Food Facts](https://world.openfoodfacts.org), the free, open food database behind barcode lookups
+- [Expo](https://expo.dev) and [React Native](https://reactnative.dev)
+- [Drizzle ORM](https://orm.drizzle.team), [lucide](https://lucide.dev) icons, [fflate](https://github.com/101arrowz/fflate)
+- [react-native-health-connect](https://github.com/matinzd/react-native-health-connect) by matinzd and [expo-speech-recognition](https://github.com/jamsch/expo-speech-recognition) by jamsch
+- [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) and [Inter](https://rsms.me/inter/) fonts
+- Badges by [shields.io](https://shields.io)
