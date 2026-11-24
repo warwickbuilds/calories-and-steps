@@ -8,6 +8,7 @@ import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
 import { AiKeyCard } from '@/components/AiKeyCard';
+import { StepsAccessCard } from '@/components/StepsAccessCard';
 import { TargetSummary } from '@/components/TargetSummary';
 import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
 import { updateProfile } from '@/db/queries';
@@ -66,6 +67,7 @@ export default function SettingsScreen() {
             }}
           />
         </Card>
+        <StepsAccessCard />
       </Section>
 
       <Section title="About you">

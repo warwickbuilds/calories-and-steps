@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
 import { Plus, Settings } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
 import { AddButton, Card, DualRings, IconButton, ProgressBar, Screen, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { useDayTotals, useProfile, useTargets } from '@/hooks/data';
+import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { takeImportRequest } from '@/lib/onboardingIntent';
 import { MEAL_TYPES, caloriesReadout, formatNumber, stepsAccessibility, type MealType } from '@/lib/today';
@@ -79,8 +80,10 @@ function RingsCard({ day }: { day: string }) {
   const targets = useTargets();
   const totals = useDayTotals(day);
   const stepTarget = profile?.stepTarget ?? 10000;
-  // Step sync from Apple Health / Health Connect arrives in Phase 4.
-  const steps: number | null = null;
+  const { access } = useStepsSync();
+  const synced = useDaySteps(day);
+  // Before anything is synced, a connected phone shows 0 rather than "Connect".
+  const steps: number | null = synced ?? (access === 'granted' ? 0 : null);
   const cal = caloriesReadout(totals.calories, targets?.calories ?? 0);
 
   const a11y = `${stepsAccessibility(steps, stepTarget)} ${
@@ -89,8 +92,14 @@ function RingsCard({ day }: { day: string }) {
 
   return (
     <Card>
-      <View style={styles.ringsRow} accessible accessibilityLabel={a11y}>
-        <DualRings steps={steps == null ? 0 : steps / stepTarget} calories={cal.progress} />
+      <View style={styles.ringsRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={a11y}
+          accessibilityHint="Opens your step history"
+          onPress={() => router.push('/steps')}>
+          <DualRings steps={steps == null ? 0 : steps / stepTarget} calories={cal.progress} />
+        </Pressable>
         <View style={styles.readouts}>
           {steps == null ? (
             <Readout
@@ -99,12 +108,8 @@ function RingsCard({ day }: { day: string }) {
               action={
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() =>
-                    Alert.alert(
-                      'Connect steps',
-                      'Reading steps from Apple Health and Health Connect is coming in an upcoming build.',
-                    )
-                  }
+                  accessibilityHint="Connects Health Connect to read your steps"
+                  onPress={() => (access == null || access === 'unsupported' ? router.push('/steps') : connectSteps())}
                   style={styles.connect}>
                   <Text variant="bodyStrong">Connect steps</Text>
                   <Text variant="caption" muted>
@@ -114,12 +119,17 @@ function RingsCard({ day }: { day: string }) {
               }
             />
           ) : (
-            <Readout
-              color={colors.steps}
-              label="Steps"
-              value={formatNumber(steps)}
-              caption={`of ${formatNumber(stepTarget)}`}
-            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityHint="Opens your step history"
+              onPress={() => router.push('/steps')}>
+              <Readout
+                color={colors.steps}
+                label="Steps"
+                value={formatNumber(steps)}
+                caption={`of ${formatNumber(stepTarget)}`}
+              />
+            </Pressable>
           )}
           <Readout
             color={colors.calories}

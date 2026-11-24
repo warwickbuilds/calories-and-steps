@@ -21,11 +21,11 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Weight.** A quick weigh-in on the home screen and charts from a week to all time. Each period shows how much you've lost in it as a big number. The chart joins your actual weigh-ins, with a faint dashed trend line that carries on to your goal, and coloured markers for every 5 kg lost.
 - **Bring your weight history with you.** Screenshot the weight list in your old app (Lose It!, MyFitnessPal, a smart-scale app or anything that shows dates and weights), pick the screenshots, and AI reads every entry. You check and fix the list before anything is saved, and duplicates are skipped. Offered when you first set up the app, and any time from the Weight tab. Uses your own Google AI (Gemini) key.
 - **Body fat.** Body fat (Navy method) check-ins from a tape measure, with lean and fat mass, plain BMI alongside, and front, side and back photos you can line up and compare side by side.
-- **Steps.** A daily step target from 5,000 to 25,000 (step sync from Health Connect is coming).
+- **Steps.** Your steps come from Health Connect (Android's health app, which gathers them from your phone, watch or fitness apps). Today's ring fills towards your daily target (5,000 to 25,000), and the Steps tab shows today hour by hour, the last 7 days as bars against your target, and your 7-day total.
 - **Light and dark.** Follows your phone, or pick one.
 - **Updates.** The app tells you when a new version is out.
 
-**Coming next:** step sync from Health Connect, and backup and restore.
+**Coming next:** backup and restore, and more step history.
 
 ## Install
 
@@ -41,7 +41,7 @@ A simple, private Android app for tracking what you eat, how much you move and h
 1. Pick metric or imperial.
 2. Enter your sex, age and height, then your current weight and an optional goal weight.
 3. Choose how active you are and your goal (hard cut, steady cut, maintain or bulk). You'll see your daily calorie target and macros straight away.
-4. Set a daily step target.
+4. Set a daily step target, and optionally connect Health Connect so the app can read your steps (or do it later from Today).
 5. Optionally paste a Google AI (Gemini) key and tap **Save and test**. It's needed for AI features such as importing weight history. [Get a key here](https://aistudio.google.com/apikey).
 6. Optionally import your weight history from another app's screenshots, or skip and do it later from the Weight tab.
 
@@ -53,6 +53,7 @@ You can change any of this later in Settings (the gear on the Today screen).
 
 - Everything is stored on your phone. There is no account and nothing is uploaded to us.
 - **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Backup and restore are on the way.
+- Steps are read from Health Connect on the phone. The app only asks to read steps, never writes anything, and steps never leave the phone. You can take access away any time in Health Connect.
 - The app sends only a few things: a daily check with GitHub for a newer version; the barcode number when you scan one, to Open Food Facts; and, when you import weights from screenshots, read a nutrition label or estimate a meal, those images and your meal description to Google AI (Gemini) using your own key. The app doesn't keep the screenshots, label photos or meal photos. What you say is turned into text on the phone; audio is never sent or kept. Your key is stored encrypted on the phone and only sent to Google.
 - With a free Google Gemini key, Google may use those requests (including meal photos) to improve its models, so a paid key is recommended.
 
@@ -89,7 +90,7 @@ Wording rule: the app always says "calories", never "kcal".
 | 3a. Food log | Add-food screen with search over recent foods, servings and grams, editing logged items, Food tab by day with a 7-day average | Done (PR #8) |
 | 3b. Barcodes and labels | Open Food Facts scanner with a local cache, AI nutrition-label reading when a product isn't found | Done (PR #8) |
 | 3c. AI meal logging | Photo and spoken description meal estimate, review screen, privacy note | Done (PR #8) |
-| 4. Steps | Step sync from Health Connect, favourites | Next |
+| 4. Steps | Step sync from Health Connect, Steps tab (today by hour, last 7 days, 7-day total), Today ring; tabs renamed and restyled | Done (PR #11, 0.12.0) |
 | Weight chart upgrade | Change for the chosen period above the chart, weigh-ins as the main line, faint trend and projection to the goal in every period, coloured 5 kg milestones, one trend-based change everywhere | Done (PR #9) |
 | Millilitres for drinks | Each food is measured in g or ml: detected from Open Food Facts, AI labels and AI meal estimates, switchable on every amount field, kept on logged items and recent foods | Done (PR #10, 0.8.0) |
 | Food icons | A small line icon for each food's category (dairy, meat, fish, eggs, bread and grains, fruit, vegetables, sauces and oils, snacks and sweets, drinks, meals, other) beside logged foods and recent foods; category from Open Food Facts, the AI or the name, changeable in the food form | Done (PR #13, 0.11.0) |
@@ -100,7 +101,7 @@ Wording rule: the app always says "calories", never "kcal".
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
-Checked on a real phone: everything up to v0.3.0, including the weight import's AI call with Rick's Gemini key. Not yet checked: anything from Phase 3 on.
+Checked on a real phone: everything up to v0.3.0, including the weight import's AI call with Rick's Gemini key. Not yet checked: anything from Phase 3 on. Step sync (0.12.0) has only been checked by the release build compiling, the unit tests and a web preview of the Steps tab with sample data; Health Connect itself needs a phone.
 
 ## Features
 
@@ -117,23 +118,23 @@ The detailed list of what works now.
   - Bulk: 500 above
 - The target never goes below 1,500 calories for men or 1,200 for women. It is recalculated as weight changes.
 - Macros: protein 2 g per kg, fat 25% of calories, carbs the rest.
-- Step target slider from 5,000 to 25,000 in steps of 500.
+- Step target slider from 5,000 to 25,000 in steps of 500. The step target page also offers **Connect Health Connect** (optional).
 - Metric by default, with a switch to lb and inches. Everything is stored in metric.
 
 ### Today screen
 
-- Steps and calories rings. Steps shows "Connect steps" until step sync arrives in Phase 4.
+- Steps and calories rings. The steps ring and number come from Health Connect; tapping them opens the Steps tab. Before Health Connect is connected, Steps shows "Connect steps", which installs or updates Health Connect when needed, or asks for access to steps.
 - Calories left, or "N over" in red once past the target.
 - Protein, carbs and fat bars against their targets.
 - Breakfast, Lunch, Dinner and Snacks, each with a "+" button (opens [Add food](#add-food)) and two pills:
   - "Quick add" enters calories and optional grams and macros.
   - "Same as yesterday" copies yesterday's items for that meal. It is hidden when that meal was empty yesterday.
-- Tapping a meal's name opens the Food tab on that day.
+- Tapping a meal's name opens the Calories tab on that day.
 - "Weight today" card for a quick weigh-in, with the trend change over the past week (the same number as the Weight tab).
 
 ### Add food
 
-- Opened by every "+" (Today and the Food tab), for the chosen meal and day. The meal can be switched at the top.
+- Opened by every "+" (Today and the Calories tab), for the chosen meal and day. The meal can be switched at the top.
 - **Recent foods**: everything logged before, one row per name (ignoring case), using the most recent serving's numbers, newest first, up to 50. Generic "Quick add" rows are left out. Built from the last 400 logged items, so there is no separate food list to keep in sync.
 - **Search** matches every typed word anywhere in the name. With no match, it offers to quick add the typed name.
 - The "+" on a row adds that serving straight away and shows a tick, so several foods can be added in a row; **Done** closes the screen. Tapping the row opens it first.
@@ -179,11 +180,33 @@ The detailed list of what works now.
 - Food added to another day is timed at midday that day; food added today uses the current time.
 - **Type** shows the food's category as a row of small icons, with its name beside the label ("Type · Dairy"). It follows the name as you type until you tap one; a tapped type is saved with the food.
 
-### Food tab
+### Calories tab
+
+Called "Food" before 0.12.0; the route is still `/food`.
 
 - One day at a time: arrows step back and forward (not past today). Tapping a meal's name on Today opens the tab on that day. The day is kept in the route (`/food?day=YYYY-MM-DD`).
 - A summary card: calories eaten against the target, protein, carbs and fat, and the **7-day average**. The average covers the seven days ending on the shown day and counts only days with food logged, so a forgotten day doesn't drag it down.
 - Each meal lists its items with a small category icon, calories, amount ("250 ml" or "40 g") and macros. Tap one to edit or delete it. "+" adds to that meal on that day, and an empty meal offers "Same as yesterday" (or the previous date) when it had food the day before.
+
+### Steps tab
+
+- **Today**: steps so far as a big number with a green bar towards the target ("3,760 to go of 10,000", or "Target of 10,000 reached"), and a bar chart of today's steps by hour.
+- **Last 7 days**: the 7-day total and a bar for each day. The target is a dotted line; days that reached it are solid green, the rest faded. Days with no data leave a gap.
+- A Health Connect card with the state and the one action that fits: **Connect Health Connect**, **Get Health Connect** (not installed), **Update Health Connect**, or once connected **Sync now** and **Manage access** (opens Health Connect). It says when steps were last read.
+- More analytics (longer periods, averages, streaks) are planned; see [Future enhancements](#future-enhancements).
+
+### Step sync
+
+- Reads from Health Connect when the app opens, whenever it comes back to the front (at most once a minute) and on **Sync now**. Each sync reads the last 30 days as daily totals into the `steps_day` table, plus today hour by hour (kept in memory only).
+- Health Connect merges steps from every app and device that writes them (phone, watch, Google Fit, Samsung Health and so on) without double counting.
+- Only the `READ_STEPS` permission is asked for. If it is refused twice Android stops showing the sheet, so the app offers to open Health Connect, where access can be given under App permissions.
+- Health Connect is built into Android 14 and later. On Android 9 to 13 it is a Play Store app; if it is missing or out of date the app sends you to the Play Store. Android 8 and older aren't supported (the app now needs Android 8.0, API 26, or newer).
+- Health Connect only shares data from about 30 days before access was first given, so older history doesn't appear.
+
+### Bottom tabs
+
+- Today, Calories, Steps, Weight, Progress. The current tab's icon sits in a solid pill (text colour, so it works in light and dark without using the step or calorie colours), with a semibold label.
+- Tabs have no ripple or fade when pressed; the pill moving is the only feedback.
 
 ### Weight tab
 
@@ -224,6 +247,7 @@ The detailed list of what works now.
 ### Settings
 
 - Every profile field, units, goal mode, target date and step target.
+- Daily steps: the step target slider and the Health Connect card (connect, sync now, manage access).
 - Appearance: System, Light or Dark.
 - AI: the Google AI key, with Save and test, Get a key and Remove key (see [AI provider and key](#ai-provider-and-key)).
 - Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it. Also an "Import weights from screenshots" button.
@@ -273,6 +297,9 @@ App version: **0.13.0** (in `app.json` and `package.json`). Android's `versionCo
 | expo-image-picker (weight import) | ~58.0.10 |
 | expo-secure-store (AI keys) | ~58.0.3 |
 | expo-speech-recognition (voice descriptions; community module by jamsch) | ~58.0.1 |
+| react-native-health-connect (step sync; community module by matinzd, includes its Expo config plugin) | ^4.1.3 |
+| expo-build-properties (sets Android minSdkVersion 26 for Health Connect) | ~58.0.12 |
+| Android minimum / target / compile SDK | 26 / 36 / 37 (target and compile are Expo SDK 58's defaults) |
 | Release build tools (CI) | Node 22, JDK 17 (Temurin), Gradle from the Expo template |
 | TypeScript | ~6.0.3 |
 | Jest (jest-expo preset) | ^30.5.2 |
@@ -291,7 +318,7 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 ```
 
 - **App framework**: Expo with TypeScript, run as a development build (not Expo Go) because of native modules. Routes live in `src/app`.
-  - Tabs: Today, Food, Weight, Progress.
+  - Tabs: Today, Calories (`(tabs)/food.tsx`), Steps, Weight, Progress. The tab bar uses a custom button (plain `Pressable`, no ripple) and a pill behind the current icon (`src/app/(tabs)/_layout.tsx`).
   - Stack screens: settings, add-food (modal), quick-add (modal), food-item (modal: add a recent food or edit a logged one), scan (full screen: barcode, label photo or meal photo), product (modal), estimate (modal: meal photo and description to AI estimate), check-in (modal), camera (full screen), check-ins/[id], compare, import-weights.
   - `Stack.Protected` shows onboarding until a profile exists.
 - **Units** (`food_ref.unit`, `food_item.unit`, migration `0003_food_units`): `g` or `ml`, default `g`. The amount columns keep their old names (`food_item.grams`, `food_ref.serving_g`, `*_per_100g`), and for an `ml` food they hold millilitres and per-100 ml values, so nothing is converted (no density guesses). `FoodUnit`, `formatAmount` and the optional `unit` on `Nutrition` live in `src/lib/food.ts`; `NumberField` takes `onUnitPress` to show the g ⇄ ml button.
@@ -308,12 +335,13 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 - **Design system**: tokens in `src/theme` (colours for light and dark, spacing, radius, type scale). Space Grotesk for numbers and headings, Inter for text, lucide icons. Font scaling is capped at 1.3×.
 - **Food log** (`src/lib/food.ts`, `src/db/meals.ts`): recent foods are worked out from logged items (`recentItemsQuery`, then `recentFoods` de-duplicates by name), so no food table has to be kept in sync. Each add makes its own `meal` row with one `food_item`; `updateFoodItem` moves an item between meals; `dailyCaloriesQuery` sums calories per day for the 7-day average. Pure helpers for search, scaling, day labels and the average are tested on their own. No schema change, so no migration.
 - **Barcodes** (`src/lib/openFoodFacts.ts`, `src/db/foods.ts`): `lookupBarcode` calls the Open Food Facts v2 product API asking only for the fields used, with a `User-Agent` naming the app as Open Food Facts asks. `parseOffProduct` turns the answer into per-100 g numbers (kJ converted when calories are missing). Products, label reads and corrections live in the existing `food_ref` table (`source` is `off`, `panel` or `custom`), saved by `saveFoodRef`, which updates in place when the barcode is already cached.
-- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, `periodChange` and change rows, milestones, projection and `projectionLine`), `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
+- **Steps** (`src/lib/healthConnect.ts`, `src/hooks/steps.ts`, `src/db/steps.ts`, `src/lib/steps.ts`): `healthConnect.ts` wraps react-native-health-connect (availability, permission, daily totals with `aggregateGroupByPeriod`, hourly totals with `aggregateGroupByDuration`, opening Health Connect or its Play Store page) and is the only file that imports it. `hooks/steps.ts` holds the shared sync state (access, syncing, last sync, today's hours) as a tiny store read with `useSyncExternalStore`; `useStepsAutoSync` in the tabs layout syncs on open and on return to the front; `connectSteps` is the connect button. Daily totals go into the existing `steps_day` table (`source` = `health_connect`), so no migration; screens read it with live queries (`useDaySteps`, `useStepsHistory`). Pure helpers in `lib/steps.ts` (buckets to days and hours, history, totals, summary stats, status messages) are tested. `StepsChart` draws the bars. The Health Connect config plugin adds the permission-rationale intent filter and activity alias to the manifest; `android.permissions` in `app.json` adds `READ_STEPS`.
+- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, `periodChange` and change rows, milestones, projection and `projectionLine`), `steps.ts`, `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
 
 ### Folder layout
 
 ```
-src/app/          Screens (Expo Router). (tabs)/ holds Today, Food, Weight and Progress.
+src/app/          Screens (Expo Router). (tabs)/ holds Today, Calories (food.tsx), Steps, Weight and Progress.
 src/components/   UI kit (ui/), profile input fields (fields/), chart, photo thumb, shared cards
 src/db/           SQLite schema, client, queries and write functions
 src/hooks/        Live data hooks
@@ -337,7 +365,8 @@ docs/screenshots/ README screenshots
 | Apple App Store and Google Play | Store release | On hold |
 | Google Gemini (in use); OpenAI and Anthropic Claude (supported by the adapter, not offered in the app yet) | Reading weight screenshots and nutrition labels, and estimating meals from a photo and description, using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import, labels, meals) |
 | Open Food Facts | Barcode lookups (`world.openfoodfacts.org/api/v2/product/<barcode>.json`). Free, no key, Open Database License, credited in Settings → About. Each product is fetched once and cached on the phone | In use (from 0.6.0) |
-| Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
+| Health Connect (Android) | Reading daily and hourly steps, on the phone only (no network). Read-only, `READ_STEPS` permission. Google Fit is skipped because it is being retired. Weight from smart scales is a later idea | In use (from 0.12.0) |
+| Apple Health (HealthKit) | Steps and weight on iPhone | On hold with iOS |
 
 The only network calls today are the daily update check, Open Food Facts lookups for scanned barcodes, and the screenshots or label photos the user sends to their AI provider. Speech is recognised on the phone where it supports that; on phones without on-device recognition, Android's speech service may use Google's servers, which is outside the app. Voice notes will be transcribed on the phone and never uploaded.
 
@@ -421,7 +450,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, Today and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, the weight-import merging and the AI request builders |
+| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, steps, Today and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, the weight-import merging and the AI request builders |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
@@ -442,6 +471,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **AI models**: providers retire model names. When one stops working (Settings → Save and test says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts` and release a new version. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
 - **expo-speech-recognition** is a community module (github.com/jamsch/expo-speech-recognition), versioned to match the Expo SDK (58.x for SDK 58). On an SDK upgrade, install the matching major. It has a config plugin in `app.json`.
 - **expo-image-picker** is used without its config plugin on purpose: the plugin's `cameraPermission: false` would block the camera permission the progress photos need, and leaving it out avoids extra permissions (the microphone permission now comes from expo-speech-recognition). Android's photo picker needs no permission. Add the plugin (with `photosPermission`) when iOS returns.
+- **Health Connect**: react-native-health-connect is a community module with its own config plugin (listed in `app.json` plugins; the old `expo-health-connect` package must not be installed alongside it). It needs `minSdkVersion` 26, set through `expo-build-properties`. On an Expo SDK upgrade, check its README for the supported React Native version. If Google Play is ever used, Health Connect access has to be declared in the Play Console first; sideloaded APKs don't need that. To test on a phone: install the APK, connect from Today, then walk (or add steps in another app that writes to Health Connect) and open the Steps tab.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
 - **Weight change numbers**: every "change" shown (Today's header, the big number on the Weight tab, the Change card) must come from `periodChange` in `src/lib/weight.ts`, so they stay on the same trend basis. Don't compare raw weigh-ins anywhere else.
 - **Previewing a chart on web**: the quickest way to look at chart changes without seeding a database is a temporary route that renders `WeightChart` with a made-up trend (`withTrend` over generated points), with the other routes moved out of `src/app` while it runs (they import the database), then restart Metro with `--clear`. Put everything back before committing.
@@ -452,12 +482,12 @@ Everything we've discussed that is not built yet.
 
 **AI meal logging, later**
 - Per-feature default models: a mid-tier model for meals and the cheapest for nutrition labels, once the benchmark picks them (everything uses `gemini-3.6-flash` for now).
-- Keep a small meal photo with the logged meal and show it on the Food tab (the `meal.photo_path` column is already there).
+- Keep a small meal photo with the logged meal and show it on the Calories tab (the `meal.photo_path` column is already there).
 - A full consent screen before the first photo goes out, if the app is ever shared beyond paid-key users (for now a short note under the form, as Rick uses a paid key).
 - Hold-to-talk as well as tap-to-talk, and offering to download the on-device speech model when it's missing.
 - Let the user choose OpenAI or Claude instead of Gemini, and change the model, in Settings. The adapter already supports both; only the screens are missing. Kept out for now to keep setup simple.
 - A weighed 30-meal benchmark across providers to pick the default models.
-- Swiping left and right between days on the Food tab (arrows for now), and a calendar to jump to a date.
+- Swiping left and right between days on the Calories tab (arrows for now), and a calendar to jump to a date.
 - Saving a whole meal (several foods) as one reusable item, and logging a meal for several people with a share.
 
 **Weight chart, later**
@@ -482,10 +512,17 @@ Everything we've discussed that is not built yet.
 - Other household units: cups, tablespoons, pieces ("1 egg"), and fl oz for US labels.
 - Refresh a cached product from Open Food Facts after a while, in case its data was corrected.
 
-**Phase 4: steps**
+**Steps, later**
+- Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year), daily average, days on target, best day and streaks. The helpers for averages, days on target, best day and streak are already in `src/lib/steps.ts` (`stepsSummary`, tested) but not shown yet.
+- Tap a bar to see that day's or hour's exact steps.
+- Reading older history with Health Connect's history permission (more than 30 days before access was given).
+- Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and a home-screen widget.
+- Entering steps by hand for days without a phone or watch.
+- Weight from smart scales through Health Connect.
+- Apple Health when iOS returns.
+
+**Food, later**
 - Favourites (pin a food to the top of the recent list).
-- Step sync from Apple Health and Health Connect, with a history chart and the step target as a goal line.
-- Optional weight sync from smart scales through the health app.
 
 **Phase 5: backup and polish**
 - Export a single zip (database, manifest and photos) through the share sheet, and import it back.
