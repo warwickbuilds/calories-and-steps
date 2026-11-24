@@ -205,9 +205,10 @@ function History({ units }: { units: UnitSystem }) {
     <Card title="History">
       {entries.length === 0 ? (
         <Text variant="label" muted>
-          Log your weight above to start your chart.
+          Log your weight above to start your chart, or bring your history over from another app.
         </Text>
       ) : null}
+      <Button variant="secondary" label="Import from screenshots" onPress={() => router.push('/import-weights')} />
       {shown.map((e) => (
         <View key={e.id} style={[styles.row, { borderTopColor: colors.line }]}>
           <Text variant="bodyMedium" style={styles.flex}>

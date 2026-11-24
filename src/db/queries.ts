@@ -1,5 +1,7 @@
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
 
+import { importTimestamp } from '@/lib/weightImport';
+
 import { db } from './client';
 import { foodItem, meal, profile, weightEntry, type NewProfile } from './schema';
 
@@ -82,4 +84,34 @@ export async function logWeightForDay(weightKg: number, dayStart: Date, dayEnd: 
 
 export async function deleteWeight(id: number) {
   await db.delete(weightEntry).where(eq(weightEntry.id, id));
+}
+
+/**
+ * Saves the rows ticked on the import review screen in one transaction.
+ * Rows for a date that already has a weight replace that weight; the rest
+ * are added at midday on their date.
+ */
+export async function importWeights(
+  rows: { day: string; kg: number; existingId: number | null }[],
+): Promise<{ added: number; replaced: number }> {
+  let added = 0;
+  let replaced = 0;
+  await db.transaction(async (tx) => {
+    const fresh = rows.filter((r) => r.existingId == null);
+    for (const r of rows) {
+      if (r.existingId != null) {
+        await tx.update(weightEntry).set({ weightKg: r.kg }).where(eq(weightEntry.id, r.existingId));
+        replaced++;
+      }
+    }
+    // Insert in chunks to stay under SQLite's variable limit on big imports.
+    for (let i = 0; i < fresh.length; i += 200) {
+      const chunk = fresh.slice(i, i + 200);
+      await tx.insert(weightEntry).values(
+        chunk.map((r) => ({ weightKg: r.kg, measuredAt: importTimestamp(r.day), source: 'import' as const })),
+      );
+      added += chunk.length;
+    }
+  });
+  return { added, replaced };
 }

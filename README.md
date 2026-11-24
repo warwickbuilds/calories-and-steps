@@ -16,16 +16,17 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Calories and macros.** A daily calorie target worked out from your body and activity, with a goal of hard cut, steady cut, maintain or bulk. Protein, carbs and fat are shown against their own targets.
 - **Meals.** Log breakfast, lunch, dinner and snacks. Quick add calories in seconds, or copy a meal from yesterday.
 - **Weight.** A quick weigh-in on the home screen, charts from a week to all time, a smoothed trend line that ignores water swings, change over each period, and a projection of when you'll reach your goal.
+- **Bring your weight history with you.** Screenshot the weight list in your old app (Lose It!, MyFitnessPal, a smart-scale app or anything that shows dates and weights), pick the screenshots, and AI reads every entry. You check and fix the list before anything is saved, and duplicates are skipped. Offered when you first set up the app, and any time from the Weight tab. Uses your own Google AI (Gemini) key.
 - **Body fat.** Body fat (Navy method) check-ins from a tape measure, with lean and fat mass, plain BMI alongside, and front, side and back photos you can line up and compare side by side.
 - **Steps.** A daily step target from 5,000 to 25,000 (step sync from Health Connect is coming).
 - **Light and dark.** Follows your phone, or pick one.
 - **Updates.** The app tells you when a new version is out.
 
-**Coming next:** photograph a meal and describe it out loud for an AI calorie estimate (using your own Google Gemini, OpenAI or Claude key), barcode scanning, reading nutrition labels, step sync from Health Connect, and backup and restore.
+**Coming next:** photograph a meal and describe it out loud for an AI calorie estimate (using your own Google AI key), barcode scanning, reading nutrition labels, step sync from Health Connect, and backup and restore.
 
 ## Install
 
-1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk`.
+1. On the phone, open the [latest release](https://github.com/warwickbuilds/calories-and-steps/releases/latest) and download `calories-and-steps-<version>.apk` (about 143 MB, so use Wi-Fi).
 2. Open the downloaded file. Android asks whether your browser (or Files app) may install unknown apps. Tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**. You only need to do this once for that browser or app.
 3. **Play Protect** may say the app is unrecognised or "unsafe" because it isn't from the Play Store. Tap **More details → Install anyway**. If it offers to scan the app, that's fine too.
 4. Open the app and set up your profile.
@@ -38,6 +39,8 @@ A simple, private Android app for tracking what you eat, how much you move and h
 2. Enter your sex, age and height, then your current weight and an optional goal weight.
 3. Choose how active you are and your goal (hard cut, steady cut, maintain or bulk). You'll see your daily calorie target and macros straight away.
 4. Set a daily step target.
+5. Optionally paste a Google AI (Gemini) key and tap **Save and test**. It's needed for AI features such as importing weight history. [Get a key here](https://aistudio.google.com/apikey).
+6. Optionally import your weight history from another app's screenshots, or skip and do it later from the Weight tab.
 
 <p align="center"><img src="docs/screenshots/onboarding-goal.png" width="200" alt="Choosing a goal during setup, with the daily calorie target shown" /></p>
 
@@ -45,10 +48,10 @@ You can change any of this later in Settings (the gear on the Today screen).
 
 ## Your data and privacy
 
-- Everything is stored on your phone. There is no account and nothing is uploaded.
+- Everything is stored on your phone. There is no account and nothing is uploaded to us.
 - **Uninstalling the app, or clearing its storage in Android settings, deletes all your data and photos.** Installing a new version over the top keeps it. Backup and restore are on the way.
-- The only thing the app sends today is a daily check with GitHub for a newer version.
-- When AI meal estimates arrive, the photo and description of a meal go to the AI provider you choose, using your own key. With a free Google Gemini key, Google may use those requests to improve its models, so a paid key is recommended.
+- The app sends only two things: a daily check with GitHub for a newer version, and, when you import weights from screenshots, those screenshots to Google AI (Gemini) using your own key. The app doesn't keep the screenshots. Your key is stored encrypted on the phone and only sent to Google.
+- When AI meal estimates arrive, the photo and description of a meal go to Google AI the same way. With a free Google Gemini key, Google may use those requests to improve its models, so a paid key is recommended.
 
 ---
 
@@ -79,12 +82,15 @@ Wording rule: the app always says "calories", never "kcal".
 | --- | --- | --- |
 | 1. Foundation | Onboarding, profile, targets, Today screen, settings, database | Done (PR #1, #2) |
 | 2. Weight and body fat | Weight charts, change cards, goal projection, Navy check-ins with photos | Done (PR #3) |
-| 3. AI meal logging | Photo and voice meal estimate, provider adapter, review screen, API key setup | Next |
+| Weight import | Import weight history from another app's screenshots with AI, offered in onboarding and on the Weight tab; provider adapter and Google AI key setup in onboarding and Settings (shared with Phase 3) | Done (PR #7) |
+| 3. AI meal logging | Photo and voice meal estimate, review screen, consent screen (adapter and key setup already built) | Next |
 | 4. Barcode, panels and steps | Open Food Facts scanner, nutrition-panel reading, favourites, step sync | Planned |
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
-The app has not yet been installed on a phone. The first signed APK comes from tagging `v0.2.0` once the release key secrets are set up (see [Releases](#releases)).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) is released the same way once PR #7 is merged.
+
+Not yet checked on a real phone: the weight import's AI call (it needs a Google AI key), and anything from Phase 3 on.
 
 ## Features
 
@@ -92,7 +98,7 @@ The detailed list of what works now.
 
 ### Profile and targets
 
-- Onboarding asks for units, sex, age, height, current and goal weight, activity level, goal mode and daily step target.
+- Onboarding asks for units, sex, age, height, current and goal weight, activity level, goal mode and daily step target. Two optional steps follow: a Google AI key (with Save and test), then "Your weight history", which offers the screenshot import. Choosing **Import my weight history** saves the profile and opens the import screen straight after (handed over through `src/lib/onboardingIntent.ts`, because saving the profile swaps onboarding for the tabs). **Skip for now** goes to Today.
 - Age is stored as the age entered plus the date it was entered, and goes up by one on each anniversary. There is no date of birth.
 - Daily calorie target: Mifflin-St Jeor maintenance × activity level, then a flat daily offset for the goal:
   - Hard cut: 800 calories below maintenance
@@ -124,6 +130,25 @@ The detailed list of what works now.
 - Change over the last week, month, 6 months, year and all time.
 - Goal projection from the last four weeks of the trend, plus the weekly rate needed for an optional target date.
 - Plain BMI and a weight history list.
+- "Import from screenshots" button under History (also in Settings → Your data). See [Weight import](#weight-import).
+
+### Weight import
+
+- Pick up to 30 screenshots at a time from the phone's photo picker. Each is shrunk to 1080 px wide and sent, one at a time, to the chosen AI provider, which returns every date and weight it can see as JSON (a fixed schema: year or null, month, day, weight, kg or lb, and whether it came from a list row or a chart).
+- Works with any app's list of dated weights, not only Lose It!. Stones and pounds are converted to pounds by the model, then everything is stored in kg.
+- Rows without a year get the most recent year that isn't in the future, and are marked "Year not shown, so it was guessed".
+- Rows that aren't real dates, are in the future, or are outside 20–400 kg are dropped and counted.
+- Overlapping screenshots are merged by date. List rows win over chart estimates; if two readings of the same date disagree, the most common one wins and the other is shown ("Also read as …").
+- A screenshot with only a chart gives up to 12 estimated key points, marked "Estimated from the chart". They are ticked only when no list rows were found.
+- Review screen: every date with a tick box and an editable weight in your units. Dates already in the app with the same weight (within 0.05 kg) are left alone. Dates with a different weight are unticked and show the app's value; ticking one replaces it.
+- "Add more screenshots" keeps what was already read and any ticks or edits. Saving is one transaction. Imported rows are stored at midday local time with source `import`.
+- A bad key or a rate limit stops the run early with a plain message; other failures are listed per screenshot.
+
+### AI provider and key
+
+- Kept simple for now (Rick, 2026-11-24): one Google AI (Gemini) key, entered in onboarding (optional) or Settings → AI, and on the import screen if none is saved. **Save and test** stores the key and sends a tiny test request. "Get a key" opens Google AI Studio, and "Remove key" deletes it. The free-tier privacy note is shown under the key field.
+- The adapter underneath already supports OpenAI and Claude and a model override (`saveAiSettings` takes a provider and model). The screens just don't offer them yet.
+- Keys are kept in expo-secure-store (Android Keystore), not in the database.
 
 ### Progress tab
 
@@ -135,7 +160,8 @@ The detailed list of what works now.
 
 - Every profile field, units, goal mode, target date and step target.
 - Appearance: System, Light or Dark.
-- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it.
+- AI: the Google AI key, with Save and test, Get a key and Remove key (see [AI provider and key](#ai-provider-and-key)).
+- Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it, while installing a new version over the top keeps it. Also an "Import weights from screenshots" button.
 - App version, with a "Check for updates" button.
 
 ### Updates
@@ -145,10 +171,12 @@ The detailed list of what works now.
 
 ## Versions and changelog
 
-App version: **0.2.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.3.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Import weight history from screenshots of another app, read by AI, offered in onboarding and on the Weight tab. Google AI key in onboarding and Settings. Provider-agnostic AI adapter (Gemini, OpenAI, Claude). Version 0.3.0 | #7 |
+| 2026-11-24 | **v0.2.0 released**: first signed APK (143 MB), published from the Releases page | – |
 | 2026-11-24 | Release workflow also attaches the APK to a release made on GitHub's Releases page | #6 |
 | 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. README split into a public part (features, screenshots, install) and a developer part. Version 0.2.0 | #5 |
 | 2026-11-23 | README brought fully up to date; rule added to keep it current with every PR | #4 |
@@ -170,6 +198,8 @@ App version: **0.2.0** (in `app.json` and `package.json`). Android's `versionCod
 | react-native-svg | ^15.16.0 |
 | expo-camera / expo-image-manipulator / expo-file-system | ~58.0.14 / ~58.0.16 / ~58.0.14 |
 | expo-constants (update check) | ~58.0.16 |
+| expo-image-picker (weight import) | ~58.0.10 |
+| expo-secure-store (AI keys) | ~58.0.3 |
 | Release build tools (CI) | Node 22, JDK 17 (Temurin), Gradle from the Expo template |
 | TypeScript | ~6.0.3 |
 | Jest (jest-expo preset) | ^30.5.2 |
@@ -189,12 +219,14 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 
 - **App framework**: Expo with TypeScript, run as a development build (not Expo Go) because of native modules. Routes live in `src/app`.
   - Tabs: Today, Food, Weight, Progress.
-  - Stack screens: settings, quick-add (modal), check-in (modal), camera (full screen), check-ins/[id], compare.
+  - Stack screens: settings, quick-add (modal), check-in (modal), camera (full screen), check-ins/[id], compare, import-weights.
   - `Stack.Protected` shows onboarding until a profile exists.
 - **Data**: one SQLite file, 8 tables: profile, meal, food_item, food_ref, weight_entry, body_check, body_photo, steps_day. All values are metric; display converts.
   - Live queries need `enableChangeListener` (set in `src/db/client.ts`), and foreign keys are switched on.
   - Migrations in `drizzle/` are bundled into the app (babel inline-import plus a metro `sql` extension) and run at start-up by `useMigrations` in `src/app/_layout.tsx`.
 - **Photos**: taken with expo-camera, saved by expo-image-manipulator as a 1080 px JPEG plus a 240 px thumbnail under `document/photos`. The database stores relative paths only, so backups and restores stay portable. `src/lib/captureStore.ts` hands camera results back to the check-in screen.
+- **AI** (`src/lib/ai/`): one adapter for every AI feature. A feature describes its request once (prompt, images, JSON Schema) as an `AiJsonRequest`; `providers.ts` turns it into a Gemini `generateContent`, OpenAI Responses or Claude Messages call with structured JSON output and low reasoning effort, and parses the answer. Calls use `fetch` straight from the phone, no SDKs. `settings.ts` stores the provider, keys and model overrides in secure store. `weightScreenshot.ts` holds the screenshot prompt and schema; `prepareImage.ts` shrinks images to base64 JPEG. Phase 3's meal estimate will add its own prompt and schema on the same adapter.
+- **Weight import** (`src/app/import-weights.tsx`, `src/lib/weightImport.ts`): the pure functions check each row, merge screenshots and compare with existing weights; `importWeights` in `src/db/queries.ts` saves the ticked rows. `weight_entry.source` gained the value `import` (a TypeScript enum only, so no migration).
 - **Charts**: a small custom SVG line chart (`src/components/LineChart.tsx`) instead of a chart library. Charts use neutral colours, because green and orange are reserved for steps and calories.
 - **Release build** (`app.config.js`, `plugins/`): `app.config.js` adds the `versionCode` and the `withReleaseSigning` config plugin on top of `app.json`. The plugin edits the generated `android/app/build.gradle` so release builds sign with the key named by `ANDROID_KEYSTORE_PATH` and friends, falling back to the debug key when they are not set. `android/` itself is never committed; `expo prebuild` regenerates it.
 - **Update check** (`src/lib/updates.ts`, `src/lib/version.ts`, `src/components/UpdateBanner.tsx`): compares the installed version (`expo-constants`) with the latest GitHub release of `extra.releasesRepo` in `app.json`, caching the result and any dismissed version in `update-check.json` in the document folder.
@@ -209,6 +241,7 @@ src/components/   UI kit (ui/), profile input fields (fields/), chart, photo thu
 src/db/           SQLite schema, client, queries and write functions
 src/hooks/        Live data hooks
 src/lib/          Pure maths and formatting, with tests in __tests__/
+src/lib/ai/       AI provider adapter, key settings and prompts
 src/theme/        Design tokens (colors.ts, tokens.ts) and the theme provider
 drizzle/          Generated migrations, bundled into the app
 plugins/          Expo config plugins and helpers for the Android release build
@@ -225,11 +258,11 @@ docs/screenshots/ README screenshots
 | GitHub Releases | Hosts the APKs. The app reads `api.github.com/repos/<repo>/releases/latest` once a day to offer updates. Needs a public repo (see [Releases](#releases)) | In use |
 | Expo EAS Build | Optional development builds for working on the app. Not used for releases, so the free tier's monthly build limit doesn't matter | Optional |
 | Apple App Store and Google Play | Store release | On hold |
-| Google Gemini (default), OpenAI, Anthropic Claude | AI meal and nutrition-panel estimates, using the user's own API key stored in the Android Keystore (expo-secure-store). Rick uses a paid Gemini key. On Google's free tier, Google may use requests (photos and descriptions) to improve its models, so the consent screen says so and recommends a paid key | Phase 3 |
+| Google Gemini (in use); OpenAI and Anthropic Claude (supported by the adapter, not offered in the app yet) | Reading weight screenshots (now), and AI meal and nutrition-panel estimates (Phase 3), using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import) |
 | Open Food Facts | Barcode lookups. Free, no key, results cached locally | Phase 4 |
 | Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
 
-The only network call today is the daily update check. Once AI and barcodes arrive, the only calls will be the AI estimate, the Open Food Facts lookup and an optional backup the user chooses to save. Voice notes will be transcribed on the phone and never uploaded.
+The only network calls today are the daily update check and, when the user imports weights, the screenshots sent to their AI provider. Once AI and barcodes arrive, the only calls will be the AI estimate, the Open Food Facts lookup and an optional backup the user chooses to save. Voice notes will be transcribed on the phone and never uploaded.
 
 ## Releases
 
@@ -239,26 +272,34 @@ APKs are built and signed by GitHub Actions (`.github/workflows/android-release.
 
 Android only installs an update if it is signed with the same key as the installed app. **If the key is lost, no update can ever install over the existing app again**, and the only way forward is uninstalling, which wipes the data. So make it once, keep two backups, and never commit it.
 
-1. Make the key on your computer (needs a JDK; Android Studio includes one, or install Temurin 17). Pick a strong password when it asks:
+1. Make the key on your computer. `keytool` comes with a JDK: Android Studio includes one, or install Temurin 17. Pick a strong password when it asks. `-dname` fills in the certificate's name, so keytool doesn't ask its "What is your first and last name?" questions. The real key uses the alias `calories`.
 
-   ```bash
-   keytool -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks \
-     -alias calories-and-steps -keyalg RSA -keysize 4096 -validity 36500 \
-     -dname "CN=Calories and Steps"
-   ```
+   - **Windows (PowerShell).** `keytool` usually isn't on the PATH, so call Android Studio's copy by its full path. Keep it on one line, because PowerShell doesn't use `\` to continue lines:
+
+     ```powershell
+     & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks -alias calories -keyalg RSA -keysize 4096 -validity 36500 -dname "CN=Calories and Steps"
+     ```
+
+   - **macOS / Linux:**
+
+     ```bash
+     keytool -genkeypair -v -storetype PKCS12 -keystore calories-and-steps-release.jks \
+       -alias calories -keyalg RSA -keysize 4096 -validity 36500 \
+       -dname "CN=Calories and Steps"
+     ```
 
 2. Back it up: save the `.jks` file and the password in your password manager, and a second copy somewhere offline (for example a USB stick). Don't put it in the repo folder.
 3. Encode it for GitHub:
    - macOS / Linux: `base64 -i calories-and-steps-release.jks | tr -d '\n' > keystore.txt`
    - Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("calories-and-steps-release.jks")) | Set-Content keystore.txt`
-4. Get the certificate fingerprint: `keytool -list -v -keystore calories-and-steps-release.jks -alias calories-and-steps` and copy the `SHA256:` line.
+4. Get the certificate fingerprint: `keytool -list -v -keystore calories-and-steps-release.jks -alias calories` and copy the `SHA256:` line. On Windows, use the same full `keytool.exe` path as in step 1.
 5. In GitHub, open the repo's **Settings → Secrets and variables → Actions → New repository secret** and add:
 
    | Secret | Value |
    | --- | --- |
    | `ANDROID_KEYSTORE_BASE64` | Contents of `keystore.txt` |
    | `ANDROID_KEYSTORE_PASSWORD` | The password |
-   | `ANDROID_KEY_ALIAS` | `calories-and-steps` |
+   | `ANDROID_KEY_ALIAS` | The alias from step 1 (`calories`) |
    | `ANDROID_KEY_PASSWORD` | The password (same as above) |
    | `ANDROID_CERT_SHA256` | The SHA256 fingerprint (optional, but the build then refuses to publish an APK signed with any other key) |
 
@@ -270,6 +311,19 @@ Android only installs an update if it is signed with the same key as the install
 1. In a PR, bump `version` in `app.json` and `package.json` (for example 0.2.0 → 0.3.0) and add a changelog row.
 2. After it merges, either push a tag (`git tag v0.3.0 origin/main && git push origin v0.3.0`), or on GitHub open **Releases → Draft a new release**, type `v0.3.0` as a new tag on `main`, and publish. In the second case the release appears straight away and the APK is added to it when the build finishes.
 3. The workflow checks the tag matches `app.json`, runs the tests, builds and signs the APK, checks the signature and publishes the release with the APK attached. It takes about 15 to 25 minutes.
+
+The current release key's certificate SHA-256 is `07aea4df8cd30a8827dce11db1083b4ded20f0a36a98d58120da397011ae18c8` (alias `calories`). Every release must show this same fingerprint. The release page lists it, and `ANDROID_CERT_SHA256` makes the build refuse any other key.
+
+### How v0.2.0 was released (2026-11-24)
+
+1. PR #5 (the release pipeline) was merged and the repo was made public.
+2. Pushing tags isn't possible from Claude's cloud sessions, so PR #6 made the workflow also run when a release is published on GitHub's **Releases** page, and attach the APK to it.
+3. Rick created the key with the Windows command above, added the secrets, then used **Releases → Draft a new release** with the new tag `v0.2.0` on `main`.
+4. GitHub Actions built and signed `calories-and-steps-0.2.0.apk` in about 20 minutes and attached it to the release.
+5. The APK is **143 MB**, because it's a universal build with native code for every phone chip type (arm64, 32-bit arm, x86, x86_64).
+6. Anyone who installed the earlier test APK from a PR build has to uninstall it first. Those builds use the debug key, so they can't be updated by a release.
+
+Use the same Releases-page steps for v0.3.0 and later releases.
 
 Pull requests that change the build set-up (`app.json`, `app.config.js`, `plugins/`, dependencies or the workflow) also build the APK, without releasing it, and keep it as a build artifact for 7 days. **Run workflow** on the Actions tab does the same for any branch.
 
@@ -290,7 +344,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend and Today maths |
+| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend and Today maths, the weight-import merging and the AI request builders |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
@@ -307,6 +361,8 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **Screenshots** (`docs/screenshots`): taken from the web build at 390×844, 2× scale, with Playwright. `metro.config.js` adds `wasm` as an asset so expo-sqlite's web worker bundles. On web the database must be opened with `openDatabaseAsync` once before the app loads, so use a temporary entry file that does that (and seeds sample weights and check-ins) and points `main` at it while capturing. Don't commit that entry. Retake them when a screen changes noticeably.
 - **Release key**: lives only in GitHub secrets and Rick's backups. If GitHub secrets are ever lost, re-add them from the backup. If the key itself is lost, a new key means every phone has to uninstall (and lose data) once, so take a backup export first.
 - **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
+- **AI models**: providers retire model names. When one stops working (Settings → Save and test says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts` and release a new version. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
+- **expo-image-picker** is used without its config plugin on purpose: the plugin's `cameraPermission: false` would block the camera permission the progress photos need, and leaving it out keeps the microphone permission off. Android's photo picker needs no permission. Add the plugin (with `photosPermission`) when iOS returns.
 - **Design rules**: green is only for steps and orange only for calories. Say "calories", never "kcal".
 
 ## Future enhancements
@@ -315,12 +371,18 @@ Everything we've discussed that is not built yet.
 
 **Phase 3: AI meal logging**
 - Photo plus hold-to-talk voice note, transcribed on the phone, sent in one request to the user's chosen AI provider.
-- Provider adapter with one JSON schema for all providers: Gemini (default), OpenAI and Claude. Mid-tier models for meals, the cheapest model for nutrition panels, low reasoning effort.
+- Meal and nutrition-panel prompts and schemas on the existing provider adapter. Mid-tier models for meals, the cheapest model for nutrition panels, low reasoning effort.
 - Review and edit screen (edit grams, delete, add items) before saving.
-- Guided "get your key" step with a test button, and a one-time consent screen naming the provider and what is sent.
+- A one-time consent screen naming the provider and what is sent, before the first meal photo goes out.
+- Let the user choose OpenAI or Claude instead of Gemini, and change the model, in Settings. The adapter already supports both; only the screens are missing. Kept out for now to keep setup simple.
 - Gemini privacy note on the consent screen: with a free-tier key, Google may use the photos and descriptions sent to improve its models (and people may review them); a paid key (billing turned on) avoids this, so the note recommends one.
 - A weighed 30-meal benchmark across providers to pick the default models.
 - Food log tab with day-by-day history, swiping between days and a weekly calorie average.
+
+**Weight import, later**
+- Import a CSV file for apps that do export, and weight history from Health Connect.
+- Read very long scrolling screenshots in slices, and more than 30 screenshots in one go.
+- Mark imported entries in the weight history list, with an "undo this import" option.
 
 **Phase 4: barcode, panels and steps**
 - Open Food Facts barcode scanner with a servings picker. Unknown products fall back to photographing the nutrition panel.
@@ -336,6 +398,7 @@ Everything we've discussed that is not built yet.
 **After the MVP**
 - Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.
 - Download and open the update APK from inside the app instead of through the browser.
+- Smaller APKs: build one APK per phone chip type (ABI split), or arm64 only, which covers modern phones. That's about a third of today's 143 MB universal APK. The update check would then have to pick the right file.
 - A small key-holding relay (with App Attest and Play Integrity) so people can use the AI without their own key.
 - Signing in with OpenRouter instead of pasting a key.
 - Automatic Google Drive backup.

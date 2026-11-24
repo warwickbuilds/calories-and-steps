@@ -1,6 +1,8 @@
+import { History } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AiKeyCard } from '@/components/AiKeyCard';
 import { AgeField } from '@/components/fields/AgeField';
 import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
@@ -18,6 +20,7 @@ import {
   type Sex,
 } from '@/lib/energy';
 import { toLocalDateString } from '@/lib/dates';
+import { requestImportAfterOnboarding } from '@/lib/onboardingIntent';
 import type { UnitSystem } from '@/lib/units';
 import { LIMITS, inRange } from '@/lib/validation';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -37,7 +40,7 @@ interface Draft {
   stepTarget: number;
 }
 
-const STEPS = ['welcome', 'about', 'weight', 'activity', 'goal', 'steps'] as const;
+const STEPS = ['welcome', 'about', 'weight', 'activity', 'goal', 'steps', 'ai', 'history'] as const;
 
 export default function Onboarding() {
   const { colors } = useTheme();
@@ -78,9 +81,10 @@ export default function Onboarding() {
         })
       : null;
 
-  const finish = async () => {
+  const finish = async (thenImport = false) => {
     if (!d.sex || !d.age || !d.heightCm || !d.weightKg || !d.activity) return;
     setSaving(true);
+    if (thenImport) requestImportAfterOnboarding();
     try {
       await addWeight(d.weightKg);
       // Saving the profile flips navigation over to the Today screen.
@@ -112,7 +116,7 @@ export default function Onboarding() {
           {step > 0 ? <Button variant="secondary" label="Back" onPress={() => setStep(step - 1)} /> : null}
           <View style={styles.flex}>
             <Button
-              label={step === 0 ? 'Get started' : last ? 'Start tracking' : 'Continue'}
+              label={step === 0 ? 'Get started' : last ? 'Skip for now' : 'Continue'}
               disabled={!canContinue}
               loading={saving}
               onPress={() => (last ? finish() : setStep(step + 1))}
@@ -214,6 +218,38 @@ export default function Onboarding() {
         </View>
       ) : null}
 
+      {name === 'ai' ? (
+        <View style={styles.section}>
+          <Text variant="body" muted>
+            Optional. Add a Google AI (Gemini) key to let AI read your old weight history from screenshots, and soon
+            estimate meals from photos. You can skip this and add it later in Settings.
+          </Text>
+          <AiKeyCard title="Google AI key (optional)" />
+        </View>
+      ) : null}
+
+      {name === 'history' ? (
+        <View style={styles.section}>
+          <Text variant="body" muted>
+            Coming from another app like Lose It! or MyFitnessPal? Bring your weight history with you so your chart,
+            trend and goal projection start with everything you’ve already logged.
+          </Text>
+          <Card>
+            <History size={22} strokeWidth={1.8} color={colors.text} />
+            <Text variant="bodyStrong">Import from screenshots</Text>
+            <Text variant="label" muted>
+              Screenshot the weight list in your old app, then pick the screenshots. AI reads the dates and weights,
+              and you check them before anything is saved. It uses the Google AI key from the last step (if you
+              skipped it, you can add one on the next screen).
+            </Text>
+            <Button label="Import my weight history" loading={saving} onPress={() => finish(true)} />
+          </Card>
+          <Text variant="label" muted>
+            You can also do this later from the Weight tab.
+          </Text>
+        </View>
+      ) : null}
+
       {name === 'steps' ? (
         <View style={styles.section}>
           <Text variant="body" muted>
@@ -235,6 +271,8 @@ const TITLES: Record<(typeof STEPS)[number], string> = {
   activity: 'How active are you?',
   goal: 'Your goal',
   steps: 'Daily steps',
+  ai: 'AI features',
+  history: 'Your weight history',
 };
 
 const styles = StyleSheet.create({
