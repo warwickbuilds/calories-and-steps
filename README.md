@@ -149,6 +149,7 @@ App version: **0.2.0** (in `app.json` and `package.json`). Android's `versionCod
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Release workflow also attaches the APK to a release made on GitHub's Releases page | #6 |
 | 2026-11-23 | Android-only sideloading: signed APK release workflow, release-key signing plugin, versionCode from the version, in-app update check, uninstall warning, install guide. README split into a public part (features, screenshots, install) and a developer part. Version 0.2.0 | #5 |
 | 2026-11-23 | README brought fully up to date; rule added to keep it current with every PR | #4 |
 | 2026-11-23 | Phase 2: weight charts, goal projection, Navy body-fat check-ins with photos | #3 |
@@ -267,7 +268,7 @@ Android only installs an update if it is signed with the same key as the install
 ### Making a release
 
 1. In a PR, bump `version` in `app.json` and `package.json` (for example 0.2.0 → 0.3.0) and add a changelog row.
-2. After it merges, tag `main` and push the tag: `git tag v0.3.0 && git push origin v0.3.0` (or create the release from GitHub's **Releases → Draft a new release** with a new `v0.3.0` tag).
+2. After it merges, either push a tag (`git tag v0.3.0 origin/main && git push origin v0.3.0`), or on GitHub open **Releases → Draft a new release**, type `v0.3.0` as a new tag on `main`, and publish. In the second case the release appears straight away and the APK is added to it when the build finishes.
 3. The workflow checks the tag matches `app.json`, runs the tests, builds and signs the APK, checks the signature and publishes the release with the APK attached. It takes about 15 to 25 minutes.
 
 Pull requests that change the build set-up (`app.json`, `app.config.js`, `plugins/`, dependencies or the workflow) also build the APK, without releasing it, and keep it as a build artifact for 7 days. **Run workflow** on the Actions tab does the same for any branch.
