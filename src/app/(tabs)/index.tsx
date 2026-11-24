@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Plus, Settings } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
+import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
 import { AddButton, Card, DualRings, IconButton, ProgressBar, Screen, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
@@ -18,6 +19,7 @@ export default function TodayScreen() {
       eyebrow={formatLongDate()}
       title="Today"
       right={<IconButton icon={Settings} accessibilityLabel="Settings" onPress={() => router.push('/settings')} />}>
+      <UpdateBanner />
       <RingsCard day={today} />
       <MacrosCard day={today} />
       <MealsCard day={today} />

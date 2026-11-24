@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 
 import { AgeField } from '@/components/fields/AgeField';
 import { DateField } from '@/components/fields/DateField';
@@ -7,10 +7,11 @@ import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
 import { TargetSummary } from '@/components/TargetSummary';
-import { Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
+import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
 import { updateProfile } from '@/db/queries';
 import { useProfile, useTargets } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
+import { checkForUpdate, installedVersion, type CheckResult } from '@/lib/updates';
 import { ACTIVITY_LEVELS, GOAL_MODES, currentAge, type ActivityLevel, type GoalMode } from '@/lib/energy';
 import { space } from '@/theme/tokens';
 
@@ -125,11 +126,59 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="Your data">
-        <Text variant="label" muted>
-          Everything is stored on this phone only. Backup and restore arrive in a later update.
-        </Text>
+        <Card>
+          <Text variant="bodyStrong">Stored on this phone only</Text>
+          <Text variant="label" muted>
+            There is no account or cloud copy. Uninstalling the app, or clearing its storage, deletes your meals,
+            weights, check-ins and photos for good. Installing a new version over the top keeps everything.
+          </Text>
+          <Text variant="label" muted>
+            Backup export and restore arrive in a later update.
+          </Text>
+        </Card>
       </Section>
+
+      <AppVersionSection />
     </Screen>
+  );
+}
+
+function AppVersionSection() {
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<CheckResult | null>(null);
+
+  const check = async () => {
+    setChecking(true);
+    setResult(await checkForUpdate());
+    setChecking(false);
+  };
+
+  return (
+    <Section title="App version">
+      <Card>
+        <Text variant="body">Version {installedVersion() ?? 'unknown'}</Text>
+        {result?.status === 'current' ? (
+          <Text variant="label" muted>
+            You have the latest version.
+          </Text>
+        ) : null}
+        {result?.status === 'unavailable' ? (
+          <Text variant="label" muted>
+            Couldn’t reach GitHub. Check your connection and try again.
+          </Text>
+        ) : null}
+        {result?.status === 'update' ? (
+          <>
+            <Text variant="label" muted>
+              Version {result.update.version} is available. Download the APK and open it to install over this one.
+            </Text>
+            <Button label="Download" onPress={() => Linking.openURL(result.update.downloadUrl)} />
+          </>
+        ) : Platform.OS === 'android' ? (
+          <Button variant="secondary" label="Check for updates" loading={checking} onPress={check} />
+        ) : null}
+      </Card>
+    </Section>
   );
 }
 
