@@ -2,6 +2,8 @@
 #
 # - Pushing a tag like v0.2.0 builds the APK, signs it with the release key
 #   and publishes it as a GitHub Release. The tag must match "version" in app.json.
+#   Publishing a release with a new tag on GitHub's Releases page works too:
+#   the APK is added to that release when the build finishes.
 # - Pull requests that touch the build set-up build the APK too (no release),
 #   so a broken build shows up before anything is tagged.
 # - "Run workflow" on the Actions tab does the same as a pull request.
@@ -142,7 +144,14 @@ jobs:
 
           Signing certificate SHA-256: \`${{ steps.apk.outputs.sha256 }}\`
           NOTES
-          gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" \
-            --title "Calories and Steps ${{ steps.version.outputs.version }}" \
-            --notes-file notes.md \
-            --generate-notes
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            # The release was made on GitHub's Releases page, which also creates the tag: add the APK to it.
+            gh release upload "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" --clobber
+            gh release view "$GITHUB_REF_NAME" --json body --jq .body >> notes.md
+            gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" "${{ steps.apk.outputs.path }}" \
+              --title "Calories and Steps ${{ steps.version.outputs.version }}" \
+              --notes-file notes.md \
+              --generate-notes
+          fi
