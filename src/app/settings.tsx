@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 
@@ -6,6 +7,7 @@ import { DateField } from '@/components/fields/DateField';
 import { HeightField } from '@/components/fields/HeightField';
 import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
+import { AiKeyCard } from '@/components/AiKeyCard';
 import { TargetSummary } from '@/components/TargetSummary';
 import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
 import { updateProfile } from '@/db/queries';
@@ -125,6 +127,10 @@ export default function SettingsScreen() {
         />
       </Section>
 
+      <Section title="AI">
+        <AiKeyCard />
+      </Section>
+
       <Section title="Your data">
         <Card>
           <Text variant="bodyStrong">Stored on this phone only</Text>
@@ -135,6 +141,11 @@ export default function SettingsScreen() {
           <Text variant="label" muted>
             Backup export and restore arrive in a later update.
           </Text>
+          <Button
+            variant="secondary"
+            label="Import weights from screenshots"
+            onPress={() => router.push('/import-weights')}
+          />
         </Card>
       </Section>
 

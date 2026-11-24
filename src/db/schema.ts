@@ -111,7 +111,8 @@ export const weightEntry = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     measuredAt: text('measured_at').notNull(),
     weightKg: real('weight_kg').notNull(),
-    source: text('source', { enum: ['manual', 'health'] })
+    /** 'import' = read from another app's screenshots (no DB-level check, so no migration was needed). */
+    source: text('source', { enum: ['manual', 'health', 'import'] })
       .notNull()
       .default('manual'),
   },

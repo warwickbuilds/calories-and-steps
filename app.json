@@ -2,7 +2,7 @@
   "expo": {
     "name": "Calories and Steps",
     "slug": "calories-and-steps",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "caloriesandsteps",

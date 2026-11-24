@@ -100,6 +100,7 @@ function Navigation({ hasProfile }: { hasProfile: boolean }) {
           <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
           <Stack.Screen name="check-ins/[id]" options={{ headerShown: true, title: 'Check-in', headerBackTitle: 'Progress' }} />
           <Stack.Screen name="compare" options={{ headerShown: true, title: 'Compare', headerBackTitle: 'Progress' }} />
+          <Stack.Screen name="import-weights" options={{ headerShown: true, title: 'Import weights', headerBackTitle: 'Weight' }} />
         </Stack.Protected>
         <Stack.Protected guard={!hasProfile}>
           <Stack.Screen name="onboarding" />
