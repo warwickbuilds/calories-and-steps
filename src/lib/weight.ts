@@ -83,36 +83,93 @@ export function trendOn(points: TrendPoint[], day: string): number | null {
   return found;
 }
 
-export interface ChangeRow {
-  label: string;
+export interface PeriodChange {
   /** kg change of the trend over the period, or null when there isn't enough history. */
   kg: number | null;
+  /** Day the change is measured from. */
+  fromDay: string | null;
+  fromKg: number | null;
+  toKg: number | null;
+  /**
+   * True when the history is shorter than the period, so the change is
+   * measured from the first weigh-in instead of the period's start.
+   */
+  partial: boolean;
 }
 
+const NO_CHANGE: PeriodChange = { kg: null, fromDay: null, fromKg: null, toKg: null, partial: false };
+
 /**
- * Trend change over the last week, month, 6 months, year and all time.
- * A period only shows a number when the first weigh-in is at least that old.
+ * Trend change over the last `days` (null = all time). Measured on the trend
+ * line everywhere in the app, so the header, the chart and the Change card
+ * always agree. When the history is shorter than the period the change runs
+ * from the first weigh-in and `partial` is set.
  */
-export function changeRows(points: TrendPoint[], today: Date = new Date()): ChangeRow[] {
-  if (points.length === 0) {
-    return ['Week', 'Month', '6 months', 'Year', 'All time'].map((label) => ({ label, kg: null }));
-  }
-  const latest = points[points.length - 1].trend;
+export function periodChange(points: TrendPoint[], days: number | null, today: Date = new Date()): PeriodChange {
+  if (points.length < 2) return NO_CHANGE;
+  const latest = points[points.length - 1];
   const first = points[0];
-  const periods: [string, number][] = [
+  let fromDay = first.day;
+  let fromKg = first.trend;
+  let partial = false;
+  if (days != null) {
+    const start = toLocalDateString(addDays(today, -days));
+    if (first.day > start) {
+      partial = true;
+    } else {
+      fromDay = start;
+      fromKg = trendOn(points, start) ?? first.trend;
+    }
+  }
+  if (fromDay >= latest.day) return NO_CHANGE;
+  return { kg: latest.trend - fromKg, fromDay, fromKg, toKg: latest.trend, partial };
+}
+
+export interface ChangeRow extends PeriodChange {
+  label: string;
+}
+
+/** Trend change over the last week, month, 6 months, year and all time. */
+export function changeRows(points: TrendPoint[], today: Date = new Date()): ChangeRow[] {
+  const periods: [string, number | null][] = [
     ['Week', 7],
     ['Month', 30],
     ['6 months', 182],
     ['Year', 365],
+    ['All time', null],
   ];
-  const rows: ChangeRow[] = periods.map(([label, days]) => {
-    const day = toLocalDateString(addDays(today, -days));
-    if (first.day > day) return { label, kg: null };
-    const then = trendOn(points, day);
-    return { label, kg: then == null ? null : latest - then };
-  });
-  rows.push({ label: 'All time', kg: points.length > 1 ? latest - first.trend : null });
-  return rows;
+  return periods.map(([label, days]) => ({ label, ...periodChange(points, days, today) }));
+}
+
+export interface Milestone {
+  /** Amount lost (or gained) from the starting weight, in kg. */
+  amountKg: number;
+  /** The weight that marks the milestone. */
+  weightKg: number;
+  /** First day the trend passed it, or null for the next one still to reach. */
+  reachedDay: string | null;
+  /** The trend on that day (at or just past `weightKg`), for placing a marker on the line. */
+  reachedTrendKg: number | null;
+}
+
+/**
+ * Round-number milestones from the starting weight (every `stepKg`, so 5, 10,
+ * 15 kg...) in the direction the trend has moved. Uses the trend so a single
+ * low reading doesn't count. Returns every milestone reached plus the next one.
+ */
+export function milestones(points: TrendPoint[], stepKg = 5): Milestone[] {
+  if (points.length < 2 || stepKg <= 0) return [];
+  const start = points[0].trend;
+  const latest = points[points.length - 1].trend;
+  const dir = latest <= start ? -1 : 1;
+  const out: Milestone[] = [];
+  for (let n = 1; n < 1000; n++) {
+    const weightKg = start + dir * n * stepKg;
+    const hit = points.find((p) => (dir < 0 ? p.trend <= weightKg : p.trend >= weightKg));
+    out.push({ amountKg: n * stepKg, weightKg, reachedDay: hit?.day ?? null, reachedTrendKg: hit?.trend ?? null });
+    if (!hit) break;
+  }
+  return out;
 }
 
 /** Least-squares slope of the trend over the last `days`, in kg per day. Null with too little data. */
@@ -172,4 +229,37 @@ export function rateNeededPerWeek(
   const days = daysBetween(today, fromLocalDateString(goalDate));
   if (days <= 0) return null;
   return ((goalKg - currentKg) / days) * 7;
+}
+
+export interface ProjectionLine {
+  from: { day: string; kg: number };
+  to: { day: string; kg: number };
+  /** True when the line stops short of the goal because of `maxDays`. */
+  cut: boolean;
+}
+
+/**
+ * Straight line from today's trend to the goal along the current slope, for
+ * drawing the projection. Stops after `maxDays` so a far-off goal doesn't
+ * squash a short chart. Null when there's no on-track projection.
+ */
+export function projectionLine(
+  points: TrendPoint[],
+  goalKg: number | null | undefined,
+  maxDays: number | null = null,
+  today: Date = new Date(),
+): ProjectionLine | null {
+  const p = projectGoal(points, goalKg, today);
+  if (p.kind !== 'on-track' || goalKg == null) return null;
+  const last = points[points.length - 1];
+  const lastDate = fromLocalDateString(last.day);
+  const totalDays = daysBetween(lastDate, p.date);
+  if (totalDays <= 0) return null;
+  const days = maxDays == null ? totalDays : Math.min(totalDays, Math.max(1, maxDays));
+  const kg = last.trend + ((goalKg - last.trend) * days) / totalDays;
+  return {
+    from: { day: last.day, kg: last.trend },
+    to: { day: toLocalDateString(addDays(lastDate, days)), kg },
+    cut: days < totalDays,
+  };
 }

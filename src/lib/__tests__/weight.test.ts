@@ -2,7 +2,10 @@ import {
   changeRows,
   dailyWeights,
   inRange,
+  milestones,
+  periodChange,
   projectGoal,
+  projectionLine,
   rateNeededPerWeek,
   trendSlope,
   withTrend,
@@ -64,14 +67,50 @@ describe('inRange', () => {
 });
 
 describe('changeRows', () => {
-  it('reports trend change and hides periods older than the history', () => {
+  it('reports trend change and measures short histories from the first weigh-in', () => {
     const pts = withTrend(steadyLoss(40));
     const rows = changeRows(pts, today);
     expect(rows.map((r) => r.label)).toEqual(['Week', 'Month', '6 months', 'Year', 'All time']);
     expect(rows[0].kg).toBeLessThan(0);
+    expect(rows[0].partial).toBe(false);
     expect(rows[1].kg).toBeLessThan(rows[0].kg!);
-    expect(rows[2].kg).toBeNull();
+    // 40 days of history: 6 months and a year run from the first weigh-in, like All time.
+    expect(rows[2].partial).toBe(true);
+    expect(rows[2].fromDay).toBe(day(-39));
+    expect(rows[3].kg).toBeCloseTo(rows[4].kg!);
     expect(rows[4].kg).toBeCloseTo(pts[pts.length - 1].trend - 90);
+  });
+
+  it('agrees with periodChange, which the header and chart use', () => {
+    const pts = withTrend(steadyLoss(40));
+    expect(changeRows(pts, today)[0].kg).toBe(periodChange(pts, 7, today).kg);
+  });
+
+  it('has nothing to say with a single weigh-in', () => {
+    const pts = withTrend(steadyLoss(1));
+    expect(periodChange(pts, 7, today).kg).toBeNull();
+    expect(periodChange(pts, null, today).kg).toBeNull();
+  });
+});
+
+describe('milestones', () => {
+  it('lists every 5 kg reached on the trend, then the next one', () => {
+    // 90 kg down 0.1 a day for 200 days: about 19 kg on the trend.
+    const pts = withTrend(steadyLoss(200));
+    const m = milestones(pts, 5);
+    expect(m.map((x) => x.amountKg)).toEqual([5, 10, 15, 20]);
+    expect(m.map((x) => x.weightKg)).toEqual([85, 80, 75, 70]);
+    expect(m.slice(0, 3).every((x) => x.reachedDay != null)).toBe(true);
+    expect(m[3].reachedDay).toBeNull();
+    // The trend lags the readings a little, so 5 kg comes just after day 50.
+    expect(m[0].reachedDay! > day(-200 + 50)).toBe(true);
+  });
+
+  it('counts up when gaining', () => {
+    const gain = Array.from({ length: 120 }, (_, i) => ({ day: day(i - 119), kg: 60 + 0.1 * i }));
+    const m = milestones(withTrend(gain), 5);
+    expect(m[0].weightKg).toBe(65);
+    expect(m[0].reachedDay).not.toBeNull();
   });
 });
 
@@ -102,5 +141,19 @@ describe('projection', () => {
   it('works out the weekly rate needed for a target date', () => {
     expect(rateNeededPerWeek(80, 76, day(28), today)).toBeCloseTo(-1);
     expect(rateNeededPerWeek(80, 76, day(-1), today)).toBeNull();
+  });
+
+  it('draws the projection to the goal, or stops early when asked', () => {
+    const pts = withTrend(steadyLoss(120));
+    const current = pts[pts.length - 1].trend;
+    const full = projectionLine(pts, current - 5, null, today)!;
+    expect(full.from.day).toBe(day(0));
+    expect(full.to.kg).toBeCloseTo(current - 5);
+    expect(full.cut).toBe(false);
+    const short = projectionLine(pts, current - 5, 7, today)!;
+    expect(short.to.day).toBe(day(7));
+    expect(short.cut).toBe(true);
+    expect(short.to.kg).toBeGreaterThan(current - 5);
+    expect(projectionLine(pts, 100, null, today)).toBeNull();
   });
 });

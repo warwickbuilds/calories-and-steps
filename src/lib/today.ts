@@ -35,38 +35,7 @@ export function caloriesReadout(eaten: number, target: number): CaloriesReadout 
   };
 }
 
-export interface DatedWeight {
-  measuredAt: string;
-  weightKg: number;
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Change between the latest entry and the entry closest to 7 days before it
- * (looking back no further than 10 days). Null when there's nothing to compare.
- */
-export function weeklyChangeKg(entries: DatedWeight[]): number | null {
-  if (entries.length < 2) return null;
-  const sorted = [...entries].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
-  const latest = sorted[sorted.length - 1];
-  const latestT = Date.parse(latest.measuredAt);
-  const target = latestT - 7 * DAY_MS;
-  let best: DatedWeight | null = null;
-  let bestGap = Infinity;
-  for (const e of sorted.slice(0, -1)) {
-    const t = Date.parse(e.measuredAt);
-    if (latestT - t < 3 * DAY_MS || latestT - t > 10 * DAY_MS) continue;
-    const gap = Math.abs(t - target);
-    if (gap < bestGap) {
-      best = e;
-      bestGap = gap;
-    }
-  }
-  return best ? latest.weightKg - best.weightKg : null;
-}
-
-/** "0.3 down this week", "0.5 up this week" or "No change this week". */
+/** "0.3 down this week", "0.5 up this week" or "No change this week". Fed the trend change. */
 export function weeklyChangeText(changeInUnits: number | null): string | null {
   if (changeInUnits == null) return null;
   const rounded = Math.round(changeInUnits * 10) / 10;

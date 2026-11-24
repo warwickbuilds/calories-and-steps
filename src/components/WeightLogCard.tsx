@@ -4,11 +4,12 @@ import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button, Card, Text } from '@/components/ui';
 import { logWeightForDay } from '@/db/queries';
-import { useLatestWeight, useProfile, useRecentWeights } from '@/hooks/data';
+import { useLatestWeight, useProfile, useWeightTrend } from '@/hooks/data';
 import { dayBounds } from '@/lib/dates';
-import { weeklyChangeKg, weeklyChangeText } from '@/lib/today';
+import { weeklyChangeText } from '@/lib/today';
 import { fromDisplayWeight, parseDecimal, toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { LIMITS, inRange } from '@/lib/validation';
+import { periodChange } from '@/lib/weight';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
 
@@ -17,7 +18,7 @@ export function WeightLogCard() {
   const { colors } = useTheme();
   const { profile } = useProfile();
   const latest = useLatestWeight();
-  const recent = useRecentWeights();
+  const trend = useWeightTrend();
   const units = profile?.unitPref ?? 'metric';
   const unit = weightUnitLabel(units);
 
@@ -34,9 +35,10 @@ export function WeightLogCard() {
   const dirty = text != null && text !== prefill;
 
   const change = useMemo(() => {
-    const kgChange = weeklyChangeKg(recent);
+    // Same trend-based number as the Weight tab's chart and Change card.
+    const kgChange = periodChange(trend, 7).kg;
     return weeklyChangeText(kgChange == null ? null : toDisplayWeight(kgChange, units));
-  }, [recent, units]);
+  }, [trend, units]);
 
   const log = async () => {
     if (!valid || kg == null) return;
