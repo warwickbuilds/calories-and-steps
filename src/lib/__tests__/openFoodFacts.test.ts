@@ -1,5 +1,5 @@
 import { parseLabelAnswer } from '../ai/nutritionLabel';
-import { displayName, isBarcode, nutritionFor, offUrl, parseOffProduct } from '../openFoodFacts';
+import { displayName, isBarcode, nutritionFor, offUnit, offUrl, parseOffProduct } from '../openFoodFacts';
 
 describe('parseOffProduct', () => {
   it('reads per-100 g values', () => {
@@ -20,7 +20,24 @@ describe('parseOffProduct', () => {
       carbsPer100g: 56,
       fatPer100g: 8.5,
       servingG: 40,
+      unit: 'g',
     });
+  });
+
+  it('reads drinks as per 100 ml', () => {
+    const food = parseOffProduct({
+      status: 1,
+      product: {
+        product_name: 'FitMilk',
+        brands: 'Rokeby',
+        quantity: '1 L',
+        serving_quantity: 250,
+        serving_quantity_unit: 'ml',
+        nutriments: { 'energy-kcal_100g': 43, proteins_100g: 5 },
+      },
+    });
+    expect(food?.unit).toBe('ml');
+    expect(food?.servingG).toBe(250);
   });
 
   it('converts kJ when calories are missing', () => {
@@ -55,7 +72,7 @@ describe('barcode helpers', () => {
 
   it('builds the lookup URL with only the fields used', () => {
     expect(offUrl('9300617003014')).toBe(
-      'https://world.openfoodfacts.org/api/v2/product/9300617003014.json?fields=product_name,generic_name,brands,nutriments,serving_quantity',
+      'https://world.openfoodfacts.org/api/v2/product/9300617003014.json?fields=product_name,generic_name,brands,nutriments,serving_quantity,serving_quantity_unit,serving_size,quantity,product_quantity_unit',
     );
   });
 
@@ -78,7 +95,27 @@ describe('parseLabelAnswer', () => {
   it('keeps per-100 values', () => {
     expect(
       parseLabelAnswer({ ...base, per100: { basis: 'per100', energy: 420, protein: 8, carbs: 60, fat: 15 } }),
-    ).toEqual({ name: 'Muesli bar', caloriesPer100g: 420, proteinPer100g: 8, carbsPer100g: 60, fatPer100g: 15, servingG: 30 });
+    ).toEqual({
+      name: 'Muesli bar',
+      caloriesPer100g: 420,
+      proteinPer100g: 8,
+      carbsPer100g: 60,
+      fatPer100g: 15,
+      servingG: 30,
+      unit: 'g',
+    });
+  });
+
+  it('keeps ml for drinks', () => {
+    const r = parseLabelAnswer({
+      ...base,
+      unit: 'ml',
+      servingG: 250,
+      per100: { basis: 'per100', energy: 43, protein: 5, carbs: 2.5, fat: 1.5 },
+    });
+    expect(r?.unit).toBe('ml');
+    expect(r?.servingG).toBe(250);
+    expect(parseLabelAnswer({ ...base, unit: 'litres', per100: { basis: 'per100', energy: 43 } })?.unit).toBe('g');
   });
 
   it('converts kJ and per-serving columns', () => {
@@ -99,5 +136,28 @@ describe('parseLabelAnswer', () => {
     expect(
       parseLabelAnswer({ ...base, servingG: null, per100: { basis: 'perServing', energy: 100, protein: 1, carbs: 1, fat: 1 } }),
     ).toBeNull();
+  });
+});
+
+describe('offUnit', () => {
+  it('uses the serving unit first', () => {
+    expect(offUnit({ serving_quantity_unit: 'ml', quantity: '500 g' })).toBe('ml');
+    expect(offUnit({ serving_quantity_unit: 'g', quantity: '1 L' })).toBe('g');
+  });
+
+  it('falls back to the serving text, then the pack size', () => {
+    expect(offUnit({ serving_size: '250 mL' })).toBe('ml');
+    expect(offUnit({ serving_size: '1 cup (250 ml / 258 g)' })).toBe('g');
+    expect(offUnit({ product_quantity_unit: 'ml' })).toBe('ml');
+    expect(offUnit({ quantity: '2 L' })).toBe('ml');
+    expect(offUnit({ quantity: '330ml' })).toBe('ml');
+    expect(offUnit({ quantity: '6 x 330 ml' })).toBe('ml');
+    expect(offUnit({ quantity: '750 g' })).toBe('g');
+  });
+
+  it('defaults to grams', () => {
+    expect(offUnit({})).toBe('g');
+    expect(offUnit(null)).toBe('g');
+    expect(offUnit({ quantity: 'Large' })).toBe('g');
   });
 });

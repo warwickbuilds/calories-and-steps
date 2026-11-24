@@ -1,4 +1,5 @@
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { ArrowLeftRight } from 'lucide-react-native';
+import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
@@ -8,6 +9,8 @@ import { Text } from './Text';
 export function NumberField({
   label,
   unit,
+  onUnitPress,
+  unitHint,
   value,
   onChangeText,
   error,
@@ -15,6 +18,9 @@ export function NumberField({
 }: {
   label?: string;
   unit?: string;
+  /** Makes the unit a small button, e.g. to switch between g and ml. */
+  onUnitPress?: () => void;
+  unitHint?: string;
   value: string;
   onChangeText: (text: string) => void;
   error?: string | null;
@@ -42,7 +48,18 @@ export function NumberField({
           accessibilityLabel={label}
           {...rest}
         />
-        {unit ? (
+        {unit && onUnitPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Unit: ${unit === 'ml' ? 'millilitres' : unit === 'g' ? 'grams' : unit}`}
+            accessibilityHint={unitHint}
+            hitSlop={8}
+            onPress={onUnitPress}
+            style={[styles.unitButton, { backgroundColor: colors.track }]}>
+            <Text variant="label">{unit}</Text>
+            <ArrowLeftRight size={12} strokeWidth={2} color={colors.muted} />
+          </Pressable>
+        ) : unit ? (
           <Text variant="label" muted>
             {unit}
           </Text>
@@ -69,4 +86,12 @@ const styles = StyleSheet.create({
     gap: space[2],
   },
   input: { flex: 1, paddingVertical: space[2] },
+  unitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minHeight: 32,
+    borderRadius: radius.pill,
+    paddingHorizontal: space[3],
+  },
 });

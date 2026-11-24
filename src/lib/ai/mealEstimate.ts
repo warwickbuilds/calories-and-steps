@@ -4,7 +4,7 @@
  * person checks and edits the list before anything is saved.
  */
 
-import type { Nutrition } from '../food';
+import type { FoodUnit, Nutrition } from '../food';
 import type { AiImage, AiJsonRequest } from './providers';
 
 export const MEAL_ESTIMATE_SCHEMA = {
@@ -19,10 +19,11 @@ export const MEAL_ESTIMATE_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['name', 'grams', 'calories', 'protein', 'carbs', 'fat', 'confidence'],
+        required: ['name', 'grams', 'unit', 'calories', 'protein', 'carbs', 'fat', 'confidence'],
         properties: {
           name: { type: 'string' },
-          grams: { type: 'number', description: 'Estimated edible weight in grams (ml for drinks)' },
+          grams: { type: 'number', description: 'Estimated amount: edible weight in grams, or volume in ml for drinks' },
+          unit: { type: 'string', enum: ['g', 'ml'], description: '"ml" for drinks and other liquids, otherwise "g"' },
           calories: { type: 'number' },
           protein: { type: 'number', description: 'grams' },
           carbs: { type: 'number', description: 'grams' },
@@ -44,6 +45,7 @@ ${said ? `The person described it as: """${said.slice(0, 1500)}"""` : 'The perso
 Rules:
 - List each separate component (for example the rice, the chicken, the sauce, the drink) as one item. Combine tiny garnishes into the item they belong to.
 - The description is the person's own account and wins over what the photo seems to show: use it for amounts, brands, cooking methods, hidden ingredients (oil, butter, sugar, dressing) and anything not visible. If they say they ate only part of it, count only that part.
+- Amounts: grams for food. For drinks and other liquids (milk, juice, soft drink, coffee, soup by the cup, alcohol) give the volume in ml and set unit "ml".
 - Estimate grams from the photo using plate, cutlery and hand size as scale. Include cooking oil and sauces that are likely but not visible, as their own item when significant.
 - calories are food calories (kcal). protein, carbs and fat in grams. Make them consistent: calories should be close to 4 × protein + 4 × carbs + 9 × fat (alcohol adds 7 per gram).
 - confidence: "high" when the item and amount are clear (or stated), "medium" for a reasonable guess, "low" when the item or amount is hard to tell.
@@ -64,6 +66,7 @@ export function mealEstimateRequest(input: { image: AiImage | null; description:
 export interface EstimatedItem extends Nutrition {
   name: string;
   grams: number;
+  unit: FoodUnit;
   confidence: 'low' | 'medium' | 'high';
 }
 
@@ -89,6 +92,7 @@ export function parseMealAnswer(answer: any): MealEstimate | null {
     items.push({
       name: name.charAt(0).toUpperCase() + name.slice(1),
       grams: Math.round(grams),
+      unit: it.unit === 'ml' ? 'ml' : 'g',
       calories: Math.round(calories),
       proteinG: r1(it.protein),
       carbsG: r1(it.carbs),

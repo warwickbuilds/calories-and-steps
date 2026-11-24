@@ -20,6 +20,7 @@ export const dayItemsQuery = (day: string) =>
       id: foodItem.id,
       name: foodItem.name,
       grams: foodItem.grams,
+      unit: foodItem.unit,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,

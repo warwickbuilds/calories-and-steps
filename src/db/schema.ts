@@ -78,6 +78,10 @@ export const foodRef = sqliteTable(
     carbsPer100g: real('carbs_per_100g'),
     fatPer100g: real('fat_per_100g'),
     servingG: real('serving_g'),
+    /** What the per-100 numbers and serving are measured in: grams for food, millilitres for drinks. */
+    unit: text('unit', { enum: ['g', 'ml'] })
+      .notNull()
+      .default('g'),
     source: text('source', { enum: ['off', 'panel', 'custom'] }).notNull(),
     isFavourite: integer('is_favourite', { mode: 'boolean' }).notNull().default(false),
     createdAt: createdAt(),
@@ -94,7 +98,11 @@ export const foodItem = sqliteTable(
       .notNull()
       .references(() => meal.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    /** The amount, in `unit` (the column keeps its old name; for drinks it holds millilitres). */
     grams: real('grams'),
+    unit: text('unit', { enum: ['g', 'ml'] })
+      .notNull()
+      .default('g'),
     calories: real('calories').notNull(),
     proteinG: real('protein_g'),
     carbsG: real('carbs_g'),

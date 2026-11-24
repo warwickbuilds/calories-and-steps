@@ -65,7 +65,7 @@ function parseFood(json: string | undefined): ({ name: string } & Nutrition) | n
     const f = JSON.parse(json);
     if (typeof f?.name !== 'string' || typeof f?.calories !== 'number') return null;
     const n = (v: unknown) => (typeof v === 'number' ? v : null);
-    return { name: f.name, calories: f.calories, proteinG: n(f.proteinG), carbsG: n(f.carbsG), fatG: n(f.fatG), grams: n(f.grams) };
+    return { name: f.name, calories: f.calories, proteinG: n(f.proteinG), carbsG: n(f.carbsG), fatG: n(f.fatG), grams: n(f.grams), unit: f.unit === 'ml' ? 'ml' : 'g' };
   } catch {
     return null;
   }

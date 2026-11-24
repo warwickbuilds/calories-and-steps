@@ -7,7 +7,7 @@ import { AddButton, Button, Card, Screen, Segmented, Text } from '@/components/u
 import { addFood } from '@/db/meals';
 import { useRecentFoods } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
-import { dayLabel, macroLine, searchFoods, type RecentFood } from '@/lib/food';
+import { dayLabel, formatAmount, macroLine, searchFoods, type RecentFood } from '@/lib/food';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
@@ -40,6 +40,7 @@ export default function AddFoodScreen() {
           carbsG: f.carbsG,
           fatG: f.fatG,
           grams: f.grams,
+          unit: f.unit,
         }),
       },
     });
@@ -48,7 +49,7 @@ export default function AddFoodScreen() {
     await addFood({
       day,
       mealType: meal,
-      food: { name: f.name, calories: f.calories, proteinG: f.proteinG, carbsG: f.carbsG, fatG: f.fatG, grams: f.grams },
+      food: { name: f.name, calories: f.calories, proteinG: f.proteinG, carbsG: f.carbsG, fatG: f.fatG, grams: f.grams, unit: f.unit },
     });
     setAdded((s) => new Set(s).add(f.name));
   };
@@ -125,7 +126,7 @@ export default function AddFoodScreen() {
                   <Text variant="bodyMedium">{f.name}</Text>
                   <Text variant="caption" muted>
                     {formatNumber(f.calories)} calories
-                    {f.grams != null ? ` · ${formatNumber(f.grams)} g` : ''}
+                    {f.grams != null ? ` · ${formatAmount(f.grams, f.unit)}` : ''}
                     {macros ? ` · ${macros}` : ''}
                   </Text>
                 </Pressable>

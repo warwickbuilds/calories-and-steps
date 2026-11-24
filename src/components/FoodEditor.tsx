@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Button, NumberField, Screen, Segmented, Text } from '@/components/ui';
 import type { FoodValues } from '@/db/meals';
-import { scaleNutrition, type Nutrition } from '@/lib/food';
+import { scaleNutrition, type FoodUnit, type Nutrition } from '@/lib/food';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
 import { parseDecimal } from '@/lib/units';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -52,6 +52,7 @@ export function FoodEditor({
   const [carbs, setCarbs] = useState(str(initial?.carbsG));
   const [fat, setFat] = useState(str(initial?.fatG));
   const [grams, setGrams] = useState(str(initial?.grams));
+  const [unit, setUnit] = useState<FoodUnit>(initial?.unit ?? base?.unit ?? 'g');
   const [portion, setPortion] = useState<number | null>(base ? 1 : null);
   const [saving, setSaving] = useState(false);
 
@@ -97,6 +98,7 @@ export function FoodEditor({
           carbsG: num(carbs),
           fatG: num(fat),
           grams: num(grams),
+          unit,
         },
         meal,
       );
@@ -173,7 +175,14 @@ export function FoodEditor({
           }}
           autoFocus={autoFocusCalories}
         />
-        <NumberField label="Amount (optional)" unit="g" value={grams} onChangeText={changeGrams} />
+        <NumberField
+          label="Amount (optional)"
+          unit={unit}
+          onUnitPress={() => setUnit((u) => (u === 'g' ? 'ml' : 'g'))}
+          unitHint="Switches between grams and millilitres"
+          value={grams}
+          onChangeText={changeGrams}
+        />
       </View>
       <View style={styles.row}>
         <NumberField label="Protein" unit="g" value={protein} onChangeText={setProtein} />
@@ -182,7 +191,7 @@ export function FoodEditor({
       </View>
       {base?.grams ? (
         <Text variant="caption" muted>
-          Changing the amount in grams rescales calories and macros.
+          Changing the amount rescales calories and macros.
         </Text>
       ) : null}
     </Screen>

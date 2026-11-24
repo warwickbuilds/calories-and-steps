@@ -36,6 +36,7 @@ describe('parseMealAnswer', () => {
     expect(r?.items[0]).toEqual({
       name: 'Rice',
       grams: 180,
+      unit: 'g',
       calories: 235,
       proteinG: 4.3,
       carbsG: 51,
@@ -50,6 +51,16 @@ describe('parseMealAnswer', () => {
     ).toBeNull();
     expect(parseMealAnswer({ isFood: false, mealName: '', items: [] })).toBeNull();
     expect(parseMealAnswer(null)).toBeNull();
+  });
+
+  it('keeps ml for drinks', () => {
+    const r = parseMealAnswer({
+      isFood: true,
+      mealName: 'Flat white',
+      items: [{ name: 'Flat white', grams: 220, unit: 'ml', calories: 110, protein: 6, carbs: 9, fat: 5.5, confidence: 'high' }],
+    });
+    expect(r?.items[0].unit).toBe('ml');
+    expect(r?.items[0].grams).toBe(220);
   });
 
   it('falls back to the first item for a missing meal name', () => {

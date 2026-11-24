@@ -6,7 +6,7 @@ import { AddButton, Card, IconButton, Screen, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { useDayItems, useDayTotals, useTargets, useWeekAverage } from '@/hooks/data';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
-import { dayLabel, macroLine } from '@/lib/food';
+import { dayLabel, formatAmount, macroLine } from '@/lib/food';
 import { MEAL_TYPES, formatNumber, isLocalDate } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
@@ -100,7 +100,7 @@ export default function FoodScreen() {
                   <Text variant="bodyMedium">{r.name}</Text>
                   <Text variant="caption" muted>
                     {formatNumber(r.calories)} calories
-                    {r.grams != null ? ` · ${formatNumber(r.grams)} g` : ''}
+                    {r.grams != null ? ` · ${formatAmount(r.grams, r.unit)}` : ''}
                     {macros ? ` · ${macros}` : ''}
                   </Text>
                 </Pressable>

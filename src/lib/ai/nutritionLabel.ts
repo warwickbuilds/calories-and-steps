@@ -9,7 +9,7 @@ import type { AiImage, AiJsonRequest } from './providers';
 export const NUTRITION_LABEL_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['isLabel', 'name', 'per100', 'servingG', 'energyUnit'],
+  required: ['isLabel', 'name', 'per100', 'servingG', 'energyUnit', 'unit'],
   properties: {
     isLabel: { type: 'boolean', description: 'False if the photo is not a nutrition label' },
     name: { type: ['string', 'null'], description: 'Product name if visible on the photo' },
@@ -27,6 +27,7 @@ export const NUTRITION_LABEL_SCHEMA = {
       },
     },
     servingG: { type: ['number', 'null'], description: 'Grams (or ml) in one serving, if stated' },
+    unit: { type: 'string', enum: ['g', 'ml'], description: '"ml" if the label is per 100 ml (a drink), otherwise "g"' },
   },
 } as const;
 
@@ -37,7 +38,8 @@ Rules:
 - energy: the energy value from that column. If both kJ and kcal (Calories) are shown, use the kcal value and energyUnit "kcal". If only kJ is shown, give the kJ value and energyUnit "kJ".
 - carbs is total carbohydrate. In US-style labels "Total Carbohydrate"; in Australian/UK/EU labels "Carbohydrate". Do not use "of which sugars".
 - fat is total fat. protein is protein. Use null for anything not shown.
-- servingG: the serving size in grams or ml, if stated (e.g. "Serving size: 30g" → 30).
+- servingG: the serving size in grams or ml, if stated (e.g. "Serving size: 30g" → 30, "Serving size: 250mL" → 250).
+- unit: "ml" if the column is per 100 ml or the serving is given in ml (drinks, milk, juice, liquid yoghurt), otherwise "g".
 - name: the product name if it is visible, otherwise null.
 - If the photo is not a nutrition label, set isLabel false and use 0 and nulls.`;
 
@@ -80,5 +82,6 @@ export function parseLabelAnswer(answer: any): (Omit<Per100g, 'name' | 'brand'> 
     carbsPer100g: scale(r1(p.carbs)),
     fatPer100g: scale(r1(p.fat)),
     servingG: servingG && servingG > 0 ? servingG : null,
+    unit: answer.unit === 'ml' ? 'ml' : 'g',
   };
 }

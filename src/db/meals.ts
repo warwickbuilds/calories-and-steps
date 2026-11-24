@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 
+import type { FoodUnit } from '@/lib/food';
 import type { MealType } from '@/lib/today';
 
 import { db } from './client';
@@ -10,6 +11,7 @@ export const recentItemsQuery = (limit = 400) =>
     .select({
       name: foodItem.name,
       grams: foodItem.grams,
+      unit: foodItem.unit,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,
@@ -36,6 +38,7 @@ export const foodItemQuery = (id: number) =>
       id: foodItem.id,
       name: foodItem.name,
       grams: foodItem.grams,
+      unit: foodItem.unit,
       calories: foodItem.calories,
       proteinG: foodItem.proteinG,
       carbsG: foodItem.carbsG,
@@ -51,6 +54,8 @@ export const foodItemQuery = (id: number) =>
 export type FoodValues = {
   name: string;
   grams?: number | null;
+  /** What `grams` is measured in. Grams when left out. */
+  unit?: FoodUnit;
   calories: number;
   proteinG?: number | null;
   carbsG?: number | null;
@@ -139,6 +144,7 @@ export async function updateFoodItem(id: number, food: FoodValues, mealType: Mea
 const nullable = (f: FoodValues) => ({
   name: f.name,
   grams: f.grams ?? null,
+  unit: f.unit ?? 'g',
   calories: f.calories,
   proteinG: f.proteinG ?? null,
   carbsG: f.carbsG ?? null,
