@@ -1,59 +1,122 @@
-import { Trash2 } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Card, Screen, Text } from '@/components/ui';
-import { deleteFoodItem } from '@/db/meals';
-import { useDayItems } from '@/hooks/data';
-import { formatLongDate, toLocalDateString } from '@/lib/dates';
-import { MEAL_TYPES, formatNumber } from '@/lib/today';
+import { AddButton, Card, IconButton, Screen, Text } from '@/components/ui';
+import { copyMeal } from '@/db/meals';
+import { useDayItems, useDayTotals, useTargets, useWeekAverage } from '@/hooks/data';
+import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
+import { dayLabel, macroLine } from '@/lib/food';
+import { MEAL_TYPES, formatNumber, isLocalDate } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
-import { layout, space } from '@/theme/tokens';
+import { space } from '@/theme/tokens';
 
-/** Today's food, grouped by meal. Day-by-day history arrives with AI meal logging (Phase 3). */
+/** Food log, one day at a time, with the 7-day average. */
 export default function FoodScreen() {
   const { colors } = useTheme();
-  const items = useDayItems(toLocalDateString());
-
-  const confirmDelete = (id: number, name: string) =>
-    Alert.alert(`Delete ${name}?`, undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteFoodItem(id) },
-    ]);
+  const params = useLocalSearchParams<{ day?: string }>();
+  const today = toLocalDateString();
+  // The day lives in the route, so Today can open a given day and the tab remembers it.
+  const day = isLocalDate(params.day) && params.day <= today ? params.day : today;
+  const shift = (n: number) => router.setParams({ day: toLocalDateString(addDays(fromLocalDateString(day), n)) });
+  const prevDay = toLocalDateString(addDays(fromLocalDateString(day), -1));
+  const prevLabel = dayLabel(prevDay, today);
+  const items = useDayItems(day);
+  const totals = useDayTotals(day);
+  const prevTotals = useDayTotals(prevDay);
+  const targets = useTargets();
+  const week = useWeekAverage(day);
 
   return (
-    <Screen eyebrow={formatLongDate()} title="Food">
+    <Screen
+      eyebrow={formatLongDate(fromLocalDateString(day))}
+      title={dayLabel(day, today)}
+      right={
+        <View style={styles.nav}>
+          <IconButton icon={ChevronLeft} accessibilityLabel="Previous day" onPress={() => shift(-1)} />
+          {day < today ? <IconButton icon={ChevronRight} accessibilityLabel="Next day" onPress={() => shift(1)} /> : null}
+        </View>
+      }>
+      <Card>
+        <View style={styles.summary}>
+          <View style={styles.summaryCol}>
+            <View style={styles.labelRow}>
+              <View style={[styles.dot, { backgroundColor: colors.calories }]} />
+              <Text variant="label" muted>
+                Eaten
+              </Text>
+            </View>
+            <Text variant="metric">{formatNumber(totals.calories)}</Text>
+            <Text variant="caption" muted>
+              {targets ? `of ${formatNumber(targets.calories)} calories` : 'calories'}
+            </Text>
+          </View>
+          <View style={styles.summaryCol}>
+            <Text variant="label" muted>
+              7-day average
+            </Text>
+            <Text variant="metric">{week ? formatNumber(week.average) : '–'}</Text>
+            <Text variant="caption" muted>
+              {week ? `calories, ${week.daysLogged} ${week.daysLogged === 1 ? 'day' : 'days'} logged` : 'Nothing logged yet'}
+            </Text>
+          </View>
+        </View>
+        {totals.calories > 0 ? (
+          <Text variant="caption" muted>
+            {macroLine(totals)}
+          </Text>
+        ) : null}
+      </Card>
+
       {MEAL_TYPES.map((m) => {
         const rows = items.filter((i) => i.mealType === m.value);
         const total = rows.reduce((s, r) => s + r.calories, 0);
+        const canCopy = rows.length === 0 && prevTotals.byMeal[m.value].count > 0;
         return (
           <Card
             key={m.value}
             title={m.label}
             right={
-              <Text variant="label" muted>
-                {rows.length ? `${formatNumber(total)} calories` : 'Not logged'}
-              </Text>
+              <View style={styles.cardRight}>
+                <Text variant="label" muted>
+                  {rows.length ? `${formatNumber(total)} calories` : 'Not logged'}
+                </Text>
+                <AddButton
+                  icon={Plus}
+                  accessibilityLabel={`Add food to ${m.label}`}
+                  onPress={() => router.push({ pathname: '/add-food', params: { meal: m.value, day } })}
+                />
+              </View>
             }>
-            {rows.map((r) => (
-              <View key={r.id} style={[styles.row, { borderTopColor: colors.line }]}>
-                <View style={styles.flex}>
+            {rows.map((r) => {
+              const macros = macroLine(r);
+              return (
+                <Pressable
+                  key={r.id}
+                  accessibilityRole="button"
+                  accessibilityHint="Opens it to change or delete"
+                  onPress={() => router.push({ pathname: '/food-item', params: { id: String(r.id) } })}
+                  style={({ pressed }) => [styles.row, { borderTopColor: colors.line, opacity: pressed ? 0.6 : 1 }]}>
                   <Text variant="bodyMedium">{r.name}</Text>
                   <Text variant="caption" muted>
                     {formatNumber(r.calories)} calories
-                    {r.proteinG != null ? ` · P ${Math.round(r.proteinG)}g` : ''}
-                    {r.carbsG != null ? ` · C ${Math.round(r.carbsG)}g` : ''}
-                    {r.fatG != null ? ` · F ${Math.round(r.fatG)}g` : ''}
+                    {r.grams != null ? ` · ${formatNumber(r.grams)} g` : ''}
+                    {macros ? ` · ${macros}` : ''}
                   </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Delete ${r.name}`}
-                  onPress={() => confirmDelete(r.id, r.name)}
-                  style={styles.delete}>
-                  <Trash2 size={18} strokeWidth={1.8} color={colors.muted} />
                 </Pressable>
-              </View>
-            ))}
+              );
+            })}
+            {canCopy ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => copyMeal(m.value, prevDay, day)}
+                hitSlop={{ top: 8, bottom: 8 }}
+                style={({ pressed }) => [styles.pill, { backgroundColor: colors.track, opacity: pressed ? 0.7 : 1 }]}>
+                <Text variant="caption" muted>
+                  {prevLabel === 'Yesterday' ? 'Same as yesterday' : `Same as ${prevLabel}`}
+                </Text>
+              </Pressable>
+            ) : null}
           </Card>
         );
       })}
@@ -62,13 +125,12 @@ export default function FoodScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space[3],
-    paddingTop: space[2],
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  delete: { width: layout.minTap, height: layout.minTap, alignItems: 'center', justifyContent: 'center' },
+  nav: { flexDirection: 'row', gap: space[2] },
+  summary: { flexDirection: 'row', gap: space[4] },
+  summaryCol: { flex: 1, gap: 2 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  cardRight: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  row: { gap: 2, paddingTop: space[2], borderTopWidth: StyleSheet.hairlineWidth },
+  pill: { alignSelf: 'flex-start', height: 28, borderRadius: 14, paddingHorizontal: space[3], justifyContent: 'center' },
 });

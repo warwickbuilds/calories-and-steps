@@ -14,7 +14,8 @@ A simple, private Android app for tracking what you eat, how much you move and h
 ## What it does
 
 - **Calories and macros.** A daily calorie target worked out from your body and activity, with a goal of hard cut, steady cut, maintain or bulk. Protein, carbs and fat are shown against their own targets.
-- **Meals.** Log breakfast, lunch, dinner and snacks. Quick add calories in seconds, or copy a meal from yesterday.
+- **Meals.** Log breakfast, lunch, dinner and snacks. Search the foods you've had before and add one in a tap, change the servings or grams, quick add calories in seconds, or copy a meal from yesterday. Tap anything you logged to fix it or move it to another meal.
+- **Food history.** Step back through earlier days, add or fix food on any of them, and see your 7-day calorie average.
 - **Weight.** A quick weigh-in on the home screen, charts from a week to all time, a smoothed trend line that ignores water swings, change over each period, and a projection of when you'll reach your goal.
 - **Bring your weight history with you.** Screenshot the weight list in your old app (Lose It!, MyFitnessPal, a smart-scale app or anything that shows dates and weights), pick the screenshots, and AI reads every entry. You check and fix the list before anything is saved, and duplicates are skipped. Offered when you first set up the app, and any time from the Weight tab. Uses your own Google AI (Gemini) key.
 - **Body fat.** Body fat (Navy method) check-ins from a tape measure, with lean and fat mass, plain BMI alongside, and front, side and back photos you can line up and compare side by side.
@@ -22,7 +23,7 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Light and dark.** Follows your phone, or pick one.
 - **Updates.** The app tells you when a new version is out.
 
-**Coming next:** photograph a meal and describe it out loud for an AI calorie estimate (using your own Google AI key), barcode scanning, reading nutrition labels, step sync from Health Connect, and backup and restore.
+**Coming next:** barcode scanning and reading nutrition labels, then photographing a meal and describing it out loud for an AI calorie estimate (using your own Google AI key), step sync from Health Connect, and backup and restore.
 
 ## Install
 
@@ -83,14 +84,18 @@ Wording rule: the app always says "calories", never "kcal".
 | 1. Foundation | Onboarding, profile, targets, Today screen, settings, database | Done (PR #1, #2) |
 | 2. Weight and body fat | Weight charts, change cards, goal projection, Navy check-ins with photos | Done (PR #3) |
 | Weight import | Import weight history from another app's screenshots with AI, offered in onboarding and on the Weight tab; provider adapter and Google AI key setup in onboarding and Settings (shared with Phase 3) | Done (PR #7) |
-| 3. AI meal logging | Photo and voice meal estimate, review screen, consent screen (adapter and key setup already built) | Next |
-| 4. Barcode, panels and steps | Open Food Facts scanner, nutrition-panel reading, favourites, step sync | Planned |
+| 3a. Food log | Add-food screen with search over recent foods, servings and grams, editing logged items, Food tab by day with a 7-day average | Done (PR #8) |
+| 3b. Barcodes and labels | Open Food Facts scanner with a local cache, AI nutrition-label reading when a product isn't found | Next |
+| 3c. AI meal logging | Photo and spoken description meal estimate, review screen, privacy note (adapter and key setup already built) | Planned |
+| 4. Steps | Step sync from Health Connect, favourites | Planned |
 | 5. Backup and polish | Zip export and import with a backup reminder, empty and offline states, icons | Planned |
 | Releases | Signed APKs on GitHub Releases, in-app update check, public README | Done (PR #5) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) is released the same way once PR #7 is merged.
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). **v0.3.0** (weight import and the Google AI key, PR #7) followed the same day and Rick confirmed it works on his phone. **v0.4.0** (food log, PR #8) is released the same way once PR #8 is merged.
 
-Not yet checked on a real phone: the weight import's AI call (it needs a Google AI key), and anything from Phase 3 on.
+Phase 3 is split into three releases so each can be tried on the phone: the food log (0.4.0), then barcodes and labels, then photo meal estimates.
+
+Checked on a real phone: everything up to v0.3.0, including the weight import's AI call with Rick's Gemini key. Not yet checked: anything from Phase 3 on.
 
 ## Features
 
@@ -115,14 +120,32 @@ The detailed list of what works now.
 - Steps and calories rings. Steps shows "Connect steps" until step sync arrives in Phase 4.
 - Calories left, or "N over" in red once past the target.
 - Protein, carbs and fat bars against their targets.
-- Breakfast, Lunch, Dinner and Snacks, each with a "+" button and two pills:
-  - "Quick add" enters calories and optional macros.
+- Breakfast, Lunch, Dinner and Snacks, each with a "+" button (opens [Add food](#add-food)) and two pills:
+  - "Quick add" enters calories and optional grams and macros.
   - "Same as yesterday" copies yesterday's items for that meal. It is hidden when that meal was empty yesterday.
+- Tapping a meal's name opens the Food tab on that day.
 - "Weight today" card for a quick weigh-in.
+
+### Add food
+
+- Opened by every "+" (Today and the Food tab), for the chosen meal and day. The meal can be switched at the top.
+- **Recent foods**: everything logged before, one row per name (ignoring case), using the most recent serving's numbers, newest first, up to 50. Generic "Quick add" rows are left out. Built from the last 400 logged items, so there is no separate food list to keep in sync.
+- **Search** matches every typed word anywhere in the name. With no match, it offers to quick add the typed name.
+- The "+" on a row adds that serving straight away and shows a tick, so several foods can be added in a row; **Done** closes the screen. Tapping the row opens it first.
+- **Quick add calories** opens the quick-add form for the same meal and day.
+
+### Food form (quick add, add and edit)
+
+- One form (`src/components/FoodEditor.tsx`) for quick add, adding a recent food and editing a logged one: meal, name, calories, amount in grams (optional), protein, carbs and fat.
+- When it starts from a known serving, **Servings** buttons (½, 1, 1½, 2) rescale every number, and changing the grams rescales calories and macros in proportion. Typing a number directly always wins.
+- Editing a logged item has **Save** and **Delete**. Changing its meal moves it (a new meal entry on the same day; the old one is removed if left empty).
+- Food added to another day is timed at midday that day; food added today uses the current time.
 
 ### Food tab
 
-- Lists what was logged today, by meal, with delete.
+- One day at a time: arrows step back and forward (not past today). Tapping a meal's name on Today opens the tab on that day. The day is kept in the route (`/food?day=YYYY-MM-DD`).
+- A summary card: calories eaten against the target, protein, carbs and fat, and the **7-day average**. The average covers the seven days ending on the shown day and counts only days with food logged, so a forgotten day doesn't drag it down.
+- Each meal lists its items with calories, grams and macros. Tap one to edit or delete it. "+" adds to that meal on that day, and an empty meal offers "Same as yesterday" (or the previous date) when it had food the day before.
 
 ### Weight tab
 
@@ -171,10 +194,11 @@ The detailed list of what works now.
 
 ## Versions and changelog
 
-App version: **0.3.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.4.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-24 | Phase 3a, food log: add-food screen with search over recent foods and one-tap add, servings and grams rescaling, edit or delete or move any logged item, Food tab by day with a 7-day average, adding food to past days. Version 0.4.0 | #8 |
 | 2026-11-24 | Import weight history from screenshots of another app, read by AI, offered in onboarding and on the Weight tab. Google AI key in onboarding and Settings. Provider-agnostic AI adapter (Gemini, OpenAI, Claude). Version 0.3.0 | #7 |
 | 2026-11-24 | **v0.2.0 released**: first signed APK (143 MB), published from the Releases page | – |
 | 2026-11-24 | Release workflow also attaches the APK to a release made on GitHub's Releases page | #6 |
@@ -219,7 +243,7 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 
 - **App framework**: Expo with TypeScript, run as a development build (not Expo Go) because of native modules. Routes live in `src/app`.
   - Tabs: Today, Food, Weight, Progress.
-  - Stack screens: settings, quick-add (modal), check-in (modal), camera (full screen), check-ins/[id], compare, import-weights.
+  - Stack screens: settings, add-food (modal), quick-add (modal), food-item (modal: add a recent food or edit a logged one), check-in (modal), camera (full screen), check-ins/[id], compare, import-weights.
   - `Stack.Protected` shows onboarding until a profile exists.
 - **Data**: one SQLite file, 8 tables: profile, meal, food_item, food_ref, weight_entry, body_check, body_photo, steps_day. All values are metric; display converts.
   - Live queries need `enableChangeListener` (set in `src/db/client.ts`), and foreign keys are switched on.
@@ -231,7 +255,8 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 - **Release build** (`app.config.js`, `plugins/`): `app.config.js` adds the `versionCode` and the `withReleaseSigning` config plugin on top of `app.json`. The plugin edits the generated `android/app/build.gradle` so release builds sign with the key named by `ANDROID_KEYSTORE_PATH` and friends, falling back to the debug key when they are not set. `android/` itself is never committed; `expo prebuild` regenerates it.
 - **Update check** (`src/lib/updates.ts`, `src/lib/version.ts`, `src/components/UpdateBanner.tsx`): compares the installed version (`expo-constants`) with the latest GitHub release of `extra.releasesRepo` in `app.json`, caching the result and any dismissed version in `update-check.json` in the document folder.
 - **Design system**: tokens in `src/theme` (colours for light and dark, spacing, radius, type scale). Space Grotesk for numbers and headings, Inter for text, lucide icons. Font scaling is capped at 1.3×.
-- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `body.ts` (Navy formula, BMI), `weight.ts` (trend, change rows, projection), `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
+- **Food log** (`src/lib/food.ts`, `src/db/meals.ts`): recent foods are worked out from logged items (`recentItemsQuery`, then `recentFoods` de-duplicates by name), so no food table has to be kept in sync. Each add makes its own `meal` row with one `food_item`; `updateFoodItem` moves an item between meals; `dailyCaloriesQuery` sums calories per day for the 7-day average. Pure helpers for search, scaling, day labels and the average are tested on their own. No schema change, so no migration.
+- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, change rows, projection), `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
 
 ### Folder layout
 
@@ -259,7 +284,7 @@ docs/screenshots/ README screenshots
 | Expo EAS Build | Optional development builds for working on the app. Not used for releases, so the free tier's monthly build limit doesn't matter | Optional |
 | Apple App Store and Google Play | Store release | On hold |
 | Google Gemini (in use); OpenAI and Anthropic Claude (supported by the adapter, not offered in the app yet) | Reading weight screenshots (now), and AI meal and nutrition-panel estimates (Phase 3), using the user's own API key stored in the Android Keystore (expo-secure-store). Default models: `gemini-3.6-flash`, `gpt-6-luna`, `claude-haiku-5-5`. Rick uses a paid Gemini key. On Google's free tier, Google may use requests (screenshots, photos and descriptions) to improve its models, so Settings says so and recommends a paid key | In use (weight import) |
-| Open Food Facts | Barcode lookups. Free, no key, results cached locally | Phase 4 |
+| Open Food Facts | Barcode lookups. Free, no key, results cached locally | Phase 3b (next) |
 | Apple Health (HealthKit) and Health Connect | Reading daily steps, and weight from smart scales. Google Fit is skipped because it is being retired | Phase 4 |
 
 The only network calls today are the daily update check and, when the user imports weights, the screenshots sent to their AI provider. Once AI and barcodes arrive, the only calls will be the AI estimate, the Open Food Facts lookup and an optional backup the user chooses to save. Voice notes will be transcribed on the phone and never uploaded.
@@ -344,7 +369,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend and Today maths, the weight-import merging and the AI request builders |
+| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, Today and food-log maths, the weight-import merging and the AI request builders |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
@@ -358,7 +383,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 - **Database changes**: edit `src/db/schema.ts`, run `npm run db:generate`, and check the SQL it writes into `drizzle/`. drizzle-kit asks about renames interactively and fails when it can't, so do a rename as two migrations (add the new column, then drop the old one) and hand-add any data backfill. Never edit a migration that has shipped.
 - **Upgrading the Expo SDK**: read the SDK release notes, run `npx expo install expo@^<new>` then `npx expo install --fix`, run all the checks, then make new development builds.
 - **Releases**: see [Releases](#releases). Never reuse or lower a version: Android needs a higher `versionCode` every time. Minor and patch must stay below 100.
-- **Screenshots** (`docs/screenshots`): taken from the web build at 390×844, 2× scale, with Playwright. `metro.config.js` adds `wasm` as an asset so expo-sqlite's web worker bundles. On web the database must be opened with `openDatabaseAsync` once before the app loads, so use a temporary entry file that does that (and seeds sample weights and check-ins) and points `main` at it while capturing. Don't commit that entry. Retake them when a screen changes noticeably.
+- **Screenshots** (`docs/screenshots`): taken from the web build at 390×844, 2× scale, with Playwright. `metro.config.js` adds `wasm` as an asset so expo-sqlite's web worker bundles. On web the database must be opened with `openDatabaseAsync` once before the app loads, so use a temporary entry file that does that, runs the migrations with drizzle's `migrate`, seeds sample data, then `require('expo-router/entry')`, and point `main` at it while capturing. Don't commit that entry. expo-sqlite on web needs `SharedArrayBuffer`, so the page must be cross-origin isolated: in Playwright, route the dev server's responses and add `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. Retake them when a screen changes noticeably.
 - **Release key**: lives only in GitHub secrets and Rick's backups. If GitHub secrets are ever lost, re-add them from the backup. If the key itself is lost, a new key means every phone has to uninstall (and lose data) once, so take a backup export first.
 - **Build tools**: the workflow uses Node 22 and JDK 17. When an Expo SDK upgrade needs newer ones, change them in `android-release.yml`.
 - **AI models**: providers retire model names. When one stops working (Settings → Save and test says the model isn't recognised), update `defaultModel` in `src/lib/ai/providers.ts` and release a new version. Gemini's `generateContent` is now a legacy API (still supported); move to its Interactions API if Google announces a shutdown.
@@ -369,7 +394,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 Everything we've discussed that is not built yet.
 
-**Phase 3: AI meal logging**
+**Phase 3c: AI meal logging**
 - Photo plus hold-to-talk voice note, transcribed on the phone, sent in one request to the user's chosen AI provider.
 - Meal and nutrition-panel prompts and schemas on the existing provider adapter. Mid-tier models for meals, the cheapest model for nutrition panels, low reasoning effort.
 - Review and edit screen (edit grams, delete, add items) before saving.
@@ -377,16 +402,19 @@ Everything we've discussed that is not built yet.
 - Let the user choose OpenAI or Claude instead of Gemini, and change the model, in Settings. The adapter already supports both; only the screens are missing. Kept out for now to keep setup simple.
 - Gemini privacy note on the consent screen: with a free-tier key, Google may use the photos and descriptions sent to improve its models (and people may review them); a paid key (billing turned on) avoids this, so the note recommends one.
 - A weighed 30-meal benchmark across providers to pick the default models.
-- Food log tab with day-by-day history, swiping between days and a weekly calorie average.
+- Swiping left and right between days on the Food tab (arrows for now), and a calendar to jump to a date.
+- Saving a whole meal (several foods) as one reusable item, and logging a meal for several people with a share.
 
 **Weight import, later**
 - Import a CSV file for apps that do export, and weight history from Health Connect.
 - Read very long scrolling screenshots in slices, and more than 30 screenshots in one go.
 - Mark imported entries in the weight history list, with an "undo this import" option.
 
-**Phase 4: barcode, panels and steps**
-- Open Food Facts barcode scanner with a servings picker. Unknown products fall back to photographing the nutrition panel.
-- Favourites and recent foods.
+**Phase 3b: barcodes and labels (next)**
+- Open Food Facts barcode scanner with a servings picker, products cached on the phone, credit to Open Food Facts in About. Unknown products fall back to photographing the nutrition label, read by the cheapest Gemini model, with every number editable before saving.
+
+**Phase 4: steps**
+- Favourites (pin a food to the top of the recent list).
 - Step sync from Apple Health and Health Connect, with a history chart and the step target as a goal line.
 - Optional weight sync from smart scales through the health app.
 

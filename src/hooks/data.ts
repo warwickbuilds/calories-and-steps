@@ -2,9 +2,11 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
 
 import { bodyChecksQuery, bodyPhotosQuery, type Pose } from '@/db/body';
+import { dailyCaloriesQuery, foodItemQuery, recentItemsQuery } from '@/db/meals';
 import { allWeightsQuery, dayItemsQuery, latestWeightQuery, profileQuery, recentWeightsQuery } from '@/db/queries';
 import { addDays, toLocalDateString } from '@/lib/dates';
 import { currentAge, dailyTargets } from '@/lib/energy';
+import { averageLoggedCalories, recentFoods, weekEndingOn } from '@/lib/food';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
 import { dailyWeights, withTrend } from '@/lib/weight';
 
@@ -73,6 +75,27 @@ export function useDayTotals(day: string = toLocalDateString()): DayTotals {
     }
     return { ...totals, byMeal };
   }, [items]);
+}
+
+/** Foods logged before, one per name, newest first. */
+export function useRecentFoods() {
+  const { data } = useLiveQuery(recentItemsQuery());
+  return useMemo(() => recentFoods(data ?? []), [data]);
+}
+
+/** Average calories over the logged days of the week ending on `day`. */
+export function useWeekAverage(day: string) {
+  const days = useMemo(() => weekEndingOn(day), [day]);
+  const { data } = useLiveQuery(dailyCaloriesQuery(days[0], days[6]), [day]);
+  return useMemo(() => {
+    const totals = Object.fromEntries((data ?? []).map((r) => [r.day, Number(r.calories) || 0]));
+    return averageLoggedCalories(days, totals);
+  }, [data, days]);
+}
+
+export function useFoodItem(id: number) {
+  const { data, updatedAt } = useLiveQuery(foodItemQuery(id), [id]);
+  return { item: data?.[0] ?? null, loaded: updatedAt !== undefined };
 }
 
 /** Every weight entry as daily points with the smoothed trend, oldest first. */
