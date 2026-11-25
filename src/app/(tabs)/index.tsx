@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
-import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Cookie, Moon, Plus, Settings, Sun, Sunrise, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BackupReminder } from '@/components/BackupCard';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
-import { AddButton, ArcGauge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
+import { AddButton, ArcGauge, Badge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { useDayTotals, useProfile, useTargets, useWeightTrend } from '@/hooks/data';
 import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
@@ -27,6 +27,13 @@ import {
 import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
+
+const MEAL_ICONS: Record<MealType, LucideIcon> = {
+  breakfast: Sunrise,
+  lunch: Sun,
+  dinner: Moon,
+  snack: Cookie,
+};
 
 export default function TodayScreen() {
   const today = useToday();
@@ -84,7 +91,7 @@ function WeightChangeStrip() {
                 {t.label}
               </Text>
               <View style={styles.stripValue}>
-                {Arrow ? <Arrow size={14} strokeWidth={2.4} color={colors.text} /> : null}
+                {Arrow ? <Arrow size={14} strokeWidth={2.5} color={colors.weight} /> : null}
                 <Text variant="bodyStrong" style={styles.tabular}>
                   {parts ? parts.amount : '–'}
                 </Text>
@@ -113,7 +120,13 @@ function CaloriesCard({ day }: { day: string }) {
   const macroColor = { protein: colors.protein, carbs: colors.carbs, fat: colors.fat };
 
   return (
-    <Card title="Calories">
+    <Card
+      title="Calories"
+      right={
+        cal.over ? (
+          <Badge tone="danger" dot label={`${formatNumber(cal.value)} over`} />
+        ) : undefined
+      }>
       <View
         style={styles.gaugeRow}
         accessible
@@ -121,14 +134,17 @@ function CaloriesCard({ day }: { day: string }) {
           totals.calories,
         )} eaten of ${formatNumber(target)}.`}>
         <View style={styles.side}>
-          <Text variant="label" muted>
-            Eaten
-          </Text>
+          <View style={styles.sideLabel}>
+            <View style={[styles.dotSmall, { backgroundColor: cal.over ? colors.danger : colors.calories }]} />
+            <Text variant="label" muted>
+              Eaten
+            </Text>
+          </View>
           <Text variant="title" style={styles.tabular}>
             {formatNumber(totals.calories)}
           </Text>
         </View>
-        <ArcGauge size={164} progress={cal.over ? 1 : cal.remaining} color={cal.over ? colors.danger : colors.calories}>
+        <ArcGauge size={168} progress={cal.over ? 1 : cal.remaining} color={cal.over ? colors.danger : colors.calories}>
           <Text variant="bigMetric" color={cal.over ? colors.danger : undefined}>
             {formatNumber(cal.value)}
           </Text>
@@ -210,11 +226,7 @@ function StepsCard({ day }: { day: string }) {
       onPress={() => router.push('/steps')}>
       <Card
         title="Steps"
-        right={
-          <Text variant="label" muted style={styles.tabular}>
-            {stepsToGo(steps, stepTarget)}
-          </Text>
-        }>
+        right={<Badge tone="steps" dot label={stepsToGo(steps, stepTarget)} />}>
         <View style={styles.stepsValue}>
           <Text variant="metric">{formatNumber(steps)}</Text>
           <Text variant="label" muted>
@@ -229,10 +241,12 @@ function StepsCard({ day }: { day: string }) {
 
 function MealsCard({ day }: { day: string }) {
   const { colors } = useTheme();
+  const targets = useTargets();
   const totals = useDayTotals(day);
   const yesterday = toLocalDateString(addDays(fromLocalDateString(day), -1));
   const yesterdayTotals = useDayTotals(yesterday);
   const [copying, setCopying] = useState<MealType | null>(null);
+  const budget = Math.max(targets?.calories ?? 0, totals.calories, 1);
 
   const openQuickAdd = (meal: MealType) => router.push({ pathname: '/quick-add', params: { meal, day } });
   const openAddFood = (meal: MealType) => router.push({ pathname: '/add-food', params: { meal, day } });
@@ -251,6 +265,8 @@ function MealsCard({ day }: { day: string }) {
       {MEAL_TYPES.map((m, i) => {
         const t = totals.byMeal[m.value];
         const hadYesterday = yesterdayTotals.byMeal[m.value].count > 0;
+        const MealIcon = MEAL_ICONS[m.value];
+        const share = t.count > 0 ? Math.min(1, t.calories / budget) : 0;
         return (
           <View
             key={m.value}
@@ -260,10 +276,18 @@ function MealsCard({ day }: { day: string }) {
                 accessibilityRole="button"
                 accessibilityHint={`Shows what you logged for ${m.label.toLowerCase()}`}
                 onPress={() => router.push({ pathname: '/food', params: { day } })}>
-                <Text variant="bodyMedium">{m.label}</Text>
-                <Text variant="label" muted style={{ fontVariant: ['tabular-nums'] }}>
+                <View style={styles.mealHeading}>
+                  <MealIcon size={16} strokeWidth={1.9} color={t.count > 0 ? colors.calories : colors.muted} />
+                  <Text variant="bodyMedium">{m.label}</Text>
+                </View>
+                <Text variant="label" muted style={styles.tabular}>
                   {t.count > 0 ? `${formatNumber(t.calories)} calories` : 'Not logged'}
                 </Text>
+                {share > 0 ? (
+                  <View style={[styles.mealBarTrack, { backgroundColor: colors.track }]}>
+                    <View style={[styles.mealBarFill, { width: `${Math.max(6, share * 100)}%`, backgroundColor: colors.calories }]} />
+                  </View>
+                ) : null}
               </Pressable>
               <View style={styles.pills}>
                 {hadYesterday ? (
@@ -283,6 +307,7 @@ function MealsCard({ day }: { day: string }) {
             </View>
             <AddButton
               icon={Plus}
+              tone="calories"
               accessibilityLabel={`Add food to ${m.label}`}
               onPress={() => openAddFood(m.value)}
             />
@@ -331,7 +356,9 @@ const styles = StyleSheet.create({
   stripValue: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   gaugeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   side: { flex: 1, alignItems: 'center', gap: 2 },
+  sideLabel: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  dotSmall: { width: 6, height: 6, borderRadius: 3 },
   connect: { minHeight: layout.minTap, justifyContent: 'center' },
   macros: { gap: space[3] },
   macroRow: { flexDirection: 'row', gap: space[3] },
@@ -341,6 +368,9 @@ const styles = StyleSheet.create({
   mealsCard: { paddingVertical: space[1], gap: 0 },
   mealRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[2] },
   mealText: { flex: 1, gap: space[2] },
+  mealHeading: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  mealBarTrack: { height: 3, borderRadius: 2, marginTop: 6, maxWidth: 140, overflow: 'hidden' },
+  mealBarFill: { height: '100%', borderRadius: 2 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   pill: { height: 28, borderRadius: 14, paddingHorizontal: space[3], justifyContent: 'center' },
 });

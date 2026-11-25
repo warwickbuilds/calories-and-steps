@@ -15,7 +15,7 @@ import {
   type TrendPoint,
   type WeightRange,
 } from '@/lib/weight';
-import { milestoneColor } from '@/theme/colors';
+import { milestoneColor, softTint } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, space } from '@/theme/tokens';
 
@@ -116,6 +116,7 @@ export function WeightChart({
         markers={markers}
         guides={guides}
         endLabels={(v) => v.toFixed(1)}
+        accentColor={colors.weight}
         height={216}
         formatValue={(v) => `${Number.isInteger(v) ? v : v.toFixed(1)}`}
         formatDate={(t) => formatShortDate(new Date(t), range === '1Y' || range === 'All' || t > today.getTime())}
@@ -155,7 +156,12 @@ function Milestones({ marks, trend, units }: { marks: Milestone[]; trend: TrendP
         return (
           <View
             key={m.amountKg}
-            style={[styles.chip, { borderColor: m.reachedDay ? color : colors.line }]}
+            style={[
+              styles.chip,
+              m.reachedDay
+                ? { borderColor: softTint(color, '55'), backgroundColor: softTint(color, '18') }
+                : { borderColor: colors.line },
+            ]}
             accessible
             accessibilityLabel={
               m.reachedDay

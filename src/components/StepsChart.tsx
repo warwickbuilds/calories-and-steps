@@ -82,16 +82,19 @@ export function StepsChart({
         ) : null}
       </View>
       <View style={[styles.axis, { paddingLeft: pad.left, paddingRight: pad.right }]}>
-        {labels.map((l, i) => (
-          <Text
-            key={`${l}-${i}`}
-            variant="caption"
-            muted
-            // One label per bar sits under its bar; fewer labels spread out.
-            style={labels.length === bars.length ? styles.under : undefined}>
-            {l}
-          </Text>
-        ))}
+        {labels.map((l, i) => {
+          const isToday = l === 'Today';
+          return (
+            <Text
+              key={`${l}-${i}`}
+              variant="caption"
+              muted={!isToday}
+              // One label per bar sits under its bar; fewer labels spread out.
+              style={[labels.length === bars.length && styles.under, isToday && styles.todayLabel]}>
+              {l}
+            </Text>
+          );
+        })}
       </View>
     </View>
   );
@@ -100,4 +103,5 @@ export function StepsChart({
 const styles = StyleSheet.create({
   axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space[1] },
   under: { flex: 1, textAlign: 'center' },
+  todayLabel: { fontFamily: fonts.semibold },
 });

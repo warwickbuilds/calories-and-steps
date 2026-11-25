@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 import { Text } from '@/components/ui';
 import { CALLOUT, placeCallout, type Box, type Callout } from '@/lib/chartCallout';
@@ -49,10 +49,11 @@ export function niceTicks(min: number, max: number): number[] {
 
 /**
  * Minimal line chart in the Rings style. The readings are the main line
- * (joined, text-coloured); an optional trend is a faint dashed line that can
- * carry on as a projection to the goal. The goal is a dotted line, round
- * values get faint gridlines, and markers (weight milestones) are coloured
- * dots. Steps green and calories orange are never used here.
+ * (accent-coloured with a soft gradient area wash underneath); an optional
+ * trend is a faint dashed line that can carry on as a projection to the goal.
+ * The goal is a dotted line, round values get faint gridlines, and markers
+ * (weight milestones) are coloured dots. Steps green and calories orange are
+ * never used here.
  */
 export function LineChart({
   points,
@@ -61,6 +62,7 @@ export function LineChart({
   markers = [],
   guides = [],
   endLabels,
+  accentColor,
   height = 180,
   formatValue,
   formatDate,
@@ -73,6 +75,8 @@ export function LineChart({
   guides?: ChartGuide[];
   /** Shows the first and latest reading in small value bubbles, formatted by this. */
   endLabels?: (v: number) => string;
+  /** Semantic highlight hue for the readings line and soft area wash (never green or orange). */
+  accentColor?: string;
   height?: number;
   formatValue: (v: number) => string;
   formatDate: (t: number) => string;
@@ -80,6 +84,8 @@ export function LineChart({
 }) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
+  const gradId = `area-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const strokeColor = accentColor ?? colors.text;
   // The left gutter holds the gridline values so they never sit on the line.
   // Extra room on top for the value bubbles when they are on.
   const pad = { top: endLabels ? 34 : 18, bottom: endLabels ? 12 : 8, left: 30, right: 10 };
@@ -122,7 +128,13 @@ export function LineChart({
   const path = (pts: (readonly [number, number])[]) =>
     pts.map(([px, py], i) => `${i === 0 ? 'M' : 'L'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
 
-  const readings = path(points.map((p) => [x(p.t), y(p.value)] as const));
+  const readingCoords = points.map((p) => [x(p.t), y(p.value)] as const);
+  const readings = path(readingCoords);
+  const bottomY = pad.top + h;
+  const areaPath =
+    points.length > 1
+      ? `${readings} L${readingCoords[readingCoords.length - 1][0].toFixed(1)},${bottomY.toFixed(1)} L${readingCoords[0][0].toFixed(1)},${bottomY.toFixed(1)} Z`
+      : null;
   const trend = hasTrend
     ? path(points.filter((p) => p.trend != null).map((p) => [x(p.t), y(p.trend!)] as const))
     : null;
@@ -157,6 +169,14 @@ export function LineChart({
       <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {width > 0 ? (
           <Svg width={width} height={height}>
+            {areaPath ? (
+              <Defs>
+                <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={strokeColor} stopOpacity={0.18} />
+                  <Stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
+                </LinearGradient>
+              </Defs>
+            ) : null}
             {ticks.map((v) => (
               <Line key={`g${v}`} x1={pad.left} x2={width - pad.right} y1={y(v)} y2={y(v)} stroke={colors.line} strokeWidth={1} />
             ))}
@@ -165,6 +185,7 @@ export function LineChart({
                 {formatValue(v)}
               </SvgText>
             ))}
+            {areaPath ? <Path d={areaPath} fill={`url(#${gradId})`} /> : null}
             {guides.map((g) => (
               <Line
                 key={`gd${g.value}`}
@@ -212,8 +233,8 @@ export function LineChart({
                     cy={y(projection.to.value)}
                     r={4}
                     fill={colors.surface}
-                    stroke={colors.text}
-                    strokeWidth={1.5}
+                    stroke={strokeColor}
+                    strokeWidth={1.75}
                   />
                 ) : null}
               </>
@@ -221,18 +242,20 @@ export function LineChart({
             {points.length > 1 ? (
               <Path
                 d={readings}
-                stroke={colors.text}
-                strokeWidth={points.length > 120 ? 1.25 : 1.75}
+                stroke={strokeColor}
+                strokeWidth={points.length > 120 ? 1.5 : 2.2}
                 fill="none"
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
             ) : null}
             {dotR > 0
-              ? points.map((p) => <Circle key={p.t} cx={x(p.t)} cy={y(p.value)} r={dotR} fill={colors.text} />)
+              ? points.map((p) => <Circle key={p.t} cx={x(p.t)} cy={y(p.value)} r={dotR} fill={strokeColor} />)
               : null}
-            {endLabels && points.length > 1 ? <Circle cx={x(first.t)} cy={y(first.value)} r={3.5} fill={colors.text} /> : null}
-            <Circle cx={x(last.t)} cy={y(last.value)} r={3.5} fill={colors.text} />
+            {endLabels && points.length > 1 ? (
+              <Circle cx={x(first.t)} cy={y(first.value)} r={4} fill={strokeColor} stroke={colors.surface} strokeWidth={1.5} />
+            ) : null}
+            <Circle cx={x(last.t)} cy={y(last.value)} r={4.5} fill={strokeColor} stroke={colors.surface} strokeWidth={2} />
             {markers.map((m) => (
               <Circle
                 key={`m${m.label}`}
@@ -272,7 +295,7 @@ export function LineChart({
       </View>
       {hasTrend || goal != null ? (
         <View style={styles.legend}>
-          <LegendItem label="Weigh-ins" color={colors.text} />
+          <LegendItem label="Weigh-ins" color={strokeColor} />
           {hasTrend ? <LegendItem label={projection ? 'Trend and projection' : 'Trend'} color={colors.muted} dash="5 4" /> : null}
           {goal != null ? <LegendItem label={`Goal ${formatValue(goal)}`} color={colors.text} dash="0.1 5" dotted /> : null}
         </View>

@@ -29,21 +29,25 @@ export function IconButton({
   );
 }
 
-/** 32×32 "+" circle with a 44×44 tap area. */
+/** 34×34 "+" circle with a 44×44 tap area. Use tone="calories" only on meal/food add actions. */
 export function AddButton({
   icon: Icon,
   onPress,
   onLongPress,
+  tone = 'neutral',
   accessibilityLabel,
   accessibilityHint,
 }: {
   icon: LucideIcon;
   onPress: () => void;
   onLongPress?: () => void;
+  tone?: 'neutral' | 'calories';
   accessibilityLabel: string;
   accessibilityHint?: string;
 }) {
   const { colors } = useTheme();
+  const bg = tone === 'calories' ? colors.caloriesSoft : colors.track;
+  const fg = tone === 'calories' ? colors.calories : colors.text;
   return (
     <Pressable
       accessibilityRole="button"
@@ -51,11 +55,11 @@ export function AddButton({
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       onLongPress={onLongPress}
-      hitSlop={6}
+      hitSlop={5}
       style={styles.tap}>
       {({ pressed }) => (
-        <View style={[styles.add, { backgroundColor: colors.track, opacity: pressed ? 0.7 : 1 }]}>
-          <Icon size={18} strokeWidth={1.8} color={colors.text} />
+        <View style={[styles.add, { backgroundColor: bg, opacity: pressed ? 0.7 : 1 }]}>
+          <Icon size={18} strokeWidth={2.1} color={fg} />
         </View>
       )}
     </Pressable>
@@ -71,6 +75,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tap: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  add: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  tap: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  add: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
 });

@@ -2,12 +2,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { StepsAccessCard } from '@/components/StepsAccessCard';
 import { StepsChart } from '@/components/StepsChart';
-import { Card, ProgressBar, Screen, Text } from '@/components/ui';
+import { Badge, Card, ProgressBar, Screen, Text } from '@/components/ui';
 import { useProfile } from '@/hooks/data';
 import { useStepsHistory, useStepsSync } from '@/hooks/steps';
 import { useToday } from '@/hooks/useToday';
 import { fromLocalDateString } from '@/lib/dates';
-import { WEEK_DAYS, totalSteps } from '@/lib/steps';
+import { WEEK_DAYS, stepsSummary, totalSteps } from '@/lib/steps';
 import { formatNumber } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
@@ -24,22 +24,28 @@ export default function StepsScreen() {
   const week = useStepsHistory(WEEK_DAYS, todayKey);
   const today = week[week.length - 1]?.steps ?? null;
   const weekTotal = totalSteps(week);
+  const summary = stepsSummary(week, target);
   const hours = todayHours?.day === todayKey ? todayHours.hours : null;
   const reached = today != null && today >= target;
 
   return (
     <Screen title="Steps">
-      <Card>
-        <Text variant="label" muted>
-          Today
-        </Text>
-        <Text variant="bigMetric">{today == null ? '–' : formatNumber(today)}</Text>
+      <Card
+        title="Today"
+        right={
+          <Badge
+            tone="steps"
+            dot
+            label={reached ? 'Target reached' : `${formatNumber(target - (today ?? 0))} to go`}
+          />
+        }>
+        <View style={styles.heroRow}>
+          <Text variant="bigMetric">{today == null ? '–' : formatNumber(today)}</Text>
+          <Text variant="label" muted>
+            of {formatNumber(target)}
+          </Text>
+        </View>
         <ProgressBar progress={today == null ? 0 : today / target} color={colors.steps} />
-        <Text variant="label" muted>
-          {reached
-            ? `Target of ${formatNumber(target)} reached`
-            : `${formatNumber(target - (today ?? 0))} to go of ${formatNumber(target)}`}
-        </Text>
         {hours ? (
           <View style={styles.chart}>
             <StepsChart
@@ -67,6 +73,34 @@ export default function StepsScreen() {
             .map((d) => `${weekday(d.day, todayKey)} ${d.steps == null ? 'no data' : formatNumber(d.steps)}`)
             .join(', ')}. Target ${formatNumber(target)}.`}
         />
+        {summary.daysWithData > 0 ? (
+          <View style={[styles.stats, { borderTopColor: colors.line }]}>
+            <View style={styles.stat}>
+              <Text variant="caption" muted>
+                Daily avg
+              </Text>
+              <Text variant="bodyStrong" style={styles.tabular}>
+                {summary.average == null ? '–' : formatNumber(summary.average)}
+              </Text>
+            </View>
+            <View style={[styles.stat, styles.statBorder, { borderLeftColor: colors.line }]}>
+              <Text variant="caption" muted>
+                On target
+              </Text>
+              <Text variant="bodyStrong" style={styles.tabular}>
+                {summary.daysOnTarget} / {summary.daysWithData}
+              </Text>
+            </View>
+            <View style={[styles.stat, styles.statBorder, { borderLeftColor: colors.line }]}>
+              <Text variant="caption" muted>
+                Streak
+              </Text>
+              <Text variant="bodyStrong" style={styles.tabular}>
+                {summary.streak} {summary.streak === 1 ? 'day' : 'days'}
+              </Text>
+            </View>
+          </View>
+        ) : null}
       </Card>
 
       <StepsAccessCard />
@@ -82,6 +116,16 @@ function busiestHour(hours: number[]): string {
 }
 
 const styles = StyleSheet.create({
+  heroRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
   chart: { marginTop: space[3] },
   total: { gap: 2 },
+  stats: {
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: space[3],
+    marginTop: space[1],
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statBorder: { borderLeftWidth: StyleSheet.hairlineWidth },
+  tabular: { fontVariant: ['tabular-nums'] },
 });
