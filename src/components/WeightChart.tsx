@@ -120,6 +120,8 @@ export function WeightChart({
         height={216}
         formatValue={(v) => `${Number.isInteger(v) ? v : v.toFixed(1)}`}
         formatDate={(t) => formatShortDate(new Date(t), range === '1Y' || range === 'All' || t > today.getTime())}
+        formatInspectValue={(v) => `${v.toFixed(1)} ${unit}`}
+        formatInspectDate={(t) => formatShortDate(new Date(t), true)}
         accessibilityLabel={
           last
             ? `Weight chart, ${range}. First weigh-in ${points[0].value.toFixed(1)} ${unit}, latest ${last.value.toFixed(1)} ${unit}, trend ${last.trend?.toFixed(1)} ${unit}.`

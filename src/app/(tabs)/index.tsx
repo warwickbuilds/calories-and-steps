@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { ArrowDown, ArrowUp, Cookie, Moon, Plus, Settings, Sun, Sunrise, type LucideIcon } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BackupReminder } from '@/components/BackupCard';
@@ -12,6 +12,7 @@ import { useDayTotals, useProfile, useTargets, useWeightTrend } from '@/hooks/da
 import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
 import { useToday } from '@/hooks/useToday';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
+import { hapticSuccess } from '@/lib/haptics';
 import { takeImportRequest } from '@/lib/onboardingIntent';
 import {
   MEAL_TYPES,
@@ -200,6 +201,15 @@ function StepsCard({ day }: { day: string }) {
   const synced = useDaySteps(day);
   // Before anything is synced, a connected phone shows 0 rather than "Connect".
   const steps: number | null = synced ?? (access === 'granted' ? 0 : null);
+  const prevSteps = useRef<number | null>(steps);
+
+  useEffect(() => {
+    const prev = prevSteps.current;
+    prevSteps.current = steps;
+    if (prev != null && steps != null && prev < stepTarget && steps >= stepTarget) {
+      hapticSuccess();
+    }
+  }, [steps, stepTarget]);
 
   if (steps == null) {
     return (
@@ -255,6 +265,7 @@ function MealsCard({ day }: { day: string }) {
     setCopying(meal);
     try {
       await copyMeal(meal, yesterday, day);
+      hapticSuccess();
     } finally {
       setCopying(null);
     }

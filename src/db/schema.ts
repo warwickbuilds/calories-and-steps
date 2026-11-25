@@ -30,7 +30,7 @@ export const profile = sqliteTable('profile', {
   unitPref: text('unit_pref', { enum: ['metric', 'imperial'] })
     .notNull()
     .default('metric'),
-  themePref: text('theme_pref', { enum: ['system', 'light', 'dark'] })
+  themePref: text('theme_pref', { enum: ['system', 'light', 'stone', 'dark', 'oled'] })
     .notNull()
     .default('system'),
   goalWeightKg: real('goal_weight_kg'),

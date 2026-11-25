@@ -147,7 +147,7 @@ export default function ProgressScreen() {
           <LineChart
             points={chartPoints}
             accentColor={colors.body}
-            height={160}
+            height={176}
             formatValue={(v) => `${v.toFixed(1)}%`}
             formatDate={(t) => formatShortDate(new Date(t), true)}
             accessibilityLabel={`Body fat chart from ${chartPoints[0].value.toFixed(1)} to ${chartPoints[chartPoints.length - 1].value.toFixed(1)} percent`}

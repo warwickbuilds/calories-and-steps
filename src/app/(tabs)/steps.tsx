@@ -51,7 +51,11 @@ export default function StepsScreen() {
             <StepsChart
               bars={hours.map((value, h) => ({ key: String(h), value }))}
               labels={['00:00', '06:00', '12:00', '18:00', '24:00']}
-              height={110}
+              height={122}
+              formatInspect={(b, h) => ({
+                label: `${String(h).padStart(2, '0')}:00 – ${String((h + 1) % 24).padStart(2, '0')}:00`,
+                value: b.value == null || b.value <= 0 ? 'No steps' : `${formatNumber(b.value)} steps`,
+              })}
               accessibilityLabel={`Steps by hour today. Busiest hour ${busiestHour(hours)}.`}
             />
           </View>
@@ -69,6 +73,13 @@ export default function StepsScreen() {
           bars={week.map((d) => ({ key: d.day, value: d.steps }))}
           target={target}
           labels={week.map((d) => weekday(d.day, todayKey))}
+          formatInspect={(b) => ({
+            label:
+              b.key === todayKey
+                ? 'Today'
+                : fromLocalDateString(b.key).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
+            value: b.value == null ? 'No data' : `${formatNumber(b.value)} steps`,
+          })}
           accessibilityLabel={`Steps for the last 7 days. ${week
             .map((d) => `${weekday(d.day, todayKey)} ${d.steps == null ? 'no data' : formatNumber(d.steps)}`)
             .join(', ')}. Target ${formatNumber(target)}.`}

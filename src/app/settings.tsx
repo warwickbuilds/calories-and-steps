@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
+import { Check } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AgeField } from '@/components/fields/AgeField';
 import { DateField } from '@/components/fields/DateField';
@@ -15,9 +16,12 @@ import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/
 import { updateProfile } from '@/db/queries';
 import { useProfile, useTargets } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
+import { hapticTick } from '@/lib/haptics';
 import { checkForUpdate, installedVersion, type CheckResult } from '@/lib/updates';
 import { ACTIVITY_LEVELS, GOAL_MODES, currentAge, type ActivityLevel, type GoalMode } from '@/lib/energy';
-import { space } from '@/theme/tokens';
+import { palettes, THEME_OPTIONS, type ThemePreference } from '@/theme/colors';
+import { useTheme } from '@/theme/ThemeProvider';
+import { layout, radius, space } from '@/theme/tokens';
 
 export default function SettingsScreen() {
   const { profile } = useProfile();
@@ -119,14 +123,9 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="Appearance">
-        <Segmented
+        <ThemePicker
           value={profile.themePref}
           onChange={(themePref) => updateProfile({ themePref })}
-          options={[
-            { value: 'system', label: 'System' },
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
-          ]}
         />
       </Section>
 
@@ -207,6 +206,70 @@ function AppVersionSection() {
   );
 }
 
+function ThemePicker({
+  value,
+  onChange,
+}: {
+  value: ThemePreference;
+  onChange: (value: ThemePreference) => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Card>
+      <View style={styles.themeList} accessibilityRole="radiogroup" accessibilityLabel="Appearance theme">
+        {THEME_OPTIONS.map((opt, idx) => {
+          const selected = opt.value === value;
+          return (
+            <Pressable
+              key={opt.value}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              accessibilityLabel={`${opt.label}. ${opt.hint}`}
+              onPress={() => {
+                if (!selected) hapticTick();
+                onChange(opt.value);
+              }}
+              style={({ pressed }) => [
+                styles.themeRow,
+                idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+                pressed && { opacity: 0.72 },
+              ]}>
+              <ThemeSwatch preference={opt.value} borderColor={selected ? colors.text : colors.cardBorder} />
+              <View style={styles.themeText}>
+                <Text variant={selected ? 'bodyStrong' : 'bodyMedium'}>{opt.label}</Text>
+                <Text variant="caption" muted>
+                  {opt.hint}
+                </Text>
+              </View>
+              {selected ? <Check size={18} strokeWidth={2.3} color={colors.text} /> : null}
+            </Pressable>
+          );
+        })}
+      </View>
+    </Card>
+  );
+}
+
+function ThemeSwatch({ preference, borderColor }: { preference: ThemePreference; borderColor: string }) {
+  if (preference === 'system') {
+    return (
+      <View style={[styles.swatch, { borderColor }]}>
+        <View style={[styles.swatchHalf, { backgroundColor: palettes.light.bg }]} />
+        <View style={[styles.swatchHalf, { backgroundColor: palettes.dark.bg }]} />
+      </View>
+    );
+  }
+  const p = palettes[preference];
+  return (
+    <View style={[styles.swatch, { backgroundColor: p.bg, borderColor }]}>
+      <View style={[styles.swatchCard, { backgroundColor: p.surface, borderColor: p.cardBorder }]}>
+        <View style={[styles.swatchDot, { backgroundColor: p.steps }]} />
+        <View style={[styles.swatchDot, { backgroundColor: p.calories }]} />
+      </View>
+    </View>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -218,4 +281,35 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   section: { gap: space[3], marginTop: space[3] },
+  themeList: { gap: 0 },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    minHeight: layout.minTap + 6,
+    paddingVertical: space[2],
+  },
+  themeText: { flex: 1, gap: 1 },
+  swatch: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  swatchHalf: { flex: 1, height: '100%' },
+  swatchCard: {
+    width: 22,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  swatchDot: { width: 5, height: 5, borderRadius: 2.5 },
 });

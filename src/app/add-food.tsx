@@ -9,6 +9,7 @@ import { addFood } from '@/db/meals';
 import { useRecentFoods } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
 import { dayLabel, formatAmount, macroLine, searchFoods, type RecentFood } from '@/lib/food';
+import { hapticSuccess } from '@/lib/haptics';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, radius, space, type as typeScale } from '@/theme/tokens';
@@ -62,6 +63,7 @@ export default function AddFoodScreen() {
         category: f.category,
       },
     });
+    hapticSuccess();
     setAdded((s) => new Set(s).add(f.name));
   };
 

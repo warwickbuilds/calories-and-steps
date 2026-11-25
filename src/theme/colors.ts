@@ -2,19 +2,20 @@
  * Colour tokens from the "Rings" design spec. Screens use these names only,
  * never raw hex values.
  *
- * Semantic discipline:
+ * Semantic discipline (enforced in every theme by src/theme/__tests__/colors.test.ts):
  * - Steps: green/lime (`steps`, `stepsSoft`) — used ONLY for steps.
  * - Calories: orange (`calories`, `caloriesSoft`) — used ONLY for calories and meal logging.
  * - Weight: cobalt blue (`weight`, `weightSoft`).
  * - Body fat / Progress: plum violet (`body`, `bodySoft`).
  * - Macros: blue (`protein`), violet (`carbs`), amber-gold (`fat`).
  * - Weight milestones: four cycling hues (blue, violet, magenta, crimson).
- * - Chrome & primary actions stay monochrome ink in both light and dark mode
+ * - Chrome & primary actions stay monochrome ink in every theme
  *   so the data accents lead without competing with buttons or navigation.
  */
 
 export type ColorScheme = 'light' | 'dark';
-export type ThemePreference = 'system' | ColorScheme;
+export type ThemeId = 'light' | 'stone' | 'dark' | 'oled';
+export type ThemePreference = 'system' | ThemeId;
 
 const light = {
   bg: '#F4F6F4',
@@ -46,6 +47,36 @@ const light = {
   fat: '#D99B00',
 };
 
+/** Warm paper / linen light theme — calm, low-glare daylight surfaces. */
+const stone: typeof light = {
+  bg: '#F4F1EA',
+  surface: '#FCFBF8',
+  cardBorder: '#E5DFD3',
+  text: '#1A1815',
+  muted: '#6B645A',
+  line: '#E6E0D5',
+  track: '#EAE4D9',
+  steps: '#1F9D55',
+  stepsSoft: 'rgba(31, 157, 85, 0.12)',
+  calories: '#F26A1B',
+  caloriesSoft: 'rgba(242, 106, 27, 0.12)',
+  weight: '#2B66CC',
+  weightSoft: 'rgba(43, 102, 204, 0.11)',
+  body: '#7546CC',
+  bodySoft: 'rgba(117, 70, 204, 0.11)',
+  primary: '#1A1815',
+  onPrimary: '#FCFBF8',
+  danger: '#C22B2B',
+  dangerSoft: 'rgba(194, 43, 43, 0.11)',
+  milestone1: '#2B66CC',
+  milestone2: '#7546CC',
+  milestone3: '#B8307A',
+  milestone4: '#AD263D',
+  protein: '#2B66CC',
+  carbs: '#7B52DB',
+  fat: '#D19400',
+};
+
 const dark: typeof light = {
   bg: '#0A0C0B',
   surface: '#151917',
@@ -75,8 +106,50 @@ const dark: typeof light = {
   fat: '#F2C94C',
 };
 
-export const palettes = { light, dark };
+/** Pure OLED black dark theme — 0-nit background with deep charcoal cards. */
+const oled: typeof light = {
+  ...dark,
+  bg: '#000000',
+  surface: '#0F1110',
+  cardBorder: '#1E2421',
+  text: '#F5F7F6',
+  muted: '#949E99',
+  line: '#1E2421',
+  track: '#1A1F1C',
+  primary: '#F5F7F6',
+  onPrimary: '#000000',
+};
+
+export const palettes: Record<ThemeId, typeof light> = { light, stone, dark, oled };
 export type Palette = typeof light;
+
+export const THEME_SCHEME: Record<ThemeId, ColorScheme> = {
+  light: 'light',
+  stone: 'light',
+  dark: 'dark',
+  oled: 'dark',
+};
+
+export const THEME_OPTIONS: { value: ThemePreference; label: string; hint: string }[] = [
+  { value: 'system', label: 'System', hint: 'Matches your phone’s light or dark mode' },
+  { value: 'light', label: 'Light', hint: 'Crisp off-white canvas with white cards' },
+  { value: 'stone', label: 'Stone', hint: 'Warm linen paper tones for softer daylight reading' },
+  { value: 'dark', label: 'Dark', hint: 'Deep forest charcoal' },
+  { value: 'oled', label: 'OLED', hint: 'True black background for AMOLED screens' },
+];
+
+export function resolveTheme(
+  preference: ThemePreference | string | null | undefined,
+  systemScheme: ColorScheme | null | undefined,
+): { themeId: ThemeId; scheme: ColorScheme; colors: Palette } {
+  const themeId: ThemeId =
+    preference && preference !== 'system' && preference in palettes
+      ? (preference as ThemeId)
+      : systemScheme === 'dark'
+        ? 'dark'
+        : 'light';
+  return { themeId, scheme: THEME_SCHEME[themeId], colors: palettes[themeId] };
+}
 
 /** Colour for the nth milestone (0-based), cycling through four. */
 export function milestoneColor(colors: Palette, index: number): string {

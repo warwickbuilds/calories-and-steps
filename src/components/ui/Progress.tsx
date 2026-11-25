@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
@@ -46,18 +47,30 @@ export function ArcGauge({
   children?: ReactNode;
 }) {
   const { colors } = useTheme();
+  const reduced = useReducedMotion();
   const halo = stroke + 6;
   const r = (size - halo) / 2;
   const c = 2 * Math.PI * r;
   const arc = c * 0.75;
   const p = useFill(progress);
+  const haloBoost = useSharedValue(0.16);
+  useEffect(() => {
+    if (reduced) {
+      haloBoost.value = 0.16;
+      return;
+    }
+    haloBoost.value = withSequence(
+      withTiming(0.26, { duration: 320, easing: Easing.out(Easing.cubic) }),
+      withTiming(0.16, { duration: 480, easing: Easing.inOut(Easing.cubic) }),
+    );
+  }, [progress, reduced, haloBoost]);
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: arc * (1 - p.value),
     strokeOpacity: p.value > 0.001 ? 1 : 0,
   }));
   const haloProps = useAnimatedProps(() => ({
     strokeDashoffset: arc * (1 - p.value),
-    strokeOpacity: p.value > 0.001 ? 0.16 : 0,
+    strokeOpacity: p.value > 0.001 ? haloBoost.value : 0,
   }));
   return (
     <View style={{ width: size, height: size }}>

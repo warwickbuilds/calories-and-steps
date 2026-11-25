@@ -1,11 +1,14 @@
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 import { Text } from '@/components/ui';
 import { CALLOUT, placeCallout, type Box, type Callout } from '@/lib/chartCallout';
+import { nearestPointIndex } from '@/lib/chartScrub';
+import { hapticTick } from '@/lib/haptics';
+import { softTint } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
-import { fonts, space } from '@/theme/tokens';
+import { fonts, radius, space } from '@/theme/tokens';
 
 export interface ChartPoint {
   /** x position: milliseconds since epoch */
@@ -51,8 +54,8 @@ export function niceTicks(min: number, max: number): number[] {
  * Minimal line chart in the Rings style. The readings are the main line
  * (accent-coloured with a soft gradient area wash underneath); an optional
  * trend is a faint dashed line that can carry on as a projection to the goal.
- * The goal is a dotted line, round values get faint gridlines, and markers
- * (weight milestones) are coloured dots. Steps green and calories orange are
+ * Touch or drag across the chart to scrub and inspect any reading with a
+ * crosshair and floating readout pill. Steps green and calories orange are
  * never used here.
  */
 export function LineChart({
@@ -66,6 +69,8 @@ export function LineChart({
   height = 180,
   formatValue,
   formatDate,
+  formatInspectValue,
+  formatInspectDate,
   accessibilityLabel,
 }: {
   points: ChartPoint[];
@@ -80,15 +85,32 @@ export function LineChart({
   height?: number;
   formatValue: (v: number) => string;
   formatDate: (t: number) => string;
+  /** Optional richer value formatter for the interactive scrub readout (e.g. "77.2 kg"). */
+  formatInspectValue?: (v: number) => string;
+  /** Optional date formatter for the interactive scrub readout. */
+  formatInspectDate?: (t: number) => string;
   accessibilityLabel: string;
 }) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
+  const [selection, setSelection] = useState<{ series: ChartPoint[]; index: number } | null>(null);
+  const activeIndex = selection?.series === points ? selection.index : null;
+  const setActiveIndex = (index: number | null) =>
+    setSelection(index == null ? null : { series: points, index });
   const gradId = `area-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const touchRef = useRef({
+    startX: 0,
+    startY: 0,
+    moved: false,
+    scrubbing: false,
+    prevPinned: null as number | null,
+    lastIndex: null as number | null,
+  });
+
   const strokeColor = accentColor ?? colors.text;
   // The left gutter holds the gridline values so they never sit on the line.
-  // Extra room on top for the value bubbles when they are on.
-  const pad = { top: endLabels ? 34 : 18, bottom: endLabels ? 12 : 8, left: 30, right: 10 };
+  // Top padding leaves room for value bubbles and the floating scrub pill without layout shift.
+  const pad = { top: 34, bottom: endLabels ? 12 : 8, left: 30, right: 10 };
 
   if (points.length === 0) {
     return (
@@ -129,6 +151,7 @@ export function LineChart({
     pts.map(([px, py], i) => `${i === 0 ? 'M' : 'L'}${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
 
   const readingCoords = points.map((p) => [x(p.t), y(p.value)] as const);
+  const xs = readingCoords.map(([px]) => px);
   const readings = path(readingCoords);
   const bottomY = pad.top + h;
   const areaPath =
@@ -142,11 +165,21 @@ export function LineChart({
   const dotR = points.length > 120 ? 0 : points.length > 40 ? 1.6 : 2.6;
   const last = points[points.length - 1];
   const first = points[0];
+  const activePoint = activeIndex != null && activeIndex < points.length ? points[activeIndex] : null;
 
-  // Value bubbles for the first and latest reading. They step aside (below
-  // the point) when a milestone label is in the way.
+  const selectAt = (locX: number) => {
+    const idx = nearestPointIndex(xs, locX);
+    if (idx != null && idx !== touchRef.current.lastIndex) {
+      touchRef.current.lastIndex = idx;
+      hapticTick();
+      setActiveIndex(idx);
+    }
+    return idx;
+  };
+
+  // Value bubbles for the first and latest reading. Hidden while scrubbing so the crosshair readout stays clear.
   const callouts: Callout[] = [];
-  if (endLabels && width > 0) {
+  if (endLabels && width > 0 && !activePoint) {
     const bounds = { left: pad.left, right: width - pad.right, top: 0, bottom: height };
     const avoid: Box[] = markers.map((m) => {
       const mx = Math.min(Math.max(x(m.t), pad.left + 12), width - pad.right - 12);
@@ -163,10 +196,85 @@ export function LineChart({
   }
 
   const faint = { stroke: colors.muted, strokeOpacity: 0.75, strokeWidth: 1.5, strokeDasharray: '5 4', fill: 'none' };
+  const inspectVal = formatInspectValue ?? formatValue;
+  const inspectDate = formatInspectDate ?? formatDate;
 
   return (
     <View accessible accessibilityLabel={accessibilityLabel}>
-      <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View
+        style={{ height }}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        onStartShouldSetResponder={() => width > 0 && points.length > 0}
+        onMoveShouldSetResponder={(_, ) => false}
+        onResponderTerminationRequest={() => !touchRef.current.scrubbing}
+        onResponderGrant={(e) => {
+          const { locationX, pageY } = e.nativeEvent;
+          touchRef.current = {
+            startX: locationX,
+            startY: pageY,
+            moved: false,
+            scrubbing: false,
+            prevPinned: activeIndex,
+            lastIndex: activeIndex,
+          };
+          selectAt(locationX);
+        }}
+        onResponderMove={(e) => {
+          const { locationX, pageY } = e.nativeEvent;
+          const dx = Math.abs(locationX - touchRef.current.startX);
+          const dy = Math.abs(pageY - touchRef.current.startY);
+          if (!touchRef.current.scrubbing && dx > 6 && dx >= dy) {
+            touchRef.current.scrubbing = true;
+            touchRef.current.moved = true;
+          }
+          if (touchRef.current.scrubbing || dx > 4) {
+            touchRef.current.moved = true;
+            selectAt(locationX);
+          }
+        }}
+        onResponderRelease={() => {
+          const { moved, prevPinned, lastIndex } = touchRef.current;
+          touchRef.current.scrubbing = false;
+          if (moved) {
+            // Dragging clears smoothly on lift.
+            setActiveIndex(null);
+            touchRef.current.lastIndex = null;
+          } else if (prevPinned != null && prevPinned === lastIndex) {
+            // Tapping the already-pinned point dismisses it.
+            setActiveIndex(null);
+            touchRef.current.lastIndex = null;
+          }
+        }}
+        onResponderTerminate={() => {
+          touchRef.current.scrubbing = false;
+          setActiveIndex(null);
+          touchRef.current.lastIndex = null;
+        }}>
+        {activePoint ? (
+          <View style={styles.scrubRow} pointerEvents="none">
+            <View
+              style={[
+                styles.scrubPill,
+                {
+                  backgroundColor: softTint(strokeColor, '1C'),
+                  borderColor: softTint(strokeColor, '4D'),
+                },
+              ]}>
+              <View style={[styles.scrubDot, { backgroundColor: strokeColor }]} />
+              <Text variant="caption" style={styles.scrubValue}>
+                {inspectVal(activePoint.value)}
+              </Text>
+              <Text variant="caption" muted>
+                {inspectDate(activePoint.t)}
+              </Text>
+              {activePoint.trend != null ? (
+                <Text variant="caption" muted style={styles.tabular}>
+                  · trend {formatValue(activePoint.trend)}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
         {width > 0 ? (
           <Svg width={width} height={height}>
             {areaPath ? (
@@ -252,10 +360,12 @@ export function LineChart({
             {dotR > 0
               ? points.map((p) => <Circle key={p.t} cx={x(p.t)} cy={y(p.value)} r={dotR} fill={strokeColor} />)
               : null}
-            {endLabels && points.length > 1 ? (
+            {endLabels && points.length > 1 && !activePoint ? (
               <Circle cx={x(first.t)} cy={y(first.value)} r={4} fill={strokeColor} stroke={colors.surface} strokeWidth={1.5} />
             ) : null}
-            <Circle cx={x(last.t)} cy={y(last.value)} r={4.5} fill={strokeColor} stroke={colors.surface} strokeWidth={2} />
+            {!activePoint ? (
+              <Circle cx={x(last.t)} cy={y(last.value)} r={4.5} fill={strokeColor} stroke={colors.surface} strokeWidth={2} />
+            ) : null}
             {markers.map((m) => (
               <Circle
                 key={`m${m.label}`}
@@ -279,6 +389,29 @@ export function LineChart({
                 {m.label}
               </SvgText>
             ))}
+            {activePoint ? (
+              <>
+                <Line
+                  x1={x(activePoint.t)}
+                  x2={x(activePoint.t)}
+                  y1={pad.top}
+                  y2={bottomY}
+                  stroke={strokeColor}
+                  strokeOpacity={0.45}
+                  strokeWidth={1.25}
+                  strokeDasharray="3 3"
+                />
+                <Circle cx={x(activePoint.t)} cy={y(activePoint.value)} r={8.5} fill={strokeColor} fillOpacity={0.18} />
+                <Circle
+                  cx={x(activePoint.t)}
+                  cy={y(activePoint.value)}
+                  r={4.8}
+                  fill={strokeColor}
+                  stroke={colors.surface}
+                  strokeWidth={2}
+                />
+              </>
+            ) : null}
             {callouts.map((c, i) => (
               <CalloutBubble key={`c${i}`} c={c} fill={colors.text} ink={colors.surface} />
             ))}
@@ -348,6 +481,26 @@ function LegendItem({ label, color, dash, dotted }: { label: string; color: stri
 
 const styles = StyleSheet.create({
   empty: { alignItems: 'center', justifyContent: 'center' },
+  scrubRow: {
+    position: 'absolute',
+    top: 2,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  scrubPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: space[2] + 2,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  scrubDot: { width: 6, height: 6, borderRadius: 3 },
+  scrubValue: { fontFamily: fonts.semibold, fontVariant: ['tabular-nums'] },
+  tabular: { fontVariant: ['tabular-nums'] },
   xLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space[1] },
   legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space[3], rowGap: space[1], marginTop: space[2] },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: space[1] },

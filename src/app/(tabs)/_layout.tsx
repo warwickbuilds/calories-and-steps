@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
 import { useStepsAutoSync } from '@/hooks/steps';
+import { hapticTick } from '@/lib/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, layout } from '@/theme/tokens';
 
@@ -34,10 +35,19 @@ function label(title: string) {
   };
 }
 
-/** Tab button with no ripple or fade: the pill moving to the new tab is the only feedback. */
+/** Tab button with no ripple or fade: the pill moving to the new tab and a light haptic tick are the only feedback. */
 function TabButton(props: Record<string, unknown>) {
-  const { ref: _ref, android_ripple: _ripple, pressColor: _pc, pressOpacity: _po, hoverEffect: _he, ...rest } = props;
-  return <Pressable {...(rest as PressableProps)} />;
+  const { ref: _ref, android_ripple: _ripple, pressColor: _pc, pressOpacity: _po, hoverEffect: _he, onPress, ...rest } = props;
+  const press = onPress as PressableProps['onPress'];
+  return (
+    <Pressable
+      {...(rest as PressableProps)}
+      onPress={(e) => {
+        hapticTick();
+        press?.(e);
+      }}
+    />
+  );
 }
 
 export default function TabLayout() {

@@ -7,6 +7,7 @@ import { logWeightForDay } from '@/db/queries';
 import { useLatestWeight, useProfile, useWeightTrend } from '@/hooks/data';
 import { useToday } from '@/hooks/useToday';
 import { dayBounds, fromLocalDateString } from '@/lib/dates';
+import { hapticSuccess } from '@/lib/haptics';
 import { weeklyChangeText } from '@/lib/today';
 import { fromDisplayWeight, parseDecimal, toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { LIMITS, inRange } from '@/lib/validation';
@@ -45,6 +46,7 @@ export function WeightLogCard() {
   const log = async () => {
     if (!valid || kg == null) return;
     await logWeightForDay(kg, start, end);
+    hapticSuccess();
     setText(null);
   };
 
