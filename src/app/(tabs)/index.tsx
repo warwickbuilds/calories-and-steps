@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { ArrowDown, ArrowUp, Cookie, Moon, Plus, Settings, Sun, Sunrise, type LucideIcon } from 'lucide-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Cookie, Moon, Plus, Settings, Sun, Sunrise, type LucideIcon } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BackupReminder } from '@/components/BackupCard';
@@ -8,7 +8,7 @@ import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
 import { AddButton, ArcGauge, Badge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
-import { useDayTotals, useProfile, useTargets, useWeightTrend } from '@/hooks/data';
+import { useDayTotals, useProfile, useTargets } from '@/hooks/data';
 import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
 import { useToday } from '@/hooks/useToday';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
@@ -17,15 +17,12 @@ import { takeImportRequest } from '@/lib/onboardingIntent';
 import {
   MEAL_TYPES,
   caloriesReadout,
-  changeParts,
   formatNumber,
   macroSplit,
   stepsAccessibility,
   stepsToGo,
-  todayWeightChanges,
   type MealType,
 } from '@/lib/today';
-import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
 
@@ -49,64 +46,11 @@ export default function TodayScreen() {
       right={<IconButton icon={Settings} accessibilityLabel="Settings" onPress={() => router.push('/settings')} />}>
       <UpdateBanner />
       <BackupReminder />
-      <WeightChangeStrip />
       <CaloriesCard day={today} />
       <StepsCard day={today} />
       <MealsCard day={today} />
-      <WeightLogCard />
+      <WeightLogCard showChanges />
     </Screen>
-  );
-}
-
-/** Weigh-in change over 7 days, 1 month and 3 months. Hidden until there are two weigh-ins. */
-function WeightChangeStrip() {
-  const { colors } = useTheme();
-  const { profile } = useProfile();
-  const trend = useWeightTrend();
-  const units = profile?.unitPref ?? 'metric';
-  const unit = weightUnitLabel(units);
-  const tiles = useMemo(() => todayWeightChanges(trend), [trend]);
-  if (trend.length < 2) return null;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityHint="Opens your weight history"
-      onPress={() => router.push('/weight')}>
-      <Card style={styles.strip}>
-        {tiles.map((t, i) => {
-          const parts = changeParts(t.kg == null ? null : toDisplayWeight(t.kg, units));
-          const Arrow = parts?.direction === 'down' ? ArrowDown : parts?.direction === 'up' ? ArrowUp : null;
-          const a11y = parts
-            ? `${t.label}: ${parts.direction === 'same' ? 'no change' : `${parts.amount} ${unit} ${parts.direction}`}${
-                t.partial ? ', since your first weigh-in' : ''
-              }`
-            : `${t.label}: not enough weigh-ins`;
-          return (
-            <View
-              key={t.label}
-              accessible
-              accessibilityLabel={a11y}
-              style={[styles.stripTile, i > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line }]}>
-              <Text variant="caption" muted>
-                {t.label}
-              </Text>
-              <View style={styles.stripValue}>
-                {Arrow ? <Arrow size={14} strokeWidth={2.5} color={colors.weight} /> : null}
-                <Text variant="bodyStrong" style={styles.tabular}>
-                  {parts ? parts.amount : '–'}
-                </Text>
-                {parts ? (
-                  <Text variant="caption" muted>
-                    {unit}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          );
-        })}
-      </Card>
-    </Pressable>
   );
 }
 
@@ -362,9 +306,6 @@ function Pill({
 
 const styles = StyleSheet.create({
   tabular: { fontVariant: ['tabular-nums'] },
-  strip: { flexDirection: 'row', paddingVertical: space[3], paddingHorizontal: 0, gap: 0 },
-  stripTile: { flex: 1, alignItems: 'center', gap: 2 },
-  stripValue: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   gaugeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   side: { flex: 1, alignItems: 'center', gap: 2 },
   sideLabel: { flexDirection: 'row', alignItems: 'center', gap: 5 },
