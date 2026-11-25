@@ -1,19 +1,30 @@
 import { router } from 'expo-router';
-import { Plus, Settings } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BackupReminder } from '@/components/BackupCard';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
-import { AddButton, Card, DualRings, IconButton, ProgressBar, Screen, Text } from '@/components/ui';
+import { AddButton, ArcGauge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
-import { useDayTotals, useProfile, useTargets } from '@/hooks/data';
+import { useDayTotals, useProfile, useTargets, useWeightTrend } from '@/hooks/data';
 import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
 import { useToday } from '@/hooks/useToday';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { takeImportRequest } from '@/lib/onboardingIntent';
-import { MEAL_TYPES, caloriesReadout, formatNumber, stepsAccessibility, type MealType } from '@/lib/today';
+import {
+  MEAL_TYPES,
+  caloriesReadout,
+  changeParts,
+  formatNumber,
+  macroSplit,
+  stepsAccessibility,
+  stepsToGo,
+  todayWeightChanges,
+  type MealType,
+} from '@/lib/today';
+import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
 
@@ -30,155 +41,189 @@ export default function TodayScreen() {
       right={<IconButton icon={Settings} accessibilityLabel="Settings" onPress={() => router.push('/settings')} />}>
       <UpdateBanner />
       <BackupReminder />
-      <RingsCard day={today} />
-      <MacrosCard day={today} />
+      <WeightChangeStrip />
+      <CaloriesCard day={today} />
+      <StepsCard day={today} />
       <MealsCard day={today} />
       <WeightLogCard />
     </Screen>
   );
 }
 
-function Readout({
-  color,
-  label,
-  value,
-  caption,
-  valueColor,
-  action,
-}: {
-  color: string;
-  label: string;
-  value?: string;
-  caption?: string;
-  valueColor?: string;
-  action?: React.ReactNode;
-}) {
+/** Weigh-in change over 7 days, 1 month and 3 months. Hidden until there are two weigh-ins. */
+function WeightChangeStrip() {
+  const { colors } = useTheme();
+  const { profile } = useProfile();
+  const trend = useWeightTrend();
+  const units = profile?.unitPref ?? 'metric';
+  const unit = weightUnitLabel(units);
+  const tiles = useMemo(() => todayWeightChanges(trend), [trend]);
+  if (trend.length < 2) return null;
+
   return (
-    <View style={styles.readout}>
-      <View style={styles.readoutLabel}>
-        <View style={[styles.dot, { backgroundColor: color }]} />
-        <Text variant="label" muted>
-          {label}
-        </Text>
-      </View>
-      {action ?? (
-        <>
-          <Text variant="metric" color={valueColor}>
-            {value}
-          </Text>
-          {caption ? (
-            <Text variant="caption" muted>
-              {caption}
-            </Text>
-          ) : null}
-        </>
-      )}
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint="Opens your weight history"
+      onPress={() => router.push('/weight')}>
+      <Card style={styles.strip}>
+        {tiles.map((t, i) => {
+          const parts = changeParts(t.kg == null ? null : toDisplayWeight(t.kg, units));
+          const Arrow = parts?.direction === 'down' ? ArrowDown : parts?.direction === 'up' ? ArrowUp : null;
+          const a11y = parts
+            ? `${t.label}: ${parts.direction === 'same' ? 'no change' : `${parts.amount} ${unit} ${parts.direction}`}${
+                t.partial ? ', since your first weigh-in' : ''
+              }`
+            : `${t.label}: not enough weigh-ins`;
+          return (
+            <View
+              key={t.label}
+              accessible
+              accessibilityLabel={a11y}
+              style={[styles.stripTile, i > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line }]}>
+              <Text variant="caption" muted>
+                {t.label}
+              </Text>
+              <View style={styles.stripValue}>
+                {Arrow ? <Arrow size={14} strokeWidth={2.4} color={colors.text} /> : null}
+                <Text variant="bodyStrong" style={styles.tabular}>
+                  {parts ? parts.amount : '–'}
+                </Text>
+                {parts ? (
+                  <Text variant="caption" muted>
+                    {unit}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          );
+        })}
+      </Card>
+    </Pressable>
   );
 }
 
-function RingsCard({ day }: { day: string }) {
+/** Countdown of calories left today, with eaten and target either side and the macro split under it. */
+function CaloriesCard({ day }: { day: string }) {
   const { colors } = useTheme();
-  const { profile } = useProfile();
   const targets = useTargets();
   const totals = useDayTotals(day);
-  const stepTarget = profile?.stepTarget ?? 10000;
-  const { access } = useStepsSync();
-  const synced = useDaySteps(day);
-  // Before anything is synced, a connected phone shows 0 rather than "Connect".
-  const steps: number | null = synced ?? (access === 'granted' ? 0 : null);
-  const cal = caloriesReadout(totals.calories, targets?.calories ?? 0);
-
-  const a11y = `${stepsAccessibility(steps, stepTarget)} ${
-    cal.over ? `${formatNumber(cal.value)} calories over.` : `${formatNumber(cal.value)} calories left.`
-  }`;
+  const target = targets?.calories ?? 0;
+  const cal = caloriesReadout(totals.calories, target);
+  const macros = macroSplit(totals, targets);
+  const macroColor = { protein: colors.protein, carbs: colors.carbs, fat: colors.fat };
 
   return (
-    <Card>
-      <View style={styles.ringsRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={a11y}
-          accessibilityHint="Opens your step history"
-          onPress={() => router.push('/steps')}>
-          <DualRings steps={steps == null ? 0 : steps / stepTarget} calories={cal.progress} />
-        </Pressable>
-        <View style={styles.readouts}>
-          {steps == null ? (
-            <Readout
-              color={colors.steps}
-              label="Steps"
-              action={
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityHint="Connects Health Connect to read your steps"
-                  onPress={() => (access == null || access === 'unsupported' ? router.push('/steps') : connectSteps())}
-                  style={styles.connect}>
-                  <Text variant="bodyStrong">Connect steps</Text>
-                  <Text variant="caption" muted>
-                    of {formatNumber(stepTarget)}
-                  </Text>
-                </Pressable>
-              }
-            />
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityHint="Opens your step history"
-              onPress={() => router.push('/steps')}>
-              <Readout
-                color={colors.steps}
-                label="Steps"
-                value={formatNumber(steps)}
-                caption={`of ${formatNumber(stepTarget)}`}
-              />
-            </Pressable>
-          )}
-          <Readout
-            color={colors.calories}
-            label="Calories left"
-            value={cal.headline}
-            valueColor={cal.over ? colors.danger : undefined}
-            caption={cal.caption}
-          />
+    <Card title="Calories">
+      <View
+        style={styles.gaugeRow}
+        accessible
+        accessibilityLabel={`${formatNumber(cal.value)} calories ${cal.status}. ${formatNumber(
+          totals.calories,
+        )} eaten of ${formatNumber(target)}.`}>
+        <View style={styles.side}>
+          <Text variant="label" muted>
+            Eaten
+          </Text>
+          <Text variant="title" style={styles.tabular}>
+            {formatNumber(totals.calories)}
+          </Text>
+        </View>
+        <ArcGauge size={164} progress={cal.over ? 1 : cal.remaining} color={cal.over ? colors.danger : colors.calories}>
+          <Text variant="bigMetric" color={cal.over ? colors.danger : undefined}>
+            {formatNumber(cal.value)}
+          </Text>
+          <Text variant="label" muted>
+            {cal.status}
+          </Text>
+        </ArcGauge>
+        <View style={styles.side}>
+          <Text variant="label" muted>
+            Target
+          </Text>
+          <Text variant="title" style={styles.tabular}>
+            {formatNumber(target)}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.macros}>
+        <SplitBar parts={macros.map((m) => ({ share: m.share, color: macroColor[m.key] }))} />
+        <View style={styles.macroRow}>
+          {macros.map((m) => (
+            <View
+              key={m.key}
+              style={styles.macro}
+              accessible
+              accessibilityLabel={`${m.label} ${m.grams} of ${m.target} grams`}>
+              <View style={styles.macroLabel}>
+                <View style={[styles.dot, { backgroundColor: macroColor[m.key] }]} />
+                <Text variant="label" muted>
+                  {m.label}
+                </Text>
+              </View>
+              <Text variant="bodyStrong" style={styles.tabular}>
+                {m.grams}g
+                <Text variant="caption" muted>
+                  {' '}
+                  / {m.target}g
+                </Text>
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
     </Card>
   );
 }
 
-function MacrosCard({ day }: { day: string }) {
-  const targets = useTargets();
-  const totals = useDayTotals(day);
-  const rows = [
-    { label: 'Protein', eaten: totals.proteinG, target: targets?.proteinG ?? 0 },
-    { label: 'Carbs', eaten: totals.carbsG, target: targets?.carbsG ?? 0 },
-    { label: 'Fat', eaten: totals.fatG, target: targets?.fatG ?? 0 },
-  ];
+/** Today's steps against the target, or a Connect button before Health Connect is set up. */
+function StepsCard({ day }: { day: string }) {
+  const { colors } = useTheme();
+  const { profile } = useProfile();
+  const stepTarget = profile?.stepTarget ?? 10000;
+  const { access } = useStepsSync();
+  const synced = useDaySteps(day);
+  // Before anything is synced, a connected phone shows 0 rather than "Connect".
+  const steps: number | null = synced ?? (access === 'granted' ? 0 : null);
+
+  if (steps == null) {
+    return (
+      <Card title="Steps">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint="Connects Health Connect to read your steps"
+          onPress={() => (access == null || access === 'unsupported' ? router.push('/steps') : connectSteps())}
+          style={styles.connect}>
+          <Text variant="bodyStrong">Connect steps</Text>
+          <Text variant="caption" muted>
+            Target {formatNumber(stepTarget)} a day
+          </Text>
+        </Pressable>
+      </Card>
+    );
+  }
+
   return (
-    <Card>
-      <View style={styles.macros}>
-        {rows.map((r) => (
-          <View
-            key={r.label}
-            style={styles.macro}
-            accessible
-            accessibilityLabel={`${r.label} ${Math.round(r.eaten)} of ${r.target} grams`}>
-            <Text variant="label" muted>
-              {r.label}
-            </Text>
-            <Text variant="bodyStrong" style={{ fontVariant: ['tabular-nums'] }}>
-              {Math.round(r.eaten)}g
-              <Text variant="label" muted>
-                {' '}
-                / {r.target}g
-              </Text>
-            </Text>
-            <ProgressBar progress={r.target ? r.eaten / r.target : 0} />
-          </View>
-        ))}
-      </View>
-    </Card>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${stepsAccessibility(steps, stepTarget)} ${stepsToGo(steps, stepTarget)}.`}
+      accessibilityHint="Opens your step history"
+      onPress={() => router.push('/steps')}>
+      <Card
+        title="Steps"
+        right={
+          <Text variant="label" muted style={styles.tabular}>
+            {stepsToGo(steps, stepTarget)}
+          </Text>
+        }>
+        <View style={styles.stepsValue}>
+          <Text variant="metric">{formatNumber(steps)}</Text>
+          <Text variant="label" muted>
+            of {formatNumber(stepTarget)}
+          </Text>
+        </View>
+        <ProgressBar progress={stepTarget ? steps / stepTarget : 0} color={colors.steps} />
+      </Card>
+    </Pressable>
   );
 }
 
@@ -280,14 +325,19 @@ function Pill({
 }
 
 const styles = StyleSheet.create({
-  ringsRow: { flexDirection: 'row', alignItems: 'center', gap: space[5] },
-  readouts: { flex: 1, gap: space[4] },
-  readout: { gap: 2 },
-  readoutLabel: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  tabular: { fontVariant: ['tabular-nums'] },
+  strip: { flexDirection: 'row', paddingVertical: space[3], paddingHorizontal: 0, gap: 0 },
+  stripTile: { flex: 1, alignItems: 'center', gap: 2 },
+  stripValue: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  gaugeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  side: { flex: 1, alignItems: 'center', gap: 2 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   connect: { minHeight: layout.minTap, justifyContent: 'center' },
-  macros: { flexDirection: 'row', gap: space[4] },
-  macro: { flex: 1, gap: space[1] },
+  macros: { gap: space[3] },
+  macroRow: { flexDirection: 'row', gap: space[3] },
+  macro: { flex: 1, gap: 2 },
+  macroLabel: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  stepsValue: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
   mealsCard: { paddingVertical: space[1], gap: 0 },
   mealRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[2] },
   mealText: { flex: 1, gap: space[2] },

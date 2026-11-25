@@ -3,7 +3,9 @@
  * never raw hex values. Two accents: steps (green/lime) and calories (orange),
  * used only for steps and calories shapes. Weight milestones get their own
  * four hues (blue, violet, magenta, crimson). In light mode they are not used
- * for text (contrast on white is too low).
+ * for text (contrast on white is too low). Macros (protein, carbs, fat) get
+ * three more for the split bar on Today: blue, violet and yellow, never green
+ * or orange.
  */
 
 export type ColorScheme = 'light' | 'dark';
@@ -26,6 +28,9 @@ const light = {
   milestone2: '#7A4BD6',
   milestone3: '#C0307F',
   milestone4: '#B3263E',
+  protein: '#3B6FD8',
+  carbs: '#8A63D2',
+  fat: '#D9A400',
 };
 
 const dark: typeof light = {
@@ -44,6 +49,9 @@ const dark: typeof light = {
   milestone2: '#AE8EFF',
   milestone3: '#F27CC6',
   milestone4: '#FF7F93',
+  protein: '#7AA7FF',
+  carbs: '#B79BFF',
+  fat: '#F2C94C',
 };
 
 export const palettes = { light, dark };
