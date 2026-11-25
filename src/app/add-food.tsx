@@ -1,33 +1,64 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Camera, Check, FileText, Mic, PencilLine, Plus, ScanBarcode, Search, type LucideIcon } from 'lucide-react-native';
+import {
+  Camera,
+  Check,
+  Copy,
+  FileText,
+  Mic,
+  PencilLine,
+  Plus,
+  ScanBarcode,
+  Search,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { FoodIcon } from '@/components/FoodIcon';
 import { AddButton, Button, Card, Screen, Segmented, Text } from '@/components/ui';
-import { addFood } from '@/db/meals';
-import { useRecentFoods } from '@/hooks/data';
-import { toLocalDateString } from '@/lib/dates';
+import { addFood, copyMeal } from '@/db/meals';
+import { useDayTotals, useRecentFoods } from '@/hooks/data';
+import { addDays, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { dayLabel, formatAmount, macroLine, searchFoods, type RecentFood } from '@/lib/food';
 import { hapticSuccess } from '@/lib/haptics';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, radius, space, type as typeScale } from '@/theme/tokens';
 
-/** Where every "+" leads: search foods logged before, or quick add. */
+/** Where every "+" leads: search recent foods, AI/barcode capture, quick add, or same as yesterday. */
 export default function AddFoodScreen() {
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ meal?: string; day?: string }>();
-  const day = isLocalDate(params.day) ? params.day : toLocalDateString();
+  const today = toLocalDateString();
+  const day = isLocalDate(params.day) ? params.day : today;
   const [meal, setMeal] = useState<MealType>(isMealType(params.meal) ? params.meal : 'snack');
   const [query, setQuery] = useState('');
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [copying, setCopying] = useState(false);
   const recent = useRecentFoods();
   const matches = useMemo(() => searchFoods(recent, query), [recent, query]);
-  const isToday = day === toLocalDateString();
+  const isToday = day === today;
+
+  const prevDay = toLocalDateString(addDays(fromLocalDateString(day), -1));
+  const prevTotals = useDayTotals(prevDay);
+  const prevMeal = prevTotals.byMeal[meal];
+  const prevLabel = dayLabel(prevDay, today);
+  const canCopyYesterday = prevMeal.count > 0;
 
   const quickAdd = (name?: string) =>
     router.push({ pathname: '/quick-add', params: { meal, day, from: 'add', ...(name ? { name } : {}) } });
+
+  const handleCopyYesterday = async () => {
+    if (copying || !canCopyYesterday) return;
+    setCopying(true);
+    try {
+      await copyMeal(meal, prevDay, day);
+      hapticSuccess();
+      router.back();
+    } finally {
+      setCopying(false);
+    }
+  };
 
   const open = (f: RecentFood) =>
     router.push({
@@ -108,7 +139,18 @@ export default function AddFoodScreen() {
           label="Read a label"
           onPress={() => router.push({ pathname: '/scan', params: { meal, day, mode: 'label' } })}
         />
+      </View>
+      <View style={styles.actions}>
         <ActionTile icon={PencilLine} label="Quick add" onPress={() => quickAdd()} />
+        {canCopyYesterday ? (
+          <ActionTile
+            icon={Copy}
+            label={prevLabel === 'Yesterday' ? 'Same as yesterday' : `Same as ${prevLabel}`}
+            hint={`${formatNumber(prevMeal.calories)} calories`}
+            disabled={copying}
+            onPress={() => void handleCopyYesterday()}
+          />
+        ) : null}
       </View>
 
       {recent.length === 0 ? (
@@ -160,20 +202,44 @@ export default function AddFoodScreen() {
   );
 }
 
-function ActionTile({ icon: Icon, label, onPress }: { icon: LucideIcon; label: string; onPress: () => void }) {
+function ActionTile({
+  icon: Icon,
+  label,
+  hint,
+  disabled,
+  onPress,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
   const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.tile,
-        { backgroundColor: colors.surface, borderColor: colors.cardBorder, opacity: pressed ? 0.75 : 1 },
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.cardBorder,
+          opacity: disabled ? 0.5 : pressed ? 0.75 : 1,
+        },
       ]}>
       <View style={[styles.tileIcon, { backgroundColor: colors.caloriesSoft }]}>
         <Icon size={20} strokeWidth={1.9} color={colors.calories} />
       </View>
-      <Text variant="label">{label}</Text>
+      <Text variant="label" style={styles.tileLabel}>
+        {label}
+      </Text>
+      {hint ? (
+        <Text variant="caption" muted style={styles.tabular}>
+          {hint}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -187,10 +253,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space[2],
+    gap: space[1] + 2,
     paddingVertical: space[3],
+    paddingHorizontal: space[2],
   },
   tileIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  tileLabel: { textAlign: 'center' },
+  tabular: { fontVariant: ['tabular-nums'] },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
