@@ -2,7 +2,7 @@
   "expo": {
     "name": "Calories and Steps",
     "slug": "calories-and-steps",
-    "version": "0.23.0",
+    "version": "0.24.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "caloriesandsteps",
@@ -46,11 +46,11 @@
               "description": "Today's steps and progress towards your daily target",
               "ios": null,
               "android": {
-                "minWidth": 90,
-                "minHeight": 90,
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "both",
+                "minWidth": 40,
+                "minHeight": 40,
+                "targetCellWidth": 1,
+                "targetCellHeight": 1,
+                "resizeMode": "none",
                 "initialLayout": "./src/widgets/StepsWidget.tsx"
               }
             },
@@ -60,11 +60,11 @@
               "description": "Remaining calories for today and progress against your target",
               "ios": null,
               "android": {
-                "minWidth": 90,
-                "minHeight": 90,
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "both",
+                "minWidth": 40,
+                "minHeight": 40,
+                "targetCellWidth": 1,
+                "targetCellHeight": 1,
+                "resizeMode": "none",
                 "initialLayout": "./src/widgets/CaloriesWidget.tsx"
               }
             }

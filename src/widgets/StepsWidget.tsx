@@ -10,77 +10,82 @@ import {
   background,
   cornerRadius,
   fillMaxSize,
-  fillMaxWidth,
   height,
   paddingAll,
   size,
+  width,
+  wrapContentHeight,
+  wrapContentWidth,
 } from '@expo/ui/jetpack-compose/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
 import type { StepsWidgetProps } from '@/lib/widgets';
 
 /**
- * Single-tile Android home-screen widget for today's steps.
+ * 1×1 single-tile Android home-screen widget for today's steps.
+ * Engineered to fit cleanly inside a single icon cell (57dp total height:
+ * 3dp padding + 46dp ring + 2dp gap + 3dp bar + 3dp padding).
  * NOTE: Inside a `'widget'` directive, every constant must live inside the
  * function body (module-scope values are not serialized into the widget bundle).
  */
 const StepsWidgetLayout = (props: StepsWidgetProps, environment: WidgetEnvironment) => {
   'widget';
-  const isDark = environment.colorScheme === 'dark';
+  const safeProps = props ?? {};
+  const isDark = environment?.colorScheme === 'dark';
   const surface = isDark ? '#151917' : '#FFFFFF';
   const ink = isDark ? '#F2F4F3' : '#0E1111';
   const muted = isDark ? '#9AA39F' : '#5B6360';
   const track = isDark ? '#222825' : '#ECEFED';
-  // Steps green only (matches src/theme/colors.ts)
   const accent = isDark ? '#B6F24A' : '#1F9D55';
-  const progress = Math.min(1, Math.max(0, props.progress ?? 0));
+  const progress = Math.min(1, Math.max(0, safeProps.progress ?? 0));
+  const valueLabel = safeProps.valueLabel ?? '–';
+  const label = safeProps.label ?? 'STEPS';
+  const reached = Boolean(safeProps.reached);
 
   return (
     <Column
       horizontalAlignment="center"
       verticalArrangement="center"
-      modifiers={[fillMaxSize(), background(surface), cornerRadius(24), paddingAll(12)]}>
-      <Text color={muted} maxLines={1} style={{ fontSize: 10, fontWeight: 'bold' }}>
-        STEPS
-      </Text>
-      <Spacer modifiers={[height(6)]} />
-      <Box contentAlignment="center" modifiers={[size(68, 68)]}>
+      modifiers={[fillMaxSize(), background(surface), cornerRadius(18), paddingAll(3)]}>
+      <Box contentAlignment="center" modifiers={[size(46, 46)]}>
         <CircularProgressIndicator
           progress={progress}
           color={accent}
           trackColor={track}
-          modifiers={[size(68, 68)]}
+          modifiers={[size(46, 46)]}
         />
-        <Column horizontalAlignment="center" verticalArrangement="center">
+        <Column
+          horizontalAlignment="center"
+          verticalArrangement="center"
+          modifiers={[wrapContentWidth(), wrapContentHeight()]}>
           <Text
             color={ink}
             maxLines={1}
-            style={{ fontSize: 14, fontWeight: 'bold', textAlign: 'center' }}>
-            {props.valueLabel}
+            style={{ fontSize: 11, fontWeight: 'bold', textAlign: 'center' }}>
+            {valueLabel}
+          </Text>
+          <Text
+            color={reached ? accent : muted}
+            maxLines={1}
+            style={{ fontSize: 7, fontWeight: 'bold', textAlign: 'center' }}>
+            {label}
           </Text>
         </Column>
       </Box>
-      <Spacer modifiers={[height(8)]} />
+      <Spacer modifiers={[height(2)]} />
       <LinearProgressIndicator
         progress={progress}
         color={accent}
         trackColor={track}
-        modifiers={[fillMaxWidth(), height(5), cornerRadius(3)]}
+        modifiers={[width(38), height(3), cornerRadius(2)]}
       />
-      <Spacer modifiers={[height(4)]} />
-      <Text
-        color={props.reached ? accent : muted}
-        maxLines={1}
-        style={{ fontSize: 10, textAlign: 'center' }}>
-        {props.subLabel}
-      </Text>
     </Column>
   );
 };
 
 export default createWidget<StepsWidgetProps>('StepsWidget', StepsWidgetLayout, {
-  valueLabel: '0',
-  subLabel: 'of 10k',
+  valueLabel: '–',
+  label: 'STEPS',
   progress: 0,
   reached: false,
   updatedDay: '',
