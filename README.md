@@ -76,16 +76,18 @@ A simple, private Android app for tracking what you eat, how much you move and h
 - **Photograph a meal.** Take a photo (or pick one), say what's in it out loud or type it, and AI estimates each part of the meal with grams, calories and macros. Check and fix the list, then add it. Works from a description alone too ("two eggs on toast"). Uses your own Google AI key; speech is turned into text on your phone.
 - **Meals.** Log breakfast, lunch, dinner and snacks. Search the foods you've had before and add one in a tap, change the servings or the amount (grams, or ml for drinks), quick add calories in seconds, or copy a meal from yesterday. Tap anything you logged to fix it or move it to another meal.
 - **Barcodes and labels.** Scan a barcode to look the product up in Open Food Facts, pick a serving or type the amount, and add it. Drinks are measured in ml (worked out from the product, and switchable with one tap). If the product isn't there, photograph the nutrition label and AI reads it (using your own Google AI key). Every number can be fixed before adding, and scanned products are remembered on your phone.
-- **Food history.** Step back through earlier days, add or fix food on any of them, and see your 7-day calorie average.
-- **Weight.** How much you've lost over the last 7 days, month and 3 months at the top of Today, a quick weigh-in on the home screen, and charts from a week to all time. Each period shows how much you've lost in it as a big number. The chart joins your actual weigh-ins, with a faint dashed trend line that carries on to your goal, and coloured markers for every 5 kg lost.
+- **Food history.** Step back through earlier days, add or fix food on any of them, and see your 7-day calorie average and interactive 7-day bar chart.
+- **Weight.** A combined Weight card at the bottom of Today with a quick weigh-in and how much you've lost over the last 7 days, month and 3 months, plus charts from a week to all time. Each period shows how much you've lost in it as a big number. The chart joins your actual weigh-ins, with a faint dashed trend line that carries on to your goal, and coloured markers for every 5 kg lost.
 - **Bring your weight history with you.** Screenshot the weight list in your old app (Lose It!, MyFitnessPal, a smart-scale app or anything that shows dates and weights), pick the screenshots, and AI reads every entry. You check and fix the list before anything is saved, and duplicates are skipped. Offered when you first set up the app, and any time from the Weight tab. Uses your own Google AI (Gemini) key.
 - **Body fat.** Body fat (Navy method) check-ins from a tape measure, with lean and fat mass, plain BMI alongside, and front, side and back photos you can line up and compare side by side.
 - **Steps.** Your steps come from Health Connect (Android's health app, which gathers them from your phone, watch or fitness apps). Today's steps card fills towards your daily target (5,000 to 25,000), and the Steps tab shows today hour by hour, the last 7 days as bars against your target, and your 7-day total.
-- **Light and dark.** Follows your phone, or pick one.
+- **Home-screen widgets.** Two compact single-tile Android widgets — **Daily Steps** (steps green) and **Calories Left** (calories orange, red when over) — each showing today's number inside a circular progress ring with a progress bar and target caption below, adapting to light and dark mode.
+- **Smart reminders.** Optional on-device notifications for weigh-ins, meals and an evening wrap-up that automatically skip today once logged. No server or account.
+- **Light and dark.** Follows your phone, or pick Light, Stone, Dark or OLED.
 - **Updates.** The app tells you when a new version is out.
 - **Backup and restore.** Save everything (meals, weights, check-ins, photos and settings) to one file on Google Drive, by email or in a folder on the phone, and restore it after reinstalling or on a new phone. Today reminds you every two weeks.
 
-**Coming next:** more step history.
+**Coming next:** more step history and background step refresh for widgets.
 
 ## Install
 
@@ -152,7 +154,7 @@ Wording rule: the app always says "calories", never "kcal".
 | App | Expo SDK 58 (development build, not Expo Go), React Native 0.88, React 19, TypeScript, Expo Router |
 | Data | SQLite on the phone through expo-sqlite and Drizzle ORM, with migrations bundled into the app |
 | UI | Custom design tokens, Space Grotesk and Inter fonts, lucide icons, Reanimated gauge and bars, custom SVG charts |
-| Phone features | expo-camera (photos and barcodes), expo-speech-recognition (on-device speech), react-native-health-connect (steps), expo-secure-store (AI key) |
+| Phone features | expo-camera (photos and barcodes), expo-speech-recognition (on-device speech), react-native-health-connect (steps), expo-notifications (local reminders), expo-widgets + `@expo/ui/jetpack-compose` (Android home-screen widgets), expo-secure-store (AI key) |
 | AI | One provider-agnostic adapter over plain `fetch` (Google Gemini in the app; OpenAI and Claude supported underneath) |
 | Quality | Jest (jest-expo), TypeScript, ESLint, and a CI workflow on every pull request |
 | Releases | GitHub Actions builds and signs the APKs with Gradle and publishes them to GitHub Releases |
@@ -199,8 +201,9 @@ Full versions are in [Main dependency versions](#main-dependency-versions).
 | Today redesign | Weight change over 7 days, 1 month and 3 months at the top; calories as a countdown gauge with a macro split bar; steps in their own card | Done (PR #23, 0.20.0) |
 | UI & highlight colour polish | Semantic domain highlights, Stone & OLED themes, custom dual-arc app icons, interactive chart scrubbing, tactile haptics & spring micro-animations, Calories macro split bar, Steps 7-day summary strip, Progress lean/fat split bar, and BMI spectrum bar | Done (PR #24, 0.21.0) |
 | Smart local reminders | On-device meal, weigh-in and evening wrap-up notifications with automatic smart-skip once logged, native time pickers, test button and deep-linking (no server or Firebase) | Done (PR #25, 0.22.0) |
+| Home-screen widgets | Two single-tile Android home-screen widgets (**Daily Steps** and **Calories Left**) with circular progress ring, progress bar, light/dark support and automatic live sync | Done (PR #26, 0.23.0) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix), **v0.14.0** (backup and restore), **v0.16.0** (check-in polish and smaller arm64 + universal APKs), **v0.18.0** (actual weigh-in totals and reliability/cropping fixes), **v0.20.0** (weight chart start/latest labels and Today redesign), and **v0.21.0** (UI & highlight colour polish, custom dual-arc icons, interactive chart scrub, haptics, and Stone/OLED themes). Everything since — smart local reminders (0.22.0) — goes out in the next release. See [which versions were released](#versions-and-changelog).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix), **v0.14.0** (backup and restore), **v0.16.0** (check-in polish and smaller arm64 + universal APKs), **v0.18.0** (actual weigh-in totals and reliability/cropping fixes), **v0.20.0** (weight chart start/latest labels and Today redesign), and **v0.21.0** (UI & highlight colour polish, custom dual-arc icons, interactive chart scrub, haptics, and Stone/OLED themes). Everything since — smart local reminders & Today/Calories layout updates (0.22.0) and Android home-screen widgets (0.23.0) — goes out in the next release. See [which versions were released](#versions-and-changelog).
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
@@ -368,6 +371,15 @@ Called "Food" before 0.12.0; the route is still `/food`.
 - **Reminder**: Today shows "Time for a backup" 14 days after the last backup, or 14 days after setting up if there's never been one. **Back up** opens the share sheet; **Later** hides it for 3 days. The update card and Settings' update text suggest backing up before installing a new APK.
 - Not in the backup: the AI key (kept in the phone's secure storage), the update-check cache, the backup date and this phone's local reminder preferences.
 
+### Home-screen widgets
+
+- Two compact single-tile Android home-screen widgets (resizable from a compact 2×2 tile upwards), built with `expo-widgets` and Jetpack Compose Glance:
+  - **Daily Steps**: shows today's step count (`6,420`, or compact `10.4k` at 10,000+) centered inside a circular progress ring, with a linear progress bar and target caption (`of 10k` or `Target hit`) underneath in steps green (`#1F9D55` light / `#B6F24A` dark).
+  - **Calories Left**: shows today's remaining calories and `left` (or amount `over` in red once past target) centered inside a circular progress ring (remaining share, or full red ring when over), with an eaten-share linear bar and `eaten / target` caption underneath in calories orange (`#F26A1B` light / `#FF8A4C` dark).
+- Both widgets automatically adapt to your phone's light or dark theme (`environment.colorScheme`) and refresh whenever today's steps, logged calories or targets change, or when the app opens or moves to the background (`useWidgetsSync`).
+- **How to add**: long-press an empty space on your Android home screen → **Widgets** → **Calories and Steps** → drag **Daily Steps** or **Calories Left** onto your home screen.
+- **Step freshness note**: without Health Connect background read access (planned under [Steps, later](#future-enhancements)), step counts refresh whenever you open the app; calories update immediately whenever you log or edit food.
+
 ### Updates
 
 - On Android the app asks GitHub for the latest release at most once a day. When a newer version exists, Today shows a "Version x is available" card with a Download button that opens the APK link. "Not now" hides it until the next version.
@@ -376,7 +388,7 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ## Versions and changelog
 
-App version: **0.22.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.23.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 Several PRs can merge between two releases, so not every version number gets its own release. Each release includes everything merged before it.
 
@@ -390,10 +402,12 @@ Several PRs can merge between two releases, so not every version number gets its
 | 0.15.0 (check-in polish) | Not tagged; shipped in 0.16.0 |
 | 0.17.0 (weight totals from weigh-ins) | Not tagged; shipped in 0.18.0 |
 | 0.19.0 (start and latest labels) | Not tagged; shipped in 0.20.0 |
-| 0.22.0 (Smart local reminders) | Next release, once tagged |
+| 0.22.0 (Smart local reminders & Today/Calories layout) | Not tagged; ships in next release |
+| 0.23.0 (Android home-screen widgets) | Next release, once tagged |
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-25 | Android home-screen widgets: added `expo-widgets` (`~58.0.29`, configured in `app.json` with `enableAndroid: true` and `ios: null`) using `@expo/ui/jetpack-compose` (`~58.0.29`) to ship two compact single-tile Android home-screen widgets — **Daily Steps** (`src/widgets/StepsWidget.tsx`, steps green `#1F9D55` / `#B6F24A`) and **Calories Left** (`src/widgets/CaloriesWidget.tsx`, calories orange `#F26A1B` / `#FF8A4C`, turning danger red when over target). Each tile renders today's value centered inside a determinate `CircularProgressIndicator` with a `LinearProgressIndicator` and compact target caption below, adapting to light and dark mode (`environment.colorScheme`). Pure snapshot builders (`buildStepsWidgetProps`, `buildCaloriesWidgetProps`, `formatCompactCount`, `formatCompactTarget` in `src/lib/widgets.ts`) are unit-tested (`src/lib/__tests__/widgets.test.ts`), and `useWidgetsSync` (`src/hooks/widgets.ts`, mounted in `(tabs)/_layout.tsx`) automatically pushes fresh snapshots whenever steps, calories, targets or app state change. No DB migration. Version 0.23.0 | #26 |
 | 2026-11-25 | Smart local reminders, Today meals & weight layout, and Calories 7-day chart: added `expo-notifications` (`~58.1.9`) with its config plugin (`assets/images/notification-icon.png` 96×96 white dual-arc status-bar icon, `#F26A1B` tint, `reminders` channel, `enableRemoteNotifications: false`) for 100% on-device notifications with no server or Firebase. New **Settings → Reminders** card (`src/components/RemindersCard.tsx`) with toggles, native time pickers, Android permission handling and a **Send test notification** button for Morning weigh-in, Breakfast, Lunch, Dinner and Evening wrap-up (all off by default). Rolling 7-day `DATE` schedule (`src/lib/reminders.ts`, tested) automatically skips today's meal or weigh-in reminder once logged (`useRemindersSync` in `(tabs)/_layout.tsx`) while keeping future days armed; tapping a notification deep-links directly to the relevant screen (`useNotificationDeepLink` in `_layout.tsx`). Preferences live in `reminders.json` (`src/lib/reminderState.ts`, no DB migration). Streamlined **Today** (`src/app/(tabs)/index.tsx`): combined the 7-day / 1-month / 3-month weight tracking strip into `WeightLogCard` (`showChanges`) at the bottom, moved today's logged food items directly onto Today's meals card (tap to edit), and removed the Quick add / Same as yesterday pills from Today so only the clean `+` button remains. Moved **Same as yesterday** into the `Add food` (`+`) screen (`src/app/add-food.tsx`) alongside **Quick add**. Upgraded the **Calories** tab (`src/app/(tabs)/food.tsx`) into a summary & 7-day trends page featuring day summary + macro split, 7-day average, an interactive 7-day bar chart (`src/components/CaloriesChart.tsx`, `useCaloriesWeek`, `caloriesHistory` & `caloriesSummary` in `src/lib/food.ts`, tested), and a 3-column Logged / On target / Avg vs target strip. Version 0.22.0 | #25 |
 | 2026-11-25 | UI & highlight colour polish: expanded the palette (`src/theme/colors.ts`) with domain highlights for weight (cobalt blue) and body fat (plum violet), soft tint tokens (`*Soft`, `softTint`), crisp `cardBorder`, two new themes (**Stone** warm light and **OLED** true black, chosen via a visual swatch picker in Settings → Appearance; no DB migration), and fixed dark-mode primary buttons to monochrome off-white so green stays strictly for steps and orange strictly for calories in every theme (enforced by `src/theme/__tests__/colors.test.ts`). Refined typography tracking (`tokens.ts`, `eyebrow` variant), bordered/gently elevated cards (`Card.tsx`), lifted active segments (`Segmented.tsx`), glowing `14 px` `ArcGauge` with gentle halo pulse, `8 px` `ProgressBar`, new `Badge` pill primitive, and `BmiBar` spectrum component. Added gradient-washed accent lines and interactive touch-and-drag crosshair scrubbing (`src/lib/chartScrub.ts`) to `LineChart` (cobalt on Weight, plum-violet on Progress) and tap/drag bar inspection to `StepsChart`, tinted milestone chips, subtle non-green/non-orange category tints on `FoodIcon`, Today meal icons/share micro-bars/tinted `+` buttons, Calories tab progress + macro `SplitBar` + meal badges, Steps tab 7-day summary strip (`Daily avg`, `On target`, `Streak` from `stepsSummary`) + highlighted Today axis label, Progress tab Lean vs. Fat `SplitBar`, bordered tinted action tiles in Add food, subtle Reanimated button springs + cross-platform haptics (`expo-haptics`, `src/lib/haptics.ts`), and custom dual-arc launcher, adaptive, monochrome, splash and favicon icons (`assets/images/`). Version 0.21.0 | #24 |
 | 2026-11-25 | Today redesign: a weight change strip at the top (7 days, 1 month, 3 months, from actual weigh-ins); calories as a countdown gauge of calories left (`ArcGauge`) with Eaten and Target either side and a protein/carbs/fat split bar (`SplitBar`) with grams against targets; steps moved into their own card with "N to go". The steps and calories rings (`DualRings`) are gone. New colour tokens `protein`, `carbs` and `fat`; new helpers `macroSplit`, `todayWeightChanges`, `changeParts` and `stepsToGo` in `src/lib/today.ts`, with tests. Today screenshots retaken. Version 0.20.0 | #23 |
@@ -440,6 +454,7 @@ Several PRs can merge between two releases, so not every version number gets its
 | expo-device (update check picks the APK for the phone's chip) | ~58.0.5 |
 | expo-haptics (subtle tactile ticks & confirmations; uses Android's native haptics engine) | ~58.0.8 |
 | expo-notifications (local on-device reminders; no FCM or remote push) | ~58.1.9 |
+| expo-widgets / `@expo/ui` (Android Glance home-screen widgets) | ~58.0.29 / ~58.0.29 |
 | expo-sharing (backup share sheet; its config plugin is only for receiving shares, so it isn't added) | ~58.0.23 |
 | fflate (backup zip, pure JavaScript, streaming) | ^0.8.3 |
 | expo-image-picker (weight import) | ~58.0.10 |
@@ -488,7 +503,8 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 - **Barcodes** (`src/lib/openFoodFacts.ts`, `src/db/foods.ts`): `lookupBarcode` calls the Open Food Facts v2 product API asking only for the fields used, with a `User-Agent` naming the app as Open Food Facts asks. `parseOffProduct` turns the answer into per-100 g numbers (kJ converted when calories are missing). Products, label reads and corrections live in the existing `food_ref` table (`source` is `off`, `panel` or `custom`), saved by `saveFoodRef`, which updates in place when the barcode is already cached.
 - **Steps** (`src/lib/healthConnect.ts`, `src/hooks/steps.ts`, `src/db/steps.ts`, `src/lib/steps.ts`): `healthConnect.ts` wraps react-native-health-connect (availability, permission, daily totals with `aggregateGroupByPeriod`, hourly totals with `aggregateGroupByDuration`, opening Health Connect or its Play Store page) and is the only file that imports it. `hooks/steps.ts` holds the shared sync state (access, syncing, last sync, today's hours) as a tiny store read with `useSyncExternalStore`; `useStepsAutoSync` in the tabs layout syncs on open and on return to the front; `connectSteps` is the connect button. Daily totals go into the existing `steps_day` table (`source` = `health_connect`), so no migration; screens read it with live queries (`useDaySteps`, `useStepsHistory`). Pure helpers in `lib/steps.ts` (buckets to days and hours, history, totals, summary stats, status messages) are tested. `StepsChart` draws the bars. The Health Connect config plugin adds the permission-rationale intent filter and activity alias to the manifest; `android.permissions` in `app.json` adds `READ_STEPS`.
 - **Reminders** (`src/lib/reminders.ts`, `src/lib/reminderState.ts`, `src/lib/notifications.ts`, `src/hooks/reminders.ts`, `src/components/RemindersCard.tsx`): `notifications.ts` is the only file that imports `expo-notifications`. Reminder preferences live in `reminders.json` in the document folder (`useSyncExternalStore`, no DB migration). `lib/reminders.ts` is pure and tested (`parseReminderSettings`, `formatReminderTime`, `buildReminderSchedule`, `parseNotificationRoute`). Rather than a blind repeating trigger, `useRemindersSync` (mounted in `(tabs)/_layout.tsx`) schedules a rolling 7-day window of local `DATE` triggers (inexact `bestEffort`, so no special exact-alarm permission is needed) and automatically skips today's meal or weigh-in reminder once logged. `useNotificationDeepLink` in `src/app/_layout.tsx` opens the matching screen when tapped. Configured in `app.json` with a 96×96 pure-white `notification-icon.png` and `enableRemoteNotifications: false` (100% local, no FCM or server).
-- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, `periodChange` and change rows from weigh-ins, milestones, projection and `projectionLine` from the trend), `steps.ts`, `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
+- **Home-screen widgets** (`src/widgets/StepsWidget.tsx`, `src/widgets/CaloriesWidget.tsx`, `src/lib/widgets.ts`, `src/hooks/widgets.ts`): Android Glance widgets built with `expo-widgets` and `@expo/ui/jetpack-compose` (`CircularProgressIndicator`, `LinearProgressIndicator`, `Box`, `Column`, `Spacer`, `Text`). Configured in `app.json` under the `expo-widgets` plugin with `enableAndroid: true` and `ios: null` on each widget so Android Glance providers are generated without an iOS WidgetKit target. Pure snapshot builders (`buildStepsWidgetProps`, `buildCaloriesWidgetProps`, compact number/target formatting) live in `src/lib/widgets.ts` and are unit-tested; `useWidgetsSync` (mounted in `(tabs)/_layout.tsx`) calls `updateSnapshot(...)` whenever today's steps, calories, targets or app state change. Inside each `'widget'` directive function, all colours and helpers stay inside the function body so Babel serialises the widget layout cleanly.
+- **Maths** (`src/lib`): `energy.ts` (maintenance, targets, age), `food.ts` (recent foods, search, servings, weekly average), `body.ts` (Navy formula, BMI), `weight.ts` (trend, `periodChange` and change rows from weigh-ins, milestones, projection and `projectionLine` from the trend), `steps.ts`, `widgets.ts`, `units.ts`, `dates.ts`, `today.ts`, `validation.ts`.
 
 ### Folder layout
 
@@ -500,6 +516,7 @@ src/hooks/        Live data hooks
 src/lib/          Pure maths and formatting, with tests in __tests__/
 src/lib/ai/       AI provider adapter, key settings and prompts
 src/theme/        Design tokens (colors.ts, tokens.ts) and the theme provider
+src/widgets/      Android home-screen widgets (expo-widgets + Jetpack Compose Glance)
 drizzle/          Generated migrations, bundled into the app
 plugins/          Expo config plugins and helpers for the Android release build
 docs/screenshots/ README screenshots
@@ -617,7 +634,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, steps, Today, chart callout & scrub, reminders scheduling, date, backup, version, voice and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, weight-import merging, AI request builders/timeouts, theme colour separation (`src/theme/__tests__/colors.test.ts`), release plugins, plus SQLite migration tests (`src/db/__tests__/migrations.test.ts`) |
+| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, steps, Today, chart callout & scrub, reminders scheduling, widget snapshot builders (`src/lib/__tests__/widgets.test.ts`), date, backup, version, voice and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, weight-import merging, AI request builders/timeouts, theme colour separation (`src/theme/__tests__/colors.test.ts`), release plugins, plus SQLite migration tests (`src/db/__tests__/migrations.test.ts`) |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
@@ -689,7 +706,7 @@ Everything we've discussed that is not built yet.
 **Steps, later**
 - Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year) and best-day highlights. The last-7-day summary strip (daily average, days on target and current streak) now uses `stepsSummary` from `src/lib/steps.ts` on the Steps tab; longer-range analytics will reuse the same helper.
 - Reading older history with Health Connect's history permission (more than 30 days before access was given).
-- Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and for the home-screen widgets (see Widgets, later).
+- Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and so the Daily Steps home-screen widget stays fresh while the app is closed (see Widgets, later).
 - Entering steps by hand for days without a phone or watch.
 - Weight from smart scales through Health Connect.
 - Apple Health when iOS returns.
@@ -707,7 +724,7 @@ Everything we've discussed that is not built yet.
 - Check-in detail, side-by-side compare and meal estimate photos now show uncropped (`contain` fit as of 0.18.0); confirm on-device with Rick whether any other cropping or camera framing tweaks are needed.
 
 **Widgets, later**
-- Home-screen widgets for steps and calories (Rick, 2026-11-24), showing today's steps against the target and calories left. Up-to-date steps on a widget need background sync (see Steps, later).
+- Android **Daily Steps** and **Calories Left** single-tile home-screen widgets shipped in 0.23.0 (updating whenever the app opens, logs food/steps or backgrounds). Still planned: background Health Connect step refresh while the app is closed (see Steps, later), tap-to-open-specific-tab deep links from widgets, and iOS WidgetKit SwiftUI layouts when iOS returns.
 
 **Knowledge and inspiration, later**
 - A help and inspiration section (Rick, 2026-11-24): YouTube links, some funny ones, and men's health. Built around Rick's key messages, kept in his words:
