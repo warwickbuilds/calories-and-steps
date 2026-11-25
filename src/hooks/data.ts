@@ -6,7 +6,7 @@ import { dailyCaloriesQuery, foodItemQuery, recentItemsQuery } from '@/db/meals'
 import { allWeightsQuery, dayItemsQuery, latestWeightQuery, profileQuery } from '@/db/queries';
 import { toLocalDateString } from '@/lib/dates';
 import { currentAge, dailyTargets } from '@/lib/energy';
-import { averageLoggedCalories, recentFoods, weekEndingOn } from '@/lib/food';
+import { averageLoggedCalories, caloriesHistory, recentFoods, weekEndingOn, type DayCalories } from '@/lib/food';
 import { MEAL_TYPES, type MealType } from '@/lib/today';
 import { dailyWeights, withTrend } from '@/lib/weight';
 
@@ -74,6 +74,16 @@ export function useDayTotals(day: string = toLocalDateString()): DayTotals {
 export function useRecentFoods() {
   const { data } = useLiveQuery(recentItemsQuery());
   return useMemo(() => recentFoods(data ?? []), [data]);
+}
+
+/** Daily calorie totals for the 7 days ending on `day`, oldest first. */
+export function useCaloriesWeek(day: string): DayCalories[] {
+  const days = useMemo(() => weekEndingOn(day), [day]);
+  const { data } = useLiveQuery(dailyCaloriesQuery(days[0], days[6]), [day]);
+  return useMemo(() => {
+    const totals = Object.fromEntries((data ?? []).map((r) => [r.day, Number(r.calories) || 0]));
+    return caloriesHistory(days, totals);
+  }, [data, days]);
 }
 
 /** Average calories over the logged days of the week ending on `day`. */

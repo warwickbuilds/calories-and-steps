@@ -1,31 +1,29 @@
 import { router } from 'expo-router';
-import { ArrowDown, ArrowUp, Cookie, Moon, Plus, Settings, Sun, Sunrise, type LucideIcon } from 'lucide-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Cookie, Moon, Plus, Settings, Sun, Sunrise, type LucideIcon } from 'lucide-react-native';
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BackupReminder } from '@/components/BackupCard';
+import { FoodIcon } from '@/components/FoodIcon';
 import { UpdateBanner } from '@/components/UpdateBanner';
 import { WeightLogCard } from '@/components/WeightLogCard';
 import { AddButton, ArcGauge, Badge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
-import { copyMeal } from '@/db/meals';
-import { useDayTotals, useProfile, useTargets, useWeightTrend } from '@/hooks/data';
+import { useDayItems, useDayTotals, useProfile, useTargets } from '@/hooks/data';
 import { connectSteps, useDaySteps, useStepsSync } from '@/hooks/steps';
 import { useToday } from '@/hooks/useToday';
-import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
+import { formatLongDate, fromLocalDateString } from '@/lib/dates';
+import { formatAmount, macroLine } from '@/lib/food';
 import { hapticSuccess } from '@/lib/haptics';
 import { takeImportRequest } from '@/lib/onboardingIntent';
 import {
   MEAL_TYPES,
   caloriesReadout,
-  changeParts,
   formatNumber,
   macroSplit,
   stepsAccessibility,
   stepsToGo,
-  todayWeightChanges,
   type MealType,
 } from '@/lib/today';
-import { toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, space } from '@/theme/tokens';
 
@@ -49,64 +47,11 @@ export default function TodayScreen() {
       right={<IconButton icon={Settings} accessibilityLabel="Settings" onPress={() => router.push('/settings')} />}>
       <UpdateBanner />
       <BackupReminder />
-      <WeightChangeStrip />
       <CaloriesCard day={today} />
       <StepsCard day={today} />
       <MealsCard day={today} />
-      <WeightLogCard />
+      <WeightLogCard showChanges />
     </Screen>
-  );
-}
-
-/** Weigh-in change over 7 days, 1 month and 3 months. Hidden until there are two weigh-ins. */
-function WeightChangeStrip() {
-  const { colors } = useTheme();
-  const { profile } = useProfile();
-  const trend = useWeightTrend();
-  const units = profile?.unitPref ?? 'metric';
-  const unit = weightUnitLabel(units);
-  const tiles = useMemo(() => todayWeightChanges(trend), [trend]);
-  if (trend.length < 2) return null;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityHint="Opens your weight history"
-      onPress={() => router.push('/weight')}>
-      <Card style={styles.strip}>
-        {tiles.map((t, i) => {
-          const parts = changeParts(t.kg == null ? null : toDisplayWeight(t.kg, units));
-          const Arrow = parts?.direction === 'down' ? ArrowDown : parts?.direction === 'up' ? ArrowUp : null;
-          const a11y = parts
-            ? `${t.label}: ${parts.direction === 'same' ? 'no change' : `${parts.amount} ${unit} ${parts.direction}`}${
-                t.partial ? ', since your first weigh-in' : ''
-              }`
-            : `${t.label}: not enough weigh-ins`;
-          return (
-            <View
-              key={t.label}
-              accessible
-              accessibilityLabel={a11y}
-              style={[styles.stripTile, i > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line }]}>
-              <Text variant="caption" muted>
-                {t.label}
-              </Text>
-              <View style={styles.stripValue}>
-                {Arrow ? <Arrow size={14} strokeWidth={2.5} color={colors.weight} /> : null}
-                <Text variant="bodyStrong" style={styles.tabular}>
-                  {parts ? parts.amount : '–'}
-                </Text>
-                {parts ? (
-                  <Text variant="caption" muted>
-                    {unit}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          );
-        })}
-      </Card>
-    </Pressable>
   );
 }
 
@@ -131,37 +76,38 @@ function CaloriesCard({ day }: { day: string }) {
       <View
         style={styles.gaugeRow}
         accessible
-        accessibilityLabel={`${formatNumber(cal.value)} calories ${cal.status}. ${formatNumber(
-          totals.calories,
-        )} eaten of ${formatNumber(target)}.`}>
+        accessibilityLabel={`${formatNumber(totals.calories)} of ${formatNumber(target)} calories eaten, ${formatNumber(
+          cal.value,
+        )} ${cal.over ? 'over' : 'left'}.`}>
         <View style={styles.side}>
           <View style={styles.sideLabel}>
-            <View style={[styles.dotSmall, { backgroundColor: cal.over ? colors.danger : colors.calories }]} />
-            <Text variant="label" muted>
+            <View style={[styles.dotSmall, { backgroundColor: colors.calories }]} />
+            <Text variant="caption" muted>
               Eaten
             </Text>
           </View>
-          <Text variant="title" style={styles.tabular}>
+          <Text variant="bodyStrong" style={styles.tabular}>
             {formatNumber(totals.calories)}
           </Text>
         </View>
-        <ArcGauge size={168} progress={cal.over ? 1 : cal.remaining} color={cal.over ? colors.danger : colors.calories}>
+        <ArcGauge progress={cal.remaining} color={cal.over ? colors.danger : colors.calories}>
           <Text variant="bigMetric" color={cal.over ? colors.danger : undefined}>
             {formatNumber(cal.value)}
           </Text>
-          <Text variant="label" muted>
-            {cal.status}
+          <Text variant="caption" muted={!cal.over} color={cal.over ? colors.danger : undefined}>
+            {cal.over ? 'calories over' : 'calories left'}
           </Text>
         </ArcGauge>
         <View style={styles.side}>
-          <Text variant="label" muted>
+          <Text variant="caption" muted>
             Target
           </Text>
-          <Text variant="title" style={styles.tabular}>
+          <Text variant="bodyStrong" style={styles.tabular}>
             {formatNumber(target)}
           </Text>
         </View>
       </View>
+
       <View style={styles.macros}>
         <SplitBar parts={macros.map((m) => ({ share: m.share, color: macroColor[m.key] }))} />
         <View style={styles.macroRow}>
@@ -249,79 +195,101 @@ function StepsCard({ day }: { day: string }) {
   );
 }
 
+/** Today's meals showing every item eaten today, with a clean "+" button per meal. */
 function MealsCard({ day }: { day: string }) {
   const { colors } = useTheme();
   const targets = useTargets();
+  const items = useDayItems(day);
   const totals = useDayTotals(day);
-  const yesterday = toLocalDateString(addDays(fromLocalDateString(day), -1));
-  const yesterdayTotals = useDayTotals(yesterday);
-  const [copying, setCopying] = useState<MealType | null>(null);
   const budget = Math.max(targets?.calories ?? 0, totals.calories, 1);
 
-  const openQuickAdd = (meal: MealType) => router.push({ pathname: '/quick-add', params: { meal, day } });
   const openAddFood = (meal: MealType) => router.push({ pathname: '/add-food', params: { meal, day } });
-  const handleCopy = async (meal: MealType) => {
-    if (copying) return;
-    setCopying(meal);
-    try {
-      await copyMeal(meal, yesterday, day);
-      hapticSuccess();
-    } finally {
-      setCopying(null);
-    }
-  };
 
   return (
     <Card style={styles.mealsCard}>
-      {MEAL_TYPES.map((m, i) => {
-        const t = totals.byMeal[m.value];
-        const hadYesterday = yesterdayTotals.byMeal[m.value].count > 0;
+      {MEAL_TYPES.map((m, idx) => {
+        const rows = items.filter((i) => i.mealType === m.value);
+        const mealTotal = totals.byMeal[m.value].calories;
+        const share = Math.min(1, mealTotal / budget);
         const MealIcon = MEAL_ICONS[m.value];
-        const share = t.count > 0 ? Math.min(1, t.calories / budget) : 0;
         return (
           <View
             key={m.value}
-            style={[styles.mealRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
-            <View style={styles.mealText}>
+            style={[
+              styles.mealSection,
+              idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+            ]}>
+            <View style={styles.mealHeader}>
               <Pressable
+                style={styles.mealTitleTap}
                 accessibilityRole="button"
-                accessibilityHint={`Shows what you logged for ${m.label.toLowerCase()}`}
+                accessibilityHint="Opens the calories summary"
                 onPress={() => router.push({ pathname: '/food', params: { day } })}>
                 <View style={styles.mealHeading}>
-                  <MealIcon size={16} strokeWidth={1.9} color={t.count > 0 ? colors.calories : colors.muted} />
-                  <Text variant="bodyMedium">{m.label}</Text>
+                  <MealIcon
+                    size={16}
+                    strokeWidth={2}
+                    color={rows.length > 0 ? colors.calories : colors.muted}
+                  />
+                  <Text variant="bodyStrong">{m.label}</Text>
                 </View>
                 <Text variant="label" muted style={styles.tabular}>
-                  {t.count > 0 ? `${formatNumber(t.calories)} calories` : 'Not logged'}
+                  {rows.length > 0 ? `${formatNumber(mealTotal)} calories` : 'Not logged'}
                 </Text>
-                {share > 0 ? (
+                {rows.length > 0 ? (
                   <View style={[styles.mealBarTrack, { backgroundColor: colors.track }]}>
-                    <View style={[styles.mealBarFill, { width: `${Math.max(6, share * 100)}%`, backgroundColor: colors.calories }]} />
+                    <View
+                      style={[
+                        styles.mealBarFill,
+                        { backgroundColor: colors.calories, width: `${Math.max(6, Math.round(share * 100))}%` },
+                      ]}
+                    />
                   </View>
                 ) : null}
               </Pressable>
-              <View style={styles.pills}>
-                {hadYesterday ? (
-                  <Pill
-                    label="Same as yesterday"
-                    accessibilityLabel={`Same ${m.label.toLowerCase()} as yesterday`}
-                    disabled={copying === m.value}
-                    onPress={() => handleCopy(m.value)}
-                  />
-                ) : null}
-                <Pill
-                  label="Quick add"
-                  accessibilityLabel={`Quick add to ${m.label}`}
-                  onPress={() => openQuickAdd(m.value)}
-                />
-              </View>
+              <AddButton
+                icon={Plus}
+                tone="calories"
+                accessibilityLabel={`Add food to ${m.label}`}
+                onPress={() => openAddFood(m.value)}
+              />
             </View>
-            <AddButton
-              icon={Plus}
-              tone="calories"
-              accessibilityLabel={`Add food to ${m.label}`}
-              onPress={() => openAddFood(m.value)}
-            />
+
+            {rows.length > 0 ? (
+              <View style={styles.itemList}>
+                {rows.map((r) => {
+                  const macros = macroLine(r);
+                  return (
+                    <Pressable
+                      key={r.id}
+                      accessibilityRole="button"
+                      accessibilityHint="Opens item to edit or delete"
+                      onPress={() => router.push({ pathname: '/food-item', params: { id: String(r.id) } })}
+                      style={({ pressed }) => [
+                        styles.itemRow,
+                        { borderTopColor: colors.line, opacity: pressed ? 0.65 : 1 },
+                      ]}>
+                      <FoodIcon food={r} size={30} />
+                      <View style={styles.itemText}>
+                        <Text variant="bodyMedium" numberOfLines={1}>
+                          {r.name}
+                        </Text>
+                        {r.grams != null || macros ? (
+                          <Text variant="caption" muted numberOfLines={1}>
+                            {r.grams != null ? formatAmount(r.grams, r.unit) : ''}
+                            {r.grams != null && macros ? ' · ' : ''}
+                            {macros}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Text variant="label" style={styles.tabular}>
+                        {formatNumber(r.calories)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
           </View>
         );
       })}
@@ -329,42 +297,8 @@ function MealsCard({ day }: { day: string }) {
   );
 }
 
-/** Small pill: 28 tall, caption text in muted on a track fill, 44 tap area. */
-function Pill({
-  label,
-  onPress,
-  accessibilityLabel,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  accessibilityLabel: string;
-  disabled?: boolean;
-}) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      disabled={disabled}
-      onPress={onPress}
-      hitSlop={{ top: 8, bottom: 8 }}>
-      {({ pressed }) => (
-        <View style={[styles.pill, { backgroundColor: colors.track, opacity: pressed || disabled ? 0.7 : 1 }]}>
-          <Text variant="caption" muted>
-            {label}
-          </Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   tabular: { fontVariant: ['tabular-nums'] },
-  strip: { flexDirection: 'row', paddingVertical: space[3], paddingHorizontal: 0, gap: 0 },
-  stripTile: { flex: 1, alignItems: 'center', gap: 2 },
-  stripValue: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   gaugeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   side: { flex: 1, alignItems: 'center', gap: 2 },
   sideLabel: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -377,11 +311,20 @@ const styles = StyleSheet.create({
   macroLabel: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   stepsValue: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
   mealsCard: { paddingVertical: space[1], gap: 0 },
-  mealRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[2] },
-  mealText: { flex: 1, gap: space[2] },
+  mealSection: { paddingVertical: space[3], gap: space[2] },
+  mealHeader: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  mealTitleTap: { flex: 1, gap: 2 },
   mealHeading: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  mealBarTrack: { height: 3, borderRadius: 2, marginTop: 6, maxWidth: 140, overflow: 'hidden' },
+  mealBarTrack: { height: 3, borderRadius: 2, marginTop: 4, maxWidth: 140, overflow: 'hidden' },
   mealBarFill: { height: '100%', borderRadius: 2 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  pill: { height: 28, borderRadius: 14, paddingHorizontal: space[3], justifyContent: 'center' },
+  itemList: { gap: 0 },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    paddingTop: space[2],
+    marginTop: space[2],
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  itemText: { flex: 1, gap: 1 },
 });

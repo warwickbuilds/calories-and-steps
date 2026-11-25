@@ -10,6 +10,7 @@ import { StepTargetSlider } from '@/components/fields/StepTargetSlider';
 import { WeightField } from '@/components/fields/WeightField';
 import { AiKeyCard } from '@/components/AiKeyCard';
 import { BackupCard } from '@/components/BackupCard';
+import { RemindersCard } from '@/components/RemindersCard';
 import { StepsAccessCard } from '@/components/StepsAccessCard';
 import { TargetSummary } from '@/components/TargetSummary';
 import { Button, Card, OptionList, Screen, Segmented, Text } from '@/components/ui';
@@ -127,6 +128,10 @@ export default function SettingsScreen() {
           value={profile.themePref}
           onChange={(themePref) => updateProfile({ themePref })}
         />
+      </Section>
+
+      <Section title="Reminders">
+        <RemindersCard />
       </Section>
 
       <Section title="AI">

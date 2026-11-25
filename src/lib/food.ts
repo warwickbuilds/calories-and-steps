@@ -128,6 +128,42 @@ export function averageLoggedCalories(
   return { average: Math.round(sum / logged.length), daysLogged: logged.length };
 }
 
+export interface DayCalories {
+  day: string;
+  /** Rounded daily calorie total, or null when nothing was logged that day. */
+  calories: number | null;
+}
+
+/** One entry per day in `days`, with null for days with nothing logged. */
+export function caloriesHistory(days: string[], totals: Record<string, number>): DayCalories[] {
+  return days.map((day) => {
+    const raw = totals[day] ?? 0;
+    return { day, calories: raw > 0 ? Math.round(raw) : null };
+  });
+}
+
+export interface CaloriesSummary {
+  daysLogged: number;
+  average: number | null;
+  /** Logged days that stayed at or under `target`. */
+  daysOnTarget: number;
+  /** Average minus target (negative = under target, positive = over), or null if no target/data. */
+  avgDelta: number | null;
+}
+
+/** 7-day calorie summary across logged days against a daily target. */
+export function caloriesSummary(history: DayCalories[], target: number): CaloriesSummary {
+  const logged = history.filter((d): d is { day: string; calories: number } => d.calories != null && d.calories > 0);
+  if (logged.length === 0) {
+    return { daysLogged: 0, average: null, daysOnTarget: 0, avgDelta: null };
+  }
+  const sum = logged.reduce((s, d) => s + d.calories, 0);
+  const average = Math.round(sum / logged.length);
+  const daysOnTarget = target > 0 ? logged.filter((d) => d.calories <= target).length : 0;
+  const avgDelta = target > 0 ? average - Math.round(target) : null;
+  return { daysLogged: logged.length, average, daysOnTarget, avgDelta };
+}
+
 /** "P 32g · C 40g · F 12g" for whichever macros are known. */
 export function macroLine(n: Pick<Nutrition, 'proteinG' | 'carbsG' | 'fatG'>): string {
   return [

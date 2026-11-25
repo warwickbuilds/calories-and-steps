@@ -1,5 +1,7 @@
 import {
   averageLoggedCalories,
+  caloriesHistory,
+  caloriesSummary,
   dayLabel,
   formatAmount,
   macroLine,
@@ -106,6 +108,32 @@ describe('weekly average', () => {
       daysLogged: 2,
     });
     expect(averageLoggedCalories(days, {})).toBeNull();
+  });
+
+  it('builds 7-day history with nulls for empty days and summarises against target', () => {
+    const days = weekEndingOn('2026-11-24');
+    const history = caloriesHistory(days, {
+      '2026-11-22': 1950.4,
+      '2026-11-23': 2250,
+      '2026-11-24': 1800,
+    });
+    expect(history).toHaveLength(7);
+    expect(history[0]).toEqual({ day: '2026-11-18', calories: null });
+    expect(history[4]).toEqual({ day: '2026-11-22', calories: 1950 });
+    expect(history[6]).toEqual({ day: '2026-11-24', calories: 1800 });
+
+    expect(caloriesSummary(history, 2100)).toEqual({
+      daysLogged: 3,
+      average: 2000,
+      daysOnTarget: 2,
+      avgDelta: -100,
+    });
+    expect(caloriesSummary(caloriesHistory(days, {}), 2100)).toEqual({
+      daysLogged: 0,
+      average: null,
+      daysOnTarget: 0,
+      avgDelta: null,
+    });
   });
 });
 
