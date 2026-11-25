@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -27,58 +27,74 @@ function useFill(progress: number) {
   return p;
 }
 
-function Ring({
-  size,
-  r,
-  stroke,
-  color,
-  track,
+/**
+ * Countdown gauge: a 270 degree arc open at the bottom. `progress` is the
+ * share still left, so it starts full and empties as you eat. `children`
+ * sit in the middle.
+ */
+export function ArcGauge({
   progress,
+  color,
+  size = 176,
+  stroke = 12,
+  children,
 }: {
-  size: number;
-  r: number;
-  stroke: number;
-  color: string;
-  track: string;
   progress: number;
+  color: string;
+  size?: number;
+  stroke?: number;
+  children?: ReactNode;
 }) {
+  const { colors } = useTheme();
+  const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
+  const arc = c * 0.75;
   const p = useFill(progress);
   const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: c * (1 - p.value),
+    strokeDashoffset: arc * (1 - p.value),
     strokeOpacity: p.value > 0.001 ? 1 : 0,
   }));
   return (
-    <>
-      <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
-      <AnimatedCircle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke={color}
-        strokeWidth={stroke}
-        strokeDasharray={`${c} ${c}`}
-        strokeLinecap="round"
-        fill="none"
-        animatedProps={animatedProps}
-      />
-    </>
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size} style={styles.gauge}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={colors.track}
+          strokeWidth={stroke}
+          strokeDasharray={`${arc} ${c}`}
+          strokeLinecap="round"
+          fill="none"
+        />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={stroke}
+          strokeDasharray={`${arc} ${c}`}
+          strokeLinecap="round"
+          fill="none"
+          animatedProps={animatedProps}
+        />
+      </Svg>
+      <View style={styles.gaugeCenter} pointerEvents="none">
+        {children}
+      </View>
+    </View>
   );
 }
 
-/**
- * Concentric rings: outer = steps, inner = calories.
- * 132 box, radii 58 and 40, stroke 12, starting at 12 o'clock, clockwise.
- */
-export function DualRings({ steps, calories }: { steps: number; calories: number }) {
+/** Stacked bar, height 8, one rounded segment per share (shares add up to 1 or are all 0). */
+export function SplitBar({ parts }: { parts: { share: number; color: string }[] }) {
   const { colors } = useTheme();
-  const size = 132;
+  const shown = parts.filter((x) => x.share > 0);
   return (
-    <View style={{ width: size, height: size }} accessible={false} importantForAccessibility="no-hide-descendants">
-      <Svg width={size} height={size} style={styles.rotate}>
-        <Ring size={size} r={58} stroke={12} color={colors.steps} track={colors.track} progress={steps} />
-        <Ring size={size} r={40} stroke={12} color={colors.calories} track={colors.track} progress={calories} />
-      </Svg>
+    <View style={[styles.split, { backgroundColor: shown.length ? 'transparent' : colors.track }]}>
+      {shown.map((x, i) => (
+        <View key={i} style={{ flex: x.share, backgroundColor: x.color, borderRadius: 4 }} />
+      ))}
     </View>
   );
 }
@@ -96,7 +112,10 @@ export function ProgressBar({ progress, color }: { progress: number; color?: str
 }
 
 const styles = StyleSheet.create({
-  rotate: { transform: [{ rotate: '-90deg' }] },
+  // Circle strokes start at 3 o'clock; turning 135 degrees puts the gap at the bottom.
+  gauge: { transform: [{ rotate: '135deg' }] },
+  gaugeCenter: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
+  split: { height: 8, borderRadius: 4, flexDirection: 'row', gap: 2, overflow: 'hidden' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 3 },
 });
