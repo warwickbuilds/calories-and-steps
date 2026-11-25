@@ -115,12 +115,13 @@ export function WeightChart({
         projection={projection}
         markers={markers}
         guides={guides}
-        height={200}
+        endLabels={(v) => v.toFixed(1)}
+        height={216}
         formatValue={(v) => `${Number.isInteger(v) ? v : v.toFixed(1)}`}
         formatDate={(t) => formatShortDate(new Date(t), range === '1Y' || range === 'All' || t > today.getTime())}
         accessibilityLabel={
           last
-            ? `Weight chart, ${range}. Latest weigh-in ${last.value.toFixed(1)} ${unit}, trend ${last.trend?.toFixed(1)} ${unit}.`
+            ? `Weight chart, ${range}. First weigh-in ${points[0].value.toFixed(1)} ${unit}, latest ${last.value.toFixed(1)} ${unit}, trend ${last.trend?.toFixed(1)} ${unit}.`
             : `Weight chart, ${range}. No entries.`
         }
       />
