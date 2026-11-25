@@ -7,6 +7,7 @@ import { logWeightForDay } from '@/db/queries';
 import { useLatestWeight, useProfile, useWeightTrend } from '@/hooks/data';
 import { useToday } from '@/hooks/useToday';
 import { dayBounds, fromLocalDateString } from '@/lib/dates';
+import { hapticSuccess } from '@/lib/haptics';
 import { weeklyChangeText } from '@/lib/today';
 import { fromDisplayWeight, parseDecimal, toDisplayWeight, weightUnitLabel } from '@/lib/units';
 import { LIMITS, inRange } from '@/lib/validation';
@@ -45,6 +46,7 @@ export function WeightLogCard() {
   const log = async () => {
     if (!valid || kg == null) return;
     await logWeightForDay(kg, start, end);
+    hapticSuccess();
     setText(null);
   };
 
@@ -54,9 +56,12 @@ export function WeightLogCard() {
     <Card>
       <View style={styles.weightRow}>
         <View style={styles.weightLeft}>
-          <Text variant="label" muted>
-            Weight today
-          </Text>
+          <View style={styles.labelRow}>
+            <View style={[styles.dot, { backgroundColor: colors.weight }]} />
+            <Text variant="label" muted>
+              Weight today
+            </Text>
+          </View>
           <View style={styles.weightInputRow}>
             <TextInput
               value={shown}
@@ -83,10 +88,10 @@ export function WeightLogCard() {
         </View>
         {done ? (
           <View
-            style={[styles.tick, { backgroundColor: colors.track }]}
+            style={[styles.tick, { backgroundColor: colors.weightSoft }]}
             accessible
             accessibilityLabel="Logged today">
-            <Check size={20} strokeWidth={2.2} color={colors.text} />
+            <Check size={20} strokeWidth={2.4} color={colors.weight} />
           </View>
         ) : (
           <Button label="Log" onPress={log} disabled={!valid} accessibilityLabel="Log weight" />
@@ -99,6 +104,8 @@ export function WeightLogCard() {
 const styles = StyleSheet.create({
   weightRow: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
   weightLeft: { flex: 1, gap: 2 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  dot: { width: 7, height: 7, borderRadius: 3.5 },
   weightInputRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[1] },
   weightInput: { minWidth: 72, padding: 0 },
   tick: {

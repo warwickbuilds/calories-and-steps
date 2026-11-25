@@ -9,9 +9,10 @@ import { addFood } from '@/db/meals';
 import { useRecentFoods } from '@/hooks/data';
 import { toLocalDateString } from '@/lib/dates';
 import { dayLabel, formatAmount, macroLine, searchFoods, type RecentFood } from '@/lib/food';
+import { hapticSuccess } from '@/lib/haptics';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
-import { MAX_FONT_SCALE, layout, radius, space, type as typeScale } from '@/theme/tokens';
+import { MAX_FONT_SCALE, radius, space, type as typeScale } from '@/theme/tokens';
 
 /** Where every "+" leads: search foods logged before, or quick add. */
 export default function AddFoodScreen() {
@@ -62,6 +63,7 @@ export default function AddFoodScreen() {
         category: f.category,
       },
     });
+    hapticSuccess();
     setAdded((s) => new Set(s).add(f.name));
   };
 
@@ -143,11 +145,11 @@ export default function AddFoodScreen() {
                   </Text>
                 </Pressable>
                 {done ? (
-                  <View style={styles.tap} accessible accessibilityLabel={`${f.name} added`}>
-                    <Check size={20} strokeWidth={2} color={colors.text} />
+                  <View style={[styles.doneBadge, { backgroundColor: colors.caloriesSoft }]} accessible accessibilityLabel={`${f.name} added`}>
+                    <Check size={18} strokeWidth={2.4} color={colors.calories} />
                   </View>
                 ) : (
-                  <AddButton icon={Plus} accessibilityLabel={`Add ${f.name}`} onPress={() => addNow(f)} />
+                  <AddButton icon={Plus} tone="calories" accessibilityLabel={`Add ${f.name}`} onPress={() => addNow(f)} />
                 )}
               </View>
             );
@@ -164,8 +166,13 @@ function ActionTile({ icon: Icon, label, onPress }: { icon: LucideIcon; label: s
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.tile, { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 }]}>
-      <Icon size={22} strokeWidth={1.8} color={colors.text} />
+      style={({ pressed }) => [
+        styles.tile,
+        { backgroundColor: colors.surface, borderColor: colors.cardBorder, opacity: pressed ? 0.75 : 1 },
+      ]}>
+      <View style={[styles.tileIcon, { backgroundColor: colors.caloriesSoft }]}>
+        <Icon size={20} strokeWidth={1.9} color={colors.calories} />
+      </View>
       <Text variant="label">{label}</Text>
     </Pressable>
   );
@@ -173,7 +180,17 @@ function ActionTile({ icon: Icon, label, onPress }: { icon: LucideIcon; label: s
 
 const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: space[2] },
-  tile: { flex: 1, minHeight: 76, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', gap: space[1] },
+  tile: {
+    flex: 1,
+    minHeight: 84,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space[2],
+    paddingVertical: space[3],
+  },
+  tileIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -188,5 +205,5 @@ const styles = StyleSheet.create({
   list: { gap: 0, paddingVertical: space[2] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 60, paddingVertical: space[2] },
   rowText: { flex: 1, gap: 2 },
-  tap: { width: layout.minTap, height: layout.minTap, alignItems: 'center', justifyContent: 'center' },
+  doneBadge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
 });

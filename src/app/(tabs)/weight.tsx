@@ -1,12 +1,13 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
-import { Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
+import { BmiBar } from '@/components/BmiBar';
 import { WeightChart } from '@/components/WeightChart';
 import { WeightLogCard } from '@/components/WeightLogCard';
-import { Button, Card, Screen, Segmented, Text } from '@/components/ui';
+import { Badge, Button, Card, Screen, Segmented, Text } from '@/components/ui';
 import { allWeightsQuery, deleteWeight } from '@/db/queries';
 import { useProfile, useWeightTrend } from '@/hooks/data';
 import { bmi, bmiCategory } from '@/lib/body';
@@ -24,6 +25,7 @@ export default function WeightScreen() {
   const [range, setRange] = useState<WeightRange>('1M');
   const units = profile?.unitPref ?? 'metric';
   const latest = trend[trend.length - 1];
+  const bmiVal = latest && profile ? bmi(latest.trend, profile.heightCm) : null;
 
   return (
     <Screen title="Weight">
@@ -38,11 +40,12 @@ export default function WeightScreen() {
 
       <GoalCard />
 
-      {latest && profile ? (
-        <Card title="BMI">
-          <Text variant="metric">{bmi(latest.trend, profile.heightCm).toFixed(1)}</Text>
+      {bmiVal != null ? (
+        <Card title="BMI" right={<Badge tone="weight" label={bmiCategory(bmiVal)} />}>
+          <Text variant="metric">{bmiVal.toFixed(1)}</Text>
+          <BmiBar value={bmiVal} />
           <Text variant="label" muted>
-            {bmiCategory(bmi(latest.trend, profile.heightCm))}, from your trend weight and height
+            From your trend weight and height
           </Text>
         </Card>
       ) : null}
@@ -53,21 +56,28 @@ export default function WeightScreen() {
 }
 
 function ChangeCards({ units }: { units: UnitSystem }) {
+  const { colors } = useTheme();
   const trend = useWeightTrend();
   const rows = changeRows(trend);
   return (
     <Card title="Change">
       <View style={styles.grid}>
-        {rows.map((r) => (
-          <View key={r.label} style={styles.cell}>
-            <Text variant="label" muted>
-              {r.partial && r.fromDay ? `${r.label} (since ${formatShortDate(fromLocalDateString(r.fromDay))})` : r.label}
-            </Text>
-            <Text variant="bodyStrong" style={styles.tabular}>
-              {r.kg == null ? '–' : signedWeight(r.kg, units)}
-            </Text>
-          </View>
-        ))}
+        {rows.map((r) => {
+          const Arrow = r.kg == null || Math.abs(r.kg) < 0.05 ? null : r.kg < 0 ? ArrowDown : ArrowUp;
+          return (
+            <View key={r.label} style={styles.cell}>
+              <Text variant="label" muted>
+                {r.partial && r.fromDay ? `${r.label} (since ${formatShortDate(fromLocalDateString(r.fromDay))})` : r.label}
+              </Text>
+              <View style={styles.changeVal}>
+                {Arrow ? <Arrow size={14} strokeWidth={2.4} color={colors.weight} /> : null}
+                <Text variant="bodyStrong" style={styles.tabular}>
+                  {r.kg == null ? '–' : signedWeight(r.kg, units)}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
       <Text variant="caption" muted>
         Changes run between your actual weigh-ins, so the numbers here, above the chart and under today’s weight always
@@ -121,7 +131,7 @@ function GoalCard() {
     profile.goalDate && latest ? rateNeededPerWeek(latest.trend, goal, profile.goalDate) : null;
 
   return (
-    <Card title="Goal" right={<Text variant="label" muted>{formatWeight(goal, units)}</Text>}>
+    <Card title="Goal" right={<Badge tone="weight" dot label={formatWeight(goal, units)} />}>
       <View>
         <Text variant="label" muted>
           {p.kind === 'on-track' ? 'Projected date' : 'Projection'}
@@ -208,6 +218,7 @@ const styles = StyleSheet.create({
   tabular: { fontVariant: ['tabular-nums'] },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space[3] },
   cell: { width: '50%', gap: 2 },
+  changeVal: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -194,11 +194,12 @@ Full versions are in [Main dependency versions](#main-dependency-versions).
 | Open source | MIT license, contributing guide, code of conduct, security policy, issue and pull request templates, CI checks on every pull request, README banner, badges and screenshot gallery | Done (PR #18) |
 | Smaller APKs | A small arm64 APK plus a universal one, compressed native libraries, update check picks the right file | Done (PR #15, 0.16.0) |
 | Weight totals from weigh-ins | "kg down", the Change card, "this week", milestones and "to lose" use your actual weigh-ins, so a new reading counts straight away; the trend stays for the chart line and projection | Done (PR #20, 0.17.0) |
-| Reliability & cropping fixes | Uncropped check-in/compare/meal photos, midnight day rollover (`useToday`), streaming backup restore/copy, AI/barcode request timeouts & unmount cancellation, label key-retry, voice unmount cleanup, clearable goal weight, Health Connect error state, Settings model override, and SQLite migration tests | Done (0.18.0) |
+| Reliability & cropping fixes | Uncropped check-in/compare/meal photos, midnight day rollover (`useToday`), streaming backup restore/copy, AI/barcode request timeouts & unmount cancellation, label key-retry, voice unmount cleanup, clearable goal weight, Health Connect error state, Settings model override, and SQLite migration tests | Done (PR #21, 0.18.0) |
 | Start and latest labels | Small value bubbles on the weight chart showing the first and latest weigh-in of the chosen period | Done (PR #22, 0.19.0) |
 | Today redesign | Weight change over 7 days, 1 month and 3 months at the top; calories as a countdown gauge with a macro split bar; steps in their own card | Done (PR #23, 0.20.0) |
+| UI & highlight colour polish | Semantic domain highlights (cobalt for weight, plum-violet for body fat), gradient-washed line charts, crisp bordered cards, tinted status badges, monochrome dark-mode buttons, Calories macro split bar, Steps 7-day summary strip, Progress lean/fat split bar, BMI spectrum bar, and subtly tinted food category icons | Done (PR #24, 0.21.0) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix), **v0.14.0** (backup and restore) and **v0.16.0** (check-in polish and smaller arm64 + universal APKs). Everything since — weight totals from actual weigh-ins (0.17.0), the reliability/cropping fixes (0.18.0), the chart's start and latest labels (0.19.0) and the Today redesign (0.20.0) — goes out in the next release. See [which versions were released](#versions-and-changelog).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix), **v0.14.0** (backup and restore), **v0.16.0** (check-in polish and smaller arm64 + universal APKs), **v0.18.0** (actual weigh-in totals and reliability/cropping fixes), and **v0.20.0** (weight chart start/latest labels and Today redesign). Everything since — the UI & highlight colour polish (0.21.0) — goes out in the next release. See [which versions were released](#versions-and-changelog).
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
@@ -226,14 +227,14 @@ The detailed list of what works now.
 
 From top to bottom:
 
-- **Weight change**: a small strip with your change over the last 7 days, 1 month and 3 months, from your actual weigh-ins (the same `periodChange` as the Weight tab), with a down or up arrow. If your history is shorter than the period, it shows the change since your first weigh-in. Hidden until you have two weigh-ins. Tapping it opens the Weight tab.
-- **Calories**: a countdown gauge (a 270° arc, open at the bottom) that starts full and empties as you eat, with the calories left in the middle, Eaten on the left and Target on the right. Past the target the number turns red and says "over". Under it, a split bar of protein, carbs and fat sized by the calories each one gave (4 per gram for protein and carbs, 9 for fat), with grams eaten against each target. Macros have their own colours (blue, violet and yellow), never green or orange.
-- **Steps**: its own card with today's steps from Health Connect, the target, "N to go" (or "Target hit") and a green bar. Tapping it opens the Steps tab. Before Health Connect is connected, it shows "Connect steps", which installs or updates Health Connect when needed, or asks for access to steps.
-- Breakfast, Lunch, Dinner and Snacks, each with a "+" button (opens [Add food](#add-food)) and two pills:
+- **Weight change**: a small strip with your change over the last 7 days, 1 month and 3 months, from your actual weigh-ins (the same `periodChange` as the Weight tab), with cobalt-blue down or up arrows. If your history is shorter than the period, it shows the change since your first weigh-in. Hidden until you have two weigh-ins. Tapping it opens the Weight tab.
+- **Calories**: a countdown gauge (a 270° arc with a soft ambient glow, open at the bottom) that starts full and empties as you eat, with the calories left in the middle, Eaten (with a calories-orange dot) on the left and Target on the right. Past the target the number turns red, says "over", and shows a red over-budget badge. Under it, a split bar of protein, carbs and fat sized by the calories each one gave (4 per gram for protein and carbs, 9 for fat), with grams eaten against each target. Macros have their own colours (blue, violet and amber-gold), never green or orange.
+- **Steps**: its own card with today's steps from Health Connect, the target, a green-tinted "N to go" (or "Target hit") badge and a green bar. Tapping it opens the Steps tab. Before Health Connect is connected, it shows "Connect steps", which installs or updates Health Connect when needed, or asks for access to steps.
+- Breakfast, Lunch, Dinner and Snacks, each with a time-of-day icon, a subtle orange share bar once logged, an orange-tinted "+" button (opens [Add food](#add-food)) and two pills:
   - "Quick add" enters calories and optional grams and macros.
   - "Same as yesterday" copies yesterday's items for that meal. It is hidden when that meal was empty yesterday.
 - Tapping a meal's name opens the Calories tab on that day.
-- "Weight today" card for a quick weigh-in, with the change over the past week from your weigh-ins (the same number as the Weight tab).
+- "Weight today" card with a cobalt-blue accent dot and logged-today tick for a quick weigh-in, plus the change over the past week from your weigh-ins (the same number as the Weight tab).
 
 ### Add food
 
@@ -288,15 +289,15 @@ From top to bottom:
 Called "Food" before 0.12.0; the route is still `/food`.
 
 - One day at a time: arrows step back and forward (not past today). Tapping a meal's name on Today opens the tab on that day. The day is kept in the route (`/food?day=YYYY-MM-DD`).
-- A summary card: calories eaten against the target, protein, carbs and fat, and the **7-day average**. The average covers the seven days ending on the shown day and counts only days with food logged, so a forgotten day doesn't drag it down.
-- Each meal lists its items with a small category icon, calories, amount ("250 ml" or "40 g") and macros. Tap one to edit or delete it. "+" adds to that meal on that day, and an empty meal offers "Same as yesterday" (or the previous date) when it had food the day before.
+- A summary card: calories eaten against the target (with a calories-orange progress bar, turning red when over), the same coloured protein/carbs/fat split bar and macro breakdown as Today, and the **7-day average**. The average covers the seven days ending on the shown day and counts only days with food logged, so a forgotten day doesn't drag it down.
+- Each meal shows a calories-tinted total badge once logged, lists its items with a softly tinted category icon (never green or orange), calories, amount ("250 ml" or "40 g") and macros. Tap one to edit or delete it. The orange-tinted "+" adds to that meal on that day, and an empty meal offers "Same as yesterday" (or the previous date) when it had food the day before.
 
 ### Steps tab
 
-- **Today**: steps so far as a big number with a green bar towards the target ("3,760 to go of 10,000", or "Target of 10,000 reached"), and a bar chart of today's steps by hour.
-- **Last 7 days**: the 7-day total and a bar for each day. The target is a dotted line; days that reached it are solid green, the rest faded. Days with no data leave a gap.
+- **Today**: steps so far as a big number with a green-tinted status badge ("3,760 to go" or "Target reached"), a green bar towards the target, and an interactive bar chart of today's steps by hour (tap or drag across bars to read any hour's exact steps).
+- **Last 7 days**: the 7-day total, an interactive bar chart for each day (with **Today** highlighted on the axis; tap or drag across bars to read any day's exact count), and a 3-column summary strip underneath showing **Daily avg**, **On target**, and **Streak** (`stepsSummary`). The target is a dotted line; days that reached it are solid green, the rest faded. Days with no data leave a gap.
 - A Health Connect card with the state and the one action that fits: **Connect Health Connect**, **Get Health Connect** (not installed), **Update Health Connect**, **Try again** (transient Health Connect error), or once connected **Sync now** and **Manage access** (opens Health Connect). It says when steps were last read.
-- More analytics (longer periods, averages, streaks) are planned; see [Future enhancements](#future-enhancements).
+- Longer step history (30 days, months, year) is planned; see [Future enhancements](#future-enhancements).
 
 ### Step sync
 
@@ -308,20 +309,20 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ### Bottom tabs
 
-- Today, Calories, Steps, Weight, Progress. The current tab's icon sits in a solid pill (text colour, so it works in light and dark without using the step or calorie colours), with a semibold label.
-- Tabs have no ripple or fade when pressed; the pill moving is the only feedback.
+- Today, Calories, Steps, Weight, Progress. The current tab's icon sits in a solid pill (text colour, so it works in every theme without using the step or calorie colours), with a semibold label.
+- Tabs have no ripple or fade when pressed; the pill moving and a light haptic tick are the only feedback.
 
 ### Weight tab
 
 - Period picker: 1W, 1M, 6M, 1Y and All. Above the chart, the change in that period as a big number ("17.9 kg down"), with what it's measured from ("Past month · 80.7 → 78.5 kg", from the weigh-in on or just before the period's start to your latest one, or "Since you started, 6 Jan 2026" when the history is shorter than the period or All is picked).
-- Chart: the main line joins your actual daily weigh-ins (several on one day are averaged), with dots when there are few enough to see. The smoothed trend (exponential smoothing, 10% per day, so water swings don't dominate) is a faint dashed line underneath, and carries on as a straight dashed projection to the goal at the current four-week rate, ending in an open circle on the projected date. The goal is a dotted line, shown in every period. Round values sit in a left gutter with faint gridlines, and a legend explains the lines.
+- Chart: the main line joins your actual daily weigh-ins (several on one day are averaged) in cobalt blue with a soft vertical gradient area wash underneath, and dots when there are few enough to see. Tap or drag anywhere along the chart to scrub with a crosshair and floating pill showing that day's exact weigh-in, date and smoothed trend. The smoothed trend (exponential smoothing, 10% per day, so water swings don't dominate) is a faint dashed line underneath, and carries on as a straight dashed projection to the goal at the current four-week rate, ending in an open circle on the projected date. The goal is a dotted line, shown in every period. Round values sit in a left gutter with faint gridlines, and a legend explains the lines.
 - Start and latest labels: the first and latest weigh-in of the chosen period each get a small filled bubble with a pointer showing the value ("97.0", "76.8"). They use the text colour (dark in light mode, light in dark mode) so they never look like steps or calories. A bubble sits above its point, leans left or right when a milestone label is in the way, and drops below the point only if both are blocked; it never covers the goal line or the other bubble. With one weigh-in in the period there is one bubble.
 - Projection length: in 6M, 1Y and All the chart runs on to the projected goal date. In 1W and 1M it stops after another week or month, so your recent weigh-ins keep at least half the chart.
-- Milestones: every 5 kg (10 lb in imperial) lost from your first weigh-in, judged on your actual weigh-ins so they match the big number and count the day you log them. Each one reached is a coloured dot on the chart labelled "−5", "−10" and so on, placed on the first weigh-in that reached it, and a chip under the chart with the date. The next one is a hollow chip with how much is left and a faint line in its colour on the chart. Milestones count up instead if your weight is going up. Colours cycle blue, violet, magenta and crimson (never green or orange).
-- Change card: last week, month, 6 months, year and all time. When your history is shorter than a period, that row shows the change since your first weigh-in and says so ("Year (since 6 Jan)") instead of a dash.
+- Milestones: every 5 kg (10 lb in imperial) lost from your first weigh-in, judged on your actual weigh-ins so they match the big number and count the day you log them. Each one reached is a coloured dot on the chart labelled "−5", "−10" and so on, placed on the first weigh-in that reached it, and a softly tinted chip under the chart with the date. The next one is a hollow chip with how much is left and a faint line in its colour on the chart. Milestones count up instead if your weight is going up. Colours cycle blue, violet, magenta and crimson (never green or orange).
+- Change card: last week, month, 6 months, year and all time, with cobalt directional arrows. When your history is shorter than a period, that row shows the change since your first weigh-in and says so ("Year (since 6 Jan)") instead of a dash.
 - One basis everywhere: the header's "0.3 down this week", the big number above the chart, the Change card, the milestone chips and the goal's "to lose" all measure your actual weigh-ins, so they always agree and a new reading shows straight away. (From 0.7.0 to 0.16.0 they used the smoothed trend, which lags: 77.0 kg logged showed "19.2 kg down" instead of 20.) The trend still draws the dashed line, the projection and BMI.
-- Goal projection from the last four weeks of the trend, plus the weekly rate needed for an optional target date.
-- Plain BMI and a weight history list.
+- Goal projection from the last four weeks of the trend, with a cobalt-tinted goal weight badge, plus the weekly rate needed for an optional target date.
+- BMI card with a category badge and horizontal spectrum bar (`BmiBar`), plus a weight history list.
 - "Import from screenshots" button under History (also in Settings → Your data). See [Weight import](#weight-import).
 
 ### Weight import
@@ -344,17 +345,17 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ### Progress tab
 
-- "Body fat (Navy method)" check-ins: neck and waist, plus hips for women, giving body-fat %, lean mass and fat mass. Plain BMI is shown alongside.
+- **Body fat** (Navy method) check-ins: neck and waist, plus hips for women, giving body-fat %, a plum-violet change badge since the previous check-in, and a **Lean vs. Fat** split bar (cobalt blue lean mass, plum-violet fat mass). BMI is shown alongside with a category badge and horizontal spectrum bar (`BmiBar`).
 - Front, side and back photos for each check-in, taken with a framing guide and a faint ghost of the last photo so shots line up, or picked from the phone's photos (handy for older shots). Tap a photo to retake, replace or remove it.
 - A check-in can be measurements, photos or both. Photos-only check-ins show "Photos" in the timeline and are left out of the body-fat card and chart. Half-filled measurements can't be saved: the screen says which one is missing.
 - Any check-in can be dated back (a date field at the top, up to today) and edited later from its detail screen (**Edit check-in**): date, measurements, weight and photos. A new check-in on an earlier day fills in that day's weigh-in, if there was one.
-- Scrollable photo timeline, side-by-side compare of any two dates (full photos shown uncropped with `contain` fit), and a body-fat chart.
+- Scrollable photo timeline, side-by-side compare of any two dates (full photos shown uncropped with `contain` fit), and an interactive plum-violet body-fat chart with a soft gradient area wash and touch-and-drag crosshair inspection.
 
 ### Settings
 
 - Every profile field, units, goal mode, clearable goal weight, target date and step target.
 - Daily steps: the step target slider and the Health Connect card (connect, sync now, manage access).
-- Appearance: System, Light or Dark.
+- Appearance: visual swatch picker for **System**, **Light**, **Stone** (warm linen paper light theme), **Dark** and **OLED** (true black dark theme). Green stays strictly for steps and orange strictly for calories in every theme.
 - AI: the Google AI key, with Save and test, Get a key, Remove key and an optional Model override (see [AI provider and key](#ai-provider-and-key)).
 - Your data: a warning that everything lives only on this phone, so uninstalling or clearing storage deletes it unless there's a backup, while installing a new version over the top keeps it. An "Import weights from screenshots" button, and the Backup card (see [Backup and restore](#backup-and-restore)).
 - About: app version with a "Check for updates" button, and the Open Food Facts credit with a link to its website.
@@ -376,25 +377,25 @@ Called "Food" before 0.12.0; the route is still `/food`.
 
 ## Versions and changelog
 
-App version: **0.20.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
+App version: **0.21.0** (in `app.json` and `package.json`). Android's `versionCode` is worked out from it in `app.config.js` (major × 10,000 + minor × 100 + patch, so 0.2.0 is 200). Releases are tagged `v<version>`.
 
 Several PRs can merge between two releases, so not every version number gets its own release. Each release includes everything merged before it.
 
 | Version | Released? |
 | --- | --- |
-| 0.2.0, 0.3.0, 0.6.0, 0.7.0, 0.11.0, 0.13.0, 0.14.0, 0.16.0 | Released on GitHub |
+| 0.2.0, 0.3.0, 0.6.0, 0.7.0, 0.11.0, 0.13.0, 0.14.0, 0.16.0, 0.18.0, 0.20.0 | Released on GitHub |
 | 0.4.0, 0.5.0 | Never built: Phase 3 was split into steps during development, then shipped together as 0.6.0 |
 | 0.8.0 (ml for drinks) | Not tagged; shipped in 0.11.0 |
 | 0.9.0, 0.10.0 | Only used on branches before they were renumbered to 0.12.0 and 0.13.0; never merged |
 | 0.12.0 (steps) | Not tagged; shipped in 0.13.0 |
 | 0.15.0 (check-in polish) | Not tagged; shipped in 0.16.0 |
-| 0.17.0 (weight totals from weigh-ins) | Merged; ships in next release |
-| 0.18.0 (reliability & cropping fixes) | Merged; ships in next release |
-| 0.19.0 (start and latest labels) | Merged; ships in next release |
-| 0.20.0 (Today redesign) | Next release, once tagged |
+| 0.17.0 (weight totals from weigh-ins) | Not tagged; shipped in 0.18.0 |
+| 0.19.0 (start and latest labels) | Not tagged; shipped in 0.20.0 |
+| 0.21.0 (UI & highlight colour polish) | Next release, once tagged |
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-25 | UI & highlight colour polish: expanded the palette (`src/theme/colors.ts`) with domain highlights for weight (cobalt blue) and body fat (plum violet), soft tint tokens (`*Soft`, `softTint`), crisp `cardBorder`, two new themes (**Stone** warm light and **OLED** true black, chosen via a visual swatch picker in Settings → Appearance; no DB migration), and fixed dark-mode primary buttons to monochrome off-white so green stays strictly for steps and orange strictly for calories in every theme (enforced by `src/theme/__tests__/colors.test.ts`). Refined typography tracking (`tokens.ts`, `eyebrow` variant), bordered/gently elevated cards (`Card.tsx`), lifted active segments (`Segmented.tsx`), glowing `14 px` `ArcGauge` with gentle halo pulse, `8 px` `ProgressBar`, new `Badge` pill primitive, and `BmiBar` spectrum component. Added gradient-washed accent lines and interactive touch-and-drag crosshair scrubbing (`src/lib/chartScrub.ts`) to `LineChart` (cobalt on Weight, plum-violet on Progress) and tap/drag bar inspection to `StepsChart`, tinted milestone chips, subtle non-green/non-orange category tints on `FoodIcon`, Today meal icons/share micro-bars/tinted `+` buttons, Calories tab progress + macro `SplitBar` + meal badges, Steps tab 7-day summary strip (`Daily avg`, `On target`, `Streak` from `stepsSummary`) + highlighted Today axis label, Progress tab Lean vs. Fat `SplitBar`, bordered tinted action tiles in Add food, subtle Reanimated button springs + cross-platform haptics (`expo-haptics`, `src/lib/haptics.ts`), and custom dual-arc launcher, adaptive, monochrome, splash and favicon icons (`assets/images/`). Version 0.21.0 | #24 |
 | 2026-11-25 | Today redesign: a weight change strip at the top (7 days, 1 month, 3 months, from actual weigh-ins); calories as a countdown gauge of calories left (`ArcGauge`) with Eaten and Target either side and a protein/carbs/fat split bar (`SplitBar`) with grams against targets; steps moved into their own card with "N to go". The steps and calories rings (`DualRings`) are gone. New colour tokens `protein`, `carbs` and `fat`; new helpers `macroSplit`, `todayWeightChanges`, `changeParts` and `stepsToGo` in `src/lib/today.ts`, with tests. Today screenshots retaken. Version 0.20.0 | #23 |
 | 2026-11-25 | Weight chart: small value bubbles with a pointer on the first and latest weigh-in of the chosen period, in the text colour for light and dark. Placement (`placeCallout` in the new `src/lib/chartCallout.ts`, tested) tries above the point, then leaning left or right, then below, keeping clear of milestone labels, the goal line and the other bubble. `LineChart` gains an `endLabels` prop and a little more top padding when it's on; the chart is 216 px tall (was 200). The accessibility label now reads the first and latest weigh-in. Version 0.19.0 | #22 |
 | 2026-11-24 | Reliability & photo cropping fixes: check-in detail, side-by-side compare and meal estimate photos now use `contain` fit so full-body and vertical photos aren't cropped; new `useToday` hook refreshes Today, Calories, Steps and WeightLogCard across midnight and app foregrounding; backup restore and folder save stream zip chunks through `FileHandle` instead of loading the entire zip into memory, and `describeBackup` prefers the exact `bodyPhoto` count; AI and Open Food Facts requests enforce timeouts (60 s / 15 s) and abort on unmount; `ProductScreen` checks for an API key before image manipulation and auto-retries label reads after returning from Settings; `VoiceButton` aborts active speech recognition on unmount; `Goal weight` in Settings can be cleared; Health Connect errors surface a retry state instead of sending the user to the Play Store; `Same as yesterday` guards against double-taps and queries items with `inArray`; Settings → AI adds an optional collapsed Model override field; real SQLite migration integration tests (`src/db/__tests__/migrations.test.ts`) verify `0000` → `0005` with foreign keys on and check `BACKUP_TABLES` sync. Version 0.18.0 | #21 |
@@ -437,6 +438,7 @@ Several PRs can merge between two releases, so not every version number gets its
 | expo-camera (photos and barcode scanning) / expo-image-manipulator / expo-file-system | ~58.0.14 / ~58.0.16 / ~58.0.14 |
 | expo-constants (update check) | ~58.0.16 |
 | expo-device (update check picks the APK for the phone's chip) | ~58.0.5 |
+| expo-haptics (subtle tactile ticks & confirmations; uses Android's native haptics engine) | ~58.0.8 |
 | expo-sharing (backup share sheet; its config plugin is only for receiving shares, so it isn't added) | ~58.0.23 |
 | fflate (backup zip, pure JavaScript, streaming) | ^0.8.3 |
 | expo-image-picker (weight import) | ~58.0.10 |
@@ -467,7 +469,7 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
   - Stack screens: settings, add-food (modal), quick-add (modal), food-item (modal: add a recent food or edit a logged one), scan (full screen: barcode, label photo or meal photo), product (modal), estimate (modal: meal photo and description to AI estimate), check-in (modal: new, or edit with `?id=`), camera (full screen), check-ins/[id], compare, import-weights.
   - `Stack.Protected` shows onboarding until a profile exists.
 - **Units** (`food_ref.unit`, `food_item.unit`, migration `0003_food_units`): `g` or `ml`, default `g`. The amount columns keep their old names (`food_item.grams`, `food_ref.serving_g`, `*_per_100g`), and for an `ml` food they hold millilitres and per-100 ml values, so nothing is converted (no density guesses). `FoodUnit`, `formatAmount` and the optional `unit` on `Nutrition` live in `src/lib/food.ts`; `NumberField` takes `onUnitPress` to show the g ⇄ ml button.
-- **Food categories** (`src/lib/foodCategory.ts`, `src/components/FoodIcon.tsx`, `food_ref.category`, `food_item.category`, migration `0004_food_category`): 12 categories, each drawn as one lucide line icon in a soft grey circle (never green or orange). The stored category wins; when it is null the icon is guessed from the name (`guessCategory`: keyword list, the last recognised word wins, "X with Y" of two kinds is a meal), else "other". `categoryFromOffTags` reads Open Food Facts tags from most to least specific and skips broad ones such as `plant-based-foods`. The AI schemas for labels and meals have a `category` enum; "other" from the AI is stored as null so the name can still decide.
+- **Food categories** (`src/lib/foodCategory.ts`, `src/components/FoodIcon.tsx`, `food_ref.category`, `food_item.category`, migration `0004_food_category`): 12 categories, each drawn as one lucide line icon in a softly tinted circle using muted category colours (cobalt, berry, amber-gold, plum, neutral — never green or orange). The stored category wins; when it is null the icon is guessed from the name (`guessCategory`: keyword list, the last recognised word wins, "X with Y" of two kinds is a meal), else "other". `categoryFromOffTags` reads Open Food Facts tags from most to least specific and skips broad ones such as `plant-based-foods`. The AI schemas for labels and meals have a `category` enum; "other" from the AI is stored as null so the name can still decide.
 - **Data**: one SQLite file, 8 tables: profile, meal, food_item, food_ref, weight_entry, body_check, body_photo, steps_day. All values are metric; display converts.
   - Live queries need `enableChangeListener` (set in `src/db/client.ts`), and foreign keys are switched on.
   - Migrations in `drizzle/` are bundled into the app (babel inline-import plus a metro `sql` extension) and run at start-up by `useMigrations` in `src/app/_layout.tsx`. `src/db/__tests__/migrations.test.ts` runs every SQL migration against an in-memory SQLite database (`node:sqlite`) with foreign keys on and verifies that `BACKUP_TABLES` stays in sync with the schema.
@@ -476,11 +478,11 @@ Pure maths and formatting (src/lib) is shared by screens and tested on its own.
 - **Check-ins** (`src/db/body.ts`, `src/app/check-in.tsx`, migration `0005_body_check_optional`): `neck_cm`, `waist_cm` and `body_fat_pct` are null for a photos-only check-in, and every screen that shows body fat filters those out. `saveCheckIn` and `updateCheckIn` share one input shape; new photos get unique file names, and replaced or removed photo files are deleted only after the database commits. `checkInReadiness` (all-or-nothing measurements, or at least one photo) and `checkInTimestamp` (today = now, an earlier day = midday, an edit keeps its time of day) are pure and tested in `src/lib/body.ts`. `DateField` takes `past` for a day up to today.
 - **AI** (`src/lib/ai/`): one adapter for every AI feature. A feature describes its request once (prompt, images, JSON Schema) as an `AiJsonRequest`; `providers.ts` turns it into a Gemini `generateContent`, OpenAI Responses or Claude Messages call with structured JSON output, low reasoning effort, and a 60-second request timeout, and parses the answer. Calls use `fetch` straight from the phone, no SDKs, and cancel cleanly on screen unmount. `settings.ts` stores the provider, keys and optional model overrides in secure store. `weightScreenshot.ts` holds the screenshot prompt and schema, `nutritionLabel.ts` the label prompt, schema and answer checks, `mealEstimate.ts` the meal prompt, schema and answer checks; `prepareImage.ts` shrinks images to base64 JPEG. 
 - **Weight import** (`src/app/import-weights.tsx`, `src/lib/weightImport.ts`): the pure functions check each row, merge screenshots and compare with existing weights; `importWeights` in `src/db/queries.ts` saves the ticked rows. `weight_entry.source` gained the value `import` (a TypeScript enum only, so no migration).
-- **Charts**: a small custom SVG line chart (`src/components/LineChart.tsx`) instead of a chart library. It draws the readings as the main line, an optional faint dashed trend and projection, a dotted goal line, gridlines with values in a left gutter, coloured markers and guide lines, and optional value bubbles on the first and latest reading (`endLabels`; placement is pure in `src/lib/chartCallout.ts` and avoids marker labels, the goal line and each other). `src/components/WeightChart.tsx` builds the Weight tab's chart block (period change, chart, milestone chips) from the trend passed in as a prop, so it can be previewed without the database. Charts use neutral colours, because green and orange are reserved for steps and calories; weight milestones have their own four colours (`milestone1`–`milestone4` in `src/theme/colors.ts`, picked with `milestoneColor`), and macros have three (`protein`, `carbs`, `fat`). Today's calories gauge (`ArcGauge`) and macro split bar (`SplitBar`) live in `src/components/ui/Progress.tsx` next to `ProgressBar`.
+- **Charts**: a small custom SVG line chart (`src/components/LineChart.tsx`) instead of a chart library. It draws the readings as a smooth domain-accented line with a soft vertical area-gradient wash (`accentColor`: cobalt `weight` on Weight, plum-violet `body` on Progress), an optional faint dashed trend and projection, a dotted goal line, gridlines with values in a left gutter, coloured markers and guide lines, surface-ringed endpoint dots, optional value bubbles on the first and latest reading (`endLabels`; placement is pure in `src/lib/chartCallout.ts`), and interactive touch-and-drag crosshair scrubbing (pure hit-testing in `src/lib/chartScrub.ts`, tested). `src/components/StepsChart.tsx` draws the green step bars with tap/drag bar inspection. `src/components/WeightChart.tsx` builds the Weight tab's chart block (period change, chart, softly tinted reached milestone chips) from the trend passed in as a prop, so it can be previewed without the database. Green and orange remain strictly reserved for steps and calories; weight milestones have their own four colours (`milestone1`–`milestone4` in `src/theme/colors.ts`, picked with `milestoneColor`), and macros have three (`protein`, `carbs`, `fat`). Today's and Calories' gauges and split bars (`ArcGauge`, `SplitBar`, `ProgressBar`) live in `src/components/ui/Progress.tsx`; the horizontal BMI spectrum bar (`BmiBar`) lives in `src/components/BmiBar.tsx`.
 - **Release build** (`app.config.js`, `plugins/`): `app.config.js` adds the `versionCode` and the `withReleaseSigning` and `withAbiSplits` config plugins on top of `app.json`. `withAbiSplits` adds Gradle ABI splits, so one release build makes an arm64 APK and a universal APK. The plugin edits the generated `android/app/build.gradle` so release builds sign with the key named by `ANDROID_KEYSTORE_PATH` and friends, falling back to the debug key when they are not set. `android/` itself is never committed; `expo prebuild` regenerates it.
 - **Backup** (`src/lib/backup.ts`, `src/db/backup.ts`, `src/lib/backupState.ts`, `src/components/BackupCard.tsx`): `lib/backup.ts` is pure and tested (format, manifest, file checks, safe photo names, the plain-words summary, when the reminder is due). `db/backup.ts` does the work: export reads every table through Drizzle (so rows are in the app's own shape) and streams a zip with fflate into `cache/backup/`, writing one photo at a time through a file handle, and folder save stream-copies in 1 MB chunks. Restore streams the picked zip in 1 MB chunks through `FileHandle` directly into `document/photos-incoming/` (only `photos/<name>.jpg` entries are written, so a crafted zip can't write elsewhere), checks the manifest against `SCHEMA_VERSION` (the number of migrations in `drizzle/`), and after confirmation deletes and re-inserts every table in one transaction (children first, then parents, 50 rows per insert), then renames `photos` to `photos-old`, `photos-incoming` to `photos`, and deletes the old folder. The last backup date and the reminder snooze live in `backup-state.json` in the document folder, outside the database so a restore doesn't overwrite them. `BACKUP_TABLES` in `lib/backup.ts` must list every table (verified by `migrations.test.ts`).
 - **Update check** (`src/lib/updates.ts`, `src/lib/version.ts`, `src/components/UpdateBanner.tsx`): compares the installed version (`expo-constants`) with the latest GitHub release of `extra.releasesRepo` in `app.json`, picks the APK for the phone's chip (`pickApk`, using expo-device's `supportedCpuArchitectures`), caching the result and any dismissed version in `update-check.json` in the document folder.
-- **Design system**: tokens in `src/theme` (colours for light and dark, spacing, radius, type scale). Space Grotesk for numbers and headings, Inter for text, lucide icons. Font scaling is capped at 1.3×.
+- **Design system**: tokens in `src/theme` (`colors.ts`, `tokens.ts`, `ThemeProvider.tsx`) supporting four palettes (**Light**, **Stone** warm light, **Dark**, and **OLED** true black, plus **System** auto-follow): monochrome ink primary buttons in every theme (so steps green never leaks onto non-step actions), dedicated domain accents (`steps` green, `calories` orange, `weight` cobalt blue, `body` plum-violet, plus soft tint tokens and `cardBorder`), tight display/metric letter-spacing and tracked uppercase eyebrows. Space Grotesk for numbers and headings, Inter for text, lucide icons, custom dual-arc launcher/adaptive/monochrome/splash icons (`assets/images/`), subtle Reanimated spring press & gauge micro-animations (honouring Reduce Motion), cross-platform haptics (`src/lib/haptics.ts` using `expo-haptics` / `AndroidHaptics`), plus reusable `Badge`, `Card`, `Segmented`, `ArcGauge`, `SplitBar`, `ProgressBar` and `BmiBar` primitives. `src/theme/__tests__/colors.test.ts` enforces that non-step/non-calorie accents never collide with `steps` or `calories` in any theme. Font scaling is capped at 1.3×.
 - **Food log** (`src/lib/food.ts`, `src/db/meals.ts`): recent foods are worked out from logged items (`recentItemsQuery`, then `recentFoods` de-duplicates by name), so no food table has to be kept in sync. Each add makes its own `meal` row with one `food_item`; `updateFoodItem` moves an item between meals; `dailyCaloriesQuery` sums calories per day for the 7-day average. Pure helpers for search, scaling, day labels and the average are tested on their own. No schema change, so no migration.
 - **Barcodes** (`src/lib/openFoodFacts.ts`, `src/db/foods.ts`): `lookupBarcode` calls the Open Food Facts v2 product API asking only for the fields used, with a `User-Agent` naming the app as Open Food Facts asks. `parseOffProduct` turns the answer into per-100 g numbers (kJ converted when calories are missing). Products, label reads and corrections live in the existing `food_ref` table (`source` is `off`, `panel` or `custom`), saved by `saveFoodRef`, which updates in place when the barcode is already cached.
 - **Steps** (`src/lib/healthConnect.ts`, `src/hooks/steps.ts`, `src/db/steps.ts`, `src/lib/steps.ts`): `healthConnect.ts` wraps react-native-health-connect (availability, permission, daily totals with `aggregateGroupByPeriod`, hourly totals with `aggregateGroupByDuration`, opening Health Connect or its Play Store page) and is the only file that imports it. `hooks/steps.ts` holds the shared sync state (access, syncing, last sync, today's hours) as a tiny store read with `useSyncExternalStore`; `useStepsAutoSync` in the tabs layout syncs on open and on return to the front; `connectSteps` is the connect button. Daily totals go into the existing `steps_day` table (`source` = `health_connect`), so no migration; screens read it with live queries (`useDaySteps`, `useStepsHistory`). Pure helpers in `lib/steps.ts` (buckets to days and hours, history, totals, summary stats, status messages) are tested. `StepsChart` draws the bars. The Health Connect config plugin adds the permission-rationale intent filter and activity alias to the manifest; `android.permissions` in `app.json` adds `READ_STEPS`.
@@ -613,7 +615,7 @@ Install the build from the link EAS gives you, then open it while `expo start` i
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, steps, Today, date, backup, version, voice and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, weight-import merging, AI request builders/timeouts, release plugins, plus SQLite migration tests (`src/db/__tests__/migrations.test.ts`) |
+| `npm test` | Unit tests for the calorie, unit, body-fat, weight-trend, steps, Today, chart callout & scrub, date, backup, version, voice and food-log maths, Open Food Facts, nutrition-label and meal-estimate parsing, weight-import merging, AI request builders/timeouts, theme colour separation (`src/theme/__tests__/colors.test.ts`), release plugins, plus SQLite migration tests (`src/db/__tests__/migrations.test.ts`) |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a migration after changing `src/db/schema.ts` |
@@ -661,7 +663,6 @@ Everything we've discussed that is not built yet.
 - Saving a whole meal (several foods) as one reusable item, and logging a meal for several people with a share.
 
 **Weight chart, later**
-- Tap or drag on the chart to read the weight and date at any point.
 - Pinch or swipe to pan through history, and a custom date range.
 - Choose the milestone step (for example 2 kg or 10 kg) and celebrate a milestone with a short message the day it's reached.
 - Show the projection's likely range (a faint band) instead of a single line.
@@ -684,8 +685,7 @@ Everything we've discussed that is not built yet.
 - Refresh a cached product from Open Food Facts after a while, in case its data was corrected.
 
 **Steps, later**
-- Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year), daily average, days on target, best day and streaks. The helpers for averages, days on target, best day and streak are already in `src/lib/steps.ts` (`stepsSummary`, tested) but not shown yet.
-- Tap a bar to see that day's or hour's exact steps.
+- Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year) and best-day highlights. The last-7-day summary strip (daily average, days on target and current streak) now uses `stepsSummary` from `src/lib/steps.ts` on the Steps tab; longer-range analytics will reuse the same helper.
 - Reading older history with Health Connect's history permission (more than 30 days before access was given).
 - Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and for the home-screen widgets (see Widgets, later).
 - Entering steps by hand for days without a phone or watch.
@@ -699,7 +699,7 @@ Everything we've discussed that is not built yet.
 - Notifications to remind you to log calories (Rick, 2026-11-24), for example when a meal time passes with nothing logged. Local notifications on the phone, no server.
 
 **Look and feel, later**
-- Additional colour themes beyond light and dark (Rick, 2026-11-24). Green stays for steps and orange for calories in every theme.
+- Additional accent or seasonal themes beyond Light, Stone, Dark and OLED (Stone and OLED shipped in 0.21.0). Green stays for steps and orange for calories in every theme.
 
 **Step and calorie graphs, later**
 - Rework the step and calorie graphs (Rick, 2026-11-24: "graph modification for step and calories"). What to change is still to be worked out with Rick; see also the step analytics above.
@@ -721,7 +721,7 @@ Everything we've discussed that is not built yet.
   - Being lean with muscle feels so good.
 
 **Phase 5: polish**
-- Empty states, offline error handling, app icons.
+- Empty states and offline error handling. (Custom dual-arc app icons shipped in 0.21.0.)
 
 **Backup, later**
 - An optional password to encrypt the backup file.
@@ -736,7 +736,6 @@ Everything we've discussed that is not built yet.
 - GitHub Discussions for questions and ideas, and good-first-issue labels.
 - A listing on F-Droid or IzzyOnDroid, so people can install and update without GitHub. F-Droid needs reproducible builds and no Google-only parts, so it needs a check of Health Connect and the speech service.
 - Translations, once the app's text is moved into string files.
-- A real app icon and logo (the launcher icon is still Expo's default; see Phase 5).
 
 **After the MVP**
 - Optional Play Store (or internal testing track) release, and a return to iOS with App Store and TestFlight. The iOS settings in `app.json` and the EAS profiles are kept for this.

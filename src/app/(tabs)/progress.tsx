@@ -2,16 +2,19 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
+import { BmiBar } from '@/components/BmiBar';
 import { LineChart } from '@/components/LineChart';
 import { PhotoThumb } from '@/components/PhotoThumb';
-import { Button, Card, Screen, Text } from '@/components/ui';
+import { Badge, Button, Card, Screen, SplitBar, Text } from '@/components/ui';
 import { useCheckIns, useProfile, useWeightTrend, type CheckIn } from '@/hooks/data';
 import { bmi, bmiCategory, bodyComposition } from '@/lib/body';
 import { formatShortDate } from '@/lib/dates';
 import { formatWeight } from '@/lib/units';
+import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
 
 export default function ProgressScreen() {
+  const { colors } = useTheme();
   const { profile } = useProfile();
   const checkIns = useCheckIns();
   const trend = useWeightTrend();
@@ -27,8 +30,10 @@ export default function ProgressScreen() {
   const withPhotos = checkIns.filter((c) => Object.keys(c.photos).length > 0);
 
   // Lean and fat mass use the check-in's own weight, or the current trend if none was entered.
-  const comp = latest ? bodyComposition(latest.weightKg ?? weightNow ?? 0, latest.bodyFatPct) : null;
+  const compWeight = latest ? (latest.weightKg ?? weightNow) : null;
+  const comp = latest && compWeight ? bodyComposition(compWeight, latest.bodyFatPct) : null;
   const bmiValue = weightNow && profile ? bmi(weightNow, profile.heightCm) : null;
+  const delta = latest && previous ? latest.bodyFatPct - previous.bodyFatPct : null;
 
   const chartPoints = useMemo(
     () =>
@@ -40,25 +45,57 @@ export default function ProgressScreen() {
 
   return (
     <Screen title="Progress">
-      <Card>
-        <Text variant="label" muted>
-          Body fat (Navy method)
-        </Text>
+      <Card
+        title="Body fat"
+        right={
+          delta != null ? (
+            <Badge
+              tone="body"
+              dot
+              label={`${Math.abs(delta).toFixed(1)} pts ${delta <= 0 ? 'down' : 'up'}`}
+            />
+          ) : (
+            <Text variant="caption" muted>
+              Navy method
+            </Text>
+          )
+        }>
         {latest ? (
           <>
             <Text variant="bigMetric">{latest.bodyFatPct.toFixed(1)}%</Text>
-            <Text variant="label" muted>
-              {comp && (latest.weightKg ?? weightNow)
-                ? `${formatWeight(comp.leanKg, units)} lean · ${formatWeight(comp.fatKg, units)} fat`
-                : null}
-              {previous
-                ? `${comp ? ' · ' : ''}${Math.abs(latest.bodyFatPct - previous.bodyFatPct).toFixed(1)} points ${
-                    latest.bodyFatPct <= previous.bodyFatPct ? 'down' : 'up'
-                  } since ${formatShortDate(new Date(previous.measuredAt))}`
-                : null}
-            </Text>
+            {comp ? (
+              <View style={styles.comp}>
+                <SplitBar
+                  parts={[
+                    { share: Math.max(0, 100 - latest.bodyFatPct) / 100, color: colors.weight },
+                    { share: Math.max(0, latest.bodyFatPct) / 100, color: colors.body },
+                  ]}
+                />
+                <View style={styles.compRow}>
+                  <View style={styles.compItem}>
+                    <View style={[styles.dot, { backgroundColor: colors.weight }]} />
+                    <Text variant="label" muted>
+                      Lean{' '}
+                      <Text variant="bodyStrong" style={styles.tabular}>
+                        {formatWeight(comp.leanKg, units)}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View style={styles.compItem}>
+                    <View style={[styles.dot, { backgroundColor: colors.body }]} />
+                    <Text variant="label" muted>
+                      Fat{' '}
+                      <Text variant="bodyStrong" style={styles.tabular}>
+                        {formatWeight(comp.fatKg, units)}
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : null}
             <Text variant="caption" muted>
               Measured {formatShortDate(new Date(latest.measuredAt), true)}
+              {previous ? ` · compared with ${formatShortDate(new Date(previous.measuredAt))}` : ''}
             </Text>
           </>
         ) : (
@@ -109,7 +146,8 @@ export default function ProgressScreen() {
         <Card title="Body fat over time">
           <LineChart
             points={chartPoints}
-            height={150}
+            accentColor={colors.body}
+            height={176}
             formatValue={(v) => `${v.toFixed(1)}%`}
             formatDate={(t) => formatShortDate(new Date(t), true)}
             accessibilityLabel={`Body fat chart from ${chartPoints[0].value.toFixed(1)} to ${chartPoints[chartPoints.length - 1].value.toFixed(1)} percent`}
@@ -118,10 +156,11 @@ export default function ProgressScreen() {
       ) : null}
 
       {bmiValue ? (
-        <Card title="BMI">
+        <Card title="BMI" right={<Badge tone="body" label={bmiCategory(bmiValue)} />}>
           <Text variant="metric">{bmiValue.toFixed(1)}</Text>
+          <BmiBar value={bmiValue} />
           <Text variant="label" muted>
-            {bmiCategory(bmiValue)}. BMI doesn’t tell muscle from fat, so body fat is the better guide.
+            BMI doesn’t tell muscle from fat, so body fat is the better guide.
           </Text>
         </Card>
       ) : null}
@@ -131,6 +170,11 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
+  comp: { gap: space[2] },
+  compRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[4] },
+  compItem: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  tabular: { fontVariant: ['tabular-nums'] },
   strip: { gap: space[3] },
   stripItem: { width: 84, gap: 2 },
 });

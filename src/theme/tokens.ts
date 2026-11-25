@@ -35,14 +35,15 @@ export const MAX_FONT_SCALE = 1.3;
 const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
 export const type = {
-  display: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36 },
-  metric: { fontFamily: fonts.metric, fontSize: 26, lineHeight: 30, ...tabular },
-  bigMetric: { fontFamily: fonts.display, fontSize: 44, lineHeight: 50, ...tabular },
-  title: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 22 },
+  display: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.6 },
+  metric: { fontFamily: fonts.metric, fontSize: 26, lineHeight: 30, letterSpacing: -0.5, ...tabular },
+  bigMetric: { fontFamily: fonts.display, fontSize: 44, lineHeight: 50, letterSpacing: -1.1, ...tabular },
+  title: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 22, letterSpacing: -0.2 },
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 },
   bodyMedium: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 20 },
   bodyStrong: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20 },
   label: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
+  eyebrow: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 16, letterSpacing: 0.4, textTransform: 'uppercase' },
   caption: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, ...tabular },
 } satisfies Record<string, TextStyle>;
 export type TypeVariant = keyof typeof type;

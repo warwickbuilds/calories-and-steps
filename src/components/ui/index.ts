@@ -1,3 +1,4 @@
+export { Badge, type BadgeTone } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
 export { AddButton, IconButton } from './IconButton';

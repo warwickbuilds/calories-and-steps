@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { hapticTick } from '@/lib/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
 import { layout, radius, space } from '@/theme/tokens';
 
@@ -14,7 +15,7 @@ export function Segmented<T extends string>({
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   return (
     <View style={[styles.track, { backgroundColor: colors.track }]} accessibilityRole="radiogroup">
       {options.map((o) => {
@@ -24,8 +25,15 @@ export function Segmented<T extends string>({
             key={o.value}
             accessibilityRole="radio"
             accessibilityState={{ selected }}
-            onPress={() => onChange(o.value)}
-            style={[styles.option, selected && { backgroundColor: colors.surface }]}>
+            onPress={() => {
+              if (!selected) hapticTick();
+              onChange(o.value);
+            }}
+            style={[
+              styles.option,
+              selected && { backgroundColor: colors.surface, borderColor: colors.cardBorder, borderWidth: 1 },
+              selected && scheme === 'light' && styles.selectedShadow,
+            ]}>
             <Text variant={selected ? 'bodyStrong' : 'bodyMedium'} muted={!selected}>
               {o.label}
             </Text>
@@ -45,5 +53,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space[2],
+  },
+  selectedShadow: {
+    shadowColor: '#0E1111',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
   },
 });

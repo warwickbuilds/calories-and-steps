@@ -31,7 +31,7 @@ export function Screen({
             <View style={styles.header}>
               <View style={styles.headerText}>
                 {eyebrow ? (
-                  <Text variant="label" muted>
+                  <Text variant="eyebrow" muted>
                     {eyebrow}
                   </Text>
                 ) : null}

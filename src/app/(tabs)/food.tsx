@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { FoodIcon } from '@/components/FoodIcon';
-import { AddButton, Card, IconButton, Screen, Text } from '@/components/ui';
+import { AddButton, Badge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
 import { copyMeal } from '@/db/meals';
 import { useDayItems, useDayTotals, useTargets, useWeekAverage } from '@/hooks/data';
 import { useToday } from '@/hooks/useToday';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { dayLabel, formatAmount, macroLine } from '@/lib/food';
-import { MEAL_TYPES, formatNumber, isLocalDate, type MealType } from '@/lib/today';
+import { MEAL_TYPES, formatNumber, isLocalDate, macroSplit, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
 
@@ -30,6 +30,10 @@ export default function FoodScreen() {
   const prevTotals = useDayTotals(prevDay);
   const targets = useTargets();
   const week = useWeekAverage(day);
+  const macros = macroSplit(totals, targets);
+  const macroColor = { protein: colors.protein, carbs: colors.carbs, fat: colors.fat };
+  const targetCal = targets?.calories ?? 0;
+  const over = targetCal > 0 && totals.calories > targetCal;
 
   const handleCopy = async (mealType: MealType) => {
     if (copying) return;
@@ -55,12 +59,14 @@ export default function FoodScreen() {
         <View style={styles.summary}>
           <View style={styles.summaryCol}>
             <View style={styles.labelRow}>
-              <View style={[styles.dot, { backgroundColor: colors.calories }]} />
+              <View style={[styles.dot, { backgroundColor: over ? colors.danger : colors.calories }]} />
               <Text variant="label" muted>
                 Eaten
               </Text>
             </View>
-            <Text variant="metric">{formatNumber(totals.calories)}</Text>
+            <Text variant="metric" color={over ? colors.danger : undefined}>
+              {formatNumber(totals.calories)}
+            </Text>
             <Text variant="caption" muted>
               {targets ? `of ${formatNumber(targets.calories)} calories` : 'calories'}
             </Text>
@@ -75,10 +81,32 @@ export default function FoodScreen() {
             </Text>
           </View>
         </View>
+        {targetCal > 0 ? (
+          <ProgressBar progress={totals.calories / targetCal} color={over ? colors.danger : colors.calories} />
+        ) : null}
         {totals.calories > 0 ? (
-          <Text variant="caption" muted>
-            {macroLine(totals)}
-          </Text>
+          <View style={styles.macros}>
+            <SplitBar parts={macros.map((m) => ({ share: m.share, color: macroColor[m.key] }))} />
+            <View style={styles.macroRow}>
+              {macros.map((m) => (
+                <View key={m.key} style={styles.macro}>
+                  <View style={styles.labelRow}>
+                    <View style={[styles.dot, { backgroundColor: macroColor[m.key] }]} />
+                    <Text variant="caption" muted>
+                      {m.label}
+                    </Text>
+                  </View>
+                  <Text variant="bodyStrong" style={styles.tabular}>
+                    {m.grams}g
+                    <Text variant="caption" muted>
+                      {' '}
+                      / {m.target}g
+                    </Text>
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
         ) : null}
       </Card>
 
@@ -92,11 +120,16 @@ export default function FoodScreen() {
             title={m.label}
             right={
               <View style={styles.cardRight}>
-                <Text variant="label" muted>
-                  {rows.length ? `${formatNumber(total)} calories` : 'Not logged'}
-                </Text>
+                {rows.length ? (
+                  <Badge tone="calories" label={`${formatNumber(total)} calories`} />
+                ) : (
+                  <Text variant="label" muted>
+                    Not logged
+                  </Text>
+                )}
                 <AddButton
                   icon={Plus}
+                  tone="calories"
                   accessibilityLabel={`Add food to ${m.label}`}
                   onPress={() => router.push({ pathname: '/add-food', params: { meal: m.value, day } })}
                 />
@@ -151,6 +184,10 @@ const styles = StyleSheet.create({
   summaryCol: { flex: 1, gap: 2 },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  macros: { gap: space[2], paddingTop: space[1] },
+  macroRow: { flexDirection: 'row', gap: space[3] },
+  macro: { flex: 1, gap: 2 },
+  tabular: { fontVariant: ['tabular-nums'] },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   row: {
     flexDirection: 'row',
