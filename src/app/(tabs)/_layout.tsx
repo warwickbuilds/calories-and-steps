@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View, type ColorValue, type PressableProps } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
+import { useRemindersSync } from '@/hooks/reminders';
 import { useStepsAutoSync } from '@/hooks/steps';
 import { hapticTick } from '@/lib/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -55,6 +56,8 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   // Reads steps from Health Connect on open and whenever the app comes back to the front.
   useStepsAutoSync();
+  // Keeps the 7-day local reminder schedule aligned with today's logged meals and weigh-in.
+  useRemindersSync();
   return (
     <Tabs
       screenOptions={{

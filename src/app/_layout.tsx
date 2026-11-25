@@ -15,6 +15,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import migrations from '../../drizzle/migrations';
 import { db } from '@/db/client';
 import { useProfile } from '@/hooks/data';
+import { useNotificationDeepLink } from '@/hooks/reminders';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/tokens';
 
@@ -65,6 +66,7 @@ function App() {
 
 function Navigation({ hasProfile }: { hasProfile: boolean }) {
   const { colors, scheme } = useTheme();
+  useNotificationDeepLink(hasProfile);
   const navTheme = useMemo(() => {
     const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
     return {
