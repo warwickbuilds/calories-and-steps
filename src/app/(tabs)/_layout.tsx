@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui';
 import { useRemindersSync } from '@/hooks/reminders';
 import { useStepsAutoSync } from '@/hooks/steps';
+import { useWidgetsSync } from '@/hooks/widgets';
 import { hapticTick } from '@/lib/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, layout } from '@/theme/tokens';
@@ -58,6 +59,8 @@ export default function TabLayout() {
   useStepsAutoSync();
   // Keeps the 7-day local reminder schedule aligned with today's logged meals and weigh-in.
   useRemindersSync();
+  // Pushes fresh daily steps and remaining calories snapshots to the Android home-screen widgets.
+  useWidgetsSync();
   return (
     <Tabs
       screenOptions={{
