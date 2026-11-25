@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { Text } from '@/components/ui';
+import { CALLOUT, placeCallout, type Box, type Callout } from '@/lib/chartCallout';
 import { useTheme } from '@/theme/ThemeProvider';
-import { space } from '@/theme/tokens';
+import { fonts, space } from '@/theme/tokens';
 
 export interface ChartPoint {
   /** x position: milliseconds since epoch */
@@ -59,6 +60,7 @@ export function LineChart({
   projection,
   markers = [],
   guides = [],
+  endLabels,
   height = 180,
   formatValue,
   formatDate,
@@ -69,6 +71,8 @@ export function LineChart({
   projection?: ChartProjection | null;
   markers?: ChartMarker[];
   guides?: ChartGuide[];
+  /** Shows the first and latest reading in small value bubbles, formatted by this. */
+  endLabels?: (v: number) => string;
   height?: number;
   formatValue: (v: number) => string;
   formatDate: (t: number) => string;
@@ -77,7 +81,8 @@ export function LineChart({
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   // The left gutter holds the gridline values so they never sit on the line.
-  const pad = { top: 18, bottom: 8, left: 30, right: 10 };
+  // Extra room on top for the value bubbles when they are on.
+  const pad = { top: endLabels ? 34 : 18, bottom: endLabels ? 12 : 8, left: 30, right: 10 };
 
   if (points.length === 0) {
     return (
@@ -124,6 +129,27 @@ export function LineChart({
   const ticks = niceTicks(min, max);
   const dotR = points.length > 120 ? 0 : points.length > 40 ? 1.6 : 2.6;
   const last = points[points.length - 1];
+  const first = points[0];
+
+  // Value bubbles for the first and latest reading. They step aside (below
+  // the point) when a milestone label is in the way.
+  const callouts: Callout[] = [];
+  if (endLabels && width > 0) {
+    const bounds = { left: pad.left, right: width - pad.right, top: 0, bottom: height };
+    const avoid: Box[] = markers.map((m) => {
+      const mx = Math.min(Math.max(x(m.t), pad.left + 12), width - pad.right - 12);
+      return { x0: mx - 14, x1: mx + 14, y0: y(m.value) - 21, y1: y(m.value) + 6 };
+    });
+    // Keep clear of the goal line so its dots stay readable.
+    if (goal != null) avoid.push({ x0: pad.left, x1: width - pad.right, y0: y(goal) - 2, y1: y(goal) + 2 });
+    const ends = points.length > 1 ? [first, last] : [last];
+    for (const p of ends) {
+      const c = placeCallout(x(p.t), y(p.value), endLabels(p.value), bounds, avoid);
+      callouts.push(c);
+      avoid.push({ x0: c.x - 2, x1: c.x + c.w + 2, y0: c.y - 2, y1: c.y + CALLOUT.h + 2 });
+    }
+  }
+
   const faint = { stroke: colors.muted, strokeOpacity: 0.75, strokeWidth: 1.5, strokeDasharray: '5 4', fill: 'none' };
 
   return (
@@ -205,6 +231,7 @@ export function LineChart({
             {dotR > 0
               ? points.map((p) => <Circle key={p.t} cx={x(p.t)} cy={y(p.value)} r={dotR} fill={colors.text} />)
               : null}
+            {endLabels && points.length > 1 ? <Circle cx={x(first.t)} cy={y(first.value)} r={3.5} fill={colors.text} /> : null}
             <Circle cx={x(last.t)} cy={y(last.value)} r={3.5} fill={colors.text} />
             {markers.map((m) => (
               <Circle
@@ -229,6 +256,9 @@ export function LineChart({
                 {m.label}
               </SvgText>
             ))}
+            {callouts.map((c, i) => (
+              <CalloutBubble key={`c${i}`} c={c} fill={colors.text} ink={colors.surface} />
+            ))}
           </Svg>
         ) : null}
       </View>
@@ -248,6 +278,25 @@ export function LineChart({
         </View>
       ) : null}
     </View>
+  );
+}
+
+/** A small filled bubble with a pointer, in the text colour so it reads in light and dark. */
+function CalloutBubble({ c, fill, ink }: { c: Callout; fill: string; ink: string }) {
+  const { h, pointer } = CALLOUT;
+  const base = c.below ? c.y : c.y + h;
+  const tip = c.below ? base - pointer : base + pointer;
+  return (
+    <>
+      <Rect x={c.x} y={c.y} width={c.w} height={h} rx={h / 2} fill={fill} />
+      <Path
+        d={`M${(c.tipX - pointer).toFixed(1)},${base.toFixed(1)} L${c.tipX.toFixed(1)},${tip.toFixed(1)} L${(c.tipX + pointer).toFixed(1)},${base.toFixed(1)} Z`}
+        fill={fill}
+      />
+      <SvgText x={c.x + c.w / 2} y={c.y + h / 2 + 3.8} fontSize={11} fontFamily={fonts.semibold} fill={ink} textAnchor="middle">
+        {c.text}
+      </SvgText>
+    </>
   );
 }
 
