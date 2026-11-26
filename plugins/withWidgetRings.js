@@ -13,6 +13,11 @@
  * its size and sat off-centre (v0.24.0). A vector picture scales to whatever
  * cell the launcher gives and stays a full, centred circle.
  *
+ * The widgets have no background of their own (transparent, so the wallpaper
+ * shows round the ring). Each picture fills the inside of the ring with a
+ * see-through disc (white in light mode, near-black in dark mode) so the
+ * number on top stays readable on any wallpaper.
+ *
  * The colours match src/widgets/*Widget.tsx; change both together.
  */
 const fs = require('fs');
@@ -25,6 +30,8 @@ const RING_COLOURS = {
   over: { light: '#C62828', dark: '#FF6B6B' },
 };
 const TRACK = { light: '#E3E7E5', dark: '#2C3430' };
+/** The see-through disc inside the ring, as #AARRGGBB (about 90% and 85% opaque). */
+const DISC = { light: '#E6FFFFFF', dark: '#D9151917' };
 const STEP = 5;
 const SIZE = 100;
 const STROKE = 10;
@@ -50,7 +57,15 @@ function arcPath(percent) {
   return `M${CENTRE},${CENTRE - RADIUS} A${RADIUS},${RADIUS} 0 ${largeArc},1 ${x},${y}`;
 }
 
-function ringVectorXml(percent, colour, track) {
+/** The filled disc inside the ring, touching the inner edge of the track. */
+function discPath() {
+  const r = RADIUS - STROKE / 2;
+  const top = CENTRE - r;
+  const bottom = CENTRE + r;
+  return `M${CENTRE},${top} A${r},${r} 0 1,1 ${CENTRE},${bottom} A${r},${r} 0 1,1 ${CENTRE},${top} Z`;
+}
+
+function ringVectorXml(percent, colour, track, disc) {
   const arc =
     percent > 0
       ? `
@@ -68,6 +83,9 @@ function ringVectorXml(percent, colour, track) {
     android:viewportWidth="${SIZE}"
     android:viewportHeight="${SIZE}">
   <path
+      android:pathData="${discPath()}"
+      android:fillColor="${disc}" />
+  <path
       android:pathData="${circlePath()}"
       android:strokeColor="${track}"
       android:strokeWidth="${STROKE}" />${arc}
@@ -84,7 +102,7 @@ function ringDrawables() {
       for (const step of steps) {
         files.push({
           name: `widget_ring_${kind}_${theme}_${step}`,
-          xml: ringVectorXml(step, colours[theme], TRACK[theme]),
+          xml: ringVectorXml(step, colours[theme], TRACK[theme], DISC[theme]),
         });
       }
     }
@@ -110,3 +128,4 @@ module.exports.ringDrawables = ringDrawables;
 module.exports.arcPath = arcPath;
 module.exports.RING_COLOURS = RING_COLOURS;
 module.exports.TRACK = TRACK;
+module.exports.DISC = DISC;
