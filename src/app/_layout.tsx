@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import migrations from '../../drizzle/migrations';
 import { db } from '@/db/client';
@@ -58,9 +59,11 @@ function App() {
   if (!loaded) return null;
 
   return (
-    <ThemeProvider preference={profile?.themePref ?? 'system'}>
-      <Navigation hasProfile={!!profile} />
-    </ThemeProvider>
+    <KeyboardProvider>
+      <ThemeProvider preference={profile?.themePref ?? 'system'}>
+        <Navigation hasProfile={!!profile} />
+      </ThemeProvider>
+    </KeyboardProvider>
   );
 }
 
