@@ -95,10 +95,19 @@ describe('withWidgetRings', () => {
 
   it('draws only the track at 0% and an arc from the top otherwise', () => {
     const empty = files.find((f) => f.name === 'widget_ring_steps_light_0').xml;
-    expect(empty.match(/<path/g)).toHaveLength(1);
+    expect(empty.match(/<path/g)).toHaveLength(2);
     const half = files.find((f) => f.name === 'widget_ring_steps_light_50').xml;
-    expect(half.match(/<path/g)).toHaveLength(2);
+    expect(half.match(/<path/g)).toHaveLength(3);
     expect(arcPath(25)).toBe('M50,5 A45,45 0 0,1 95,50');
     expect(arcPath(75)).toBe('M50,5 A45,45 0 1,1 5,50');
+  });
+
+  it('puts a see-through disc behind the number so it reads on any wallpaper', () => {
+    const { DISC } = require('../withWidgetRings');
+    const light = files.find((f) => f.name === 'widget_ring_calories_light_40').xml;
+    const dark = files.find((f) => f.name === 'widget_ring_calories_dark_40').xml;
+    expect(light).toContain(`android:fillColor="${DISC.light}"`);
+    expect(dark).toContain(`android:fillColor="${DISC.dark}"`);
+    for (const colour of Object.values(DISC)) expect(colour).toMatch(/^#[0-9A-F]{8}$/);
   });
 });

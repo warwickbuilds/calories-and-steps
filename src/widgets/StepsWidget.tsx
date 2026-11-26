@@ -1,7 +1,5 @@
 import { Box, Column, Image, Text } from '@expo/ui/jetpack-compose';
 import {
-  background,
-  cornerRadius,
   fillMaxSize,
   paddingAll,
   wrapContentHeight,
@@ -18,6 +16,8 @@ import type { StepsWidgetProps } from '@/lib/widgets';
  * The ring is a picture (res/drawable/widget_ring_steps_<theme>_<step>, made by
  * plugins/withWidgetRings.js) scaled to fit, because Android widgets can't draw
  * a sized progress ring themselves.
+ * The widget has no background (transparent); the ring picture carries a
+ * see-through disc behind the number so it reads on any wallpaper.
  * NOTE: Inside a `'widget'` directive, every constant must live inside the
  * function body (module-scope values are not serialized into the widget bundle).
  */
@@ -25,7 +25,6 @@ const StepsWidgetLayout = (props: StepsWidgetProps, environment: WidgetEnvironme
   'widget';
   const safeProps = props ?? {};
   const isDark = environment?.colorScheme === 'dark';
-  const surface = isDark ? '#151917' : '#FFFFFF';
   const ink = isDark ? '#F2F4F3' : '#0E1111';
   const muted = isDark ? '#9AA39F' : '#5B6360';
   const accent = isDark ? '#B6F24A' : '#1F9D55';
@@ -43,7 +42,7 @@ const StepsWidgetLayout = (props: StepsWidgetProps, environment: WidgetEnvironme
   return (
     <Box
       contentAlignment="center"
-      modifiers={[fillMaxSize(), background(surface), cornerRadius(20), paddingAll(6)]}>
+      modifiers={[fillMaxSize(), paddingAll(4)]}>
       <Image source={{ uri: ring }} contentScale="fit" modifiers={[fillMaxSize()]} />
       <Column
         horizontalAlignment="center"
