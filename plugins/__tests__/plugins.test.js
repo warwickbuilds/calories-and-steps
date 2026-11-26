@@ -70,3 +70,35 @@ android {
     expect(() => addAbiSplits('plugins { }')).toThrow();
   });
 });
+
+describe('withWidgetRings', () => {
+  const { ringDrawables, arcPath } = require('../withWidgetRings');
+  const files = ringDrawables();
+  const names = files.map((f) => f.name);
+
+  it('makes a ring for every 5% in both themes, plus a full red over ring', () => {
+    for (const kind of ['steps', 'calories']) {
+      for (const theme of ['light', 'dark']) {
+        for (let step = 0; step <= 100; step += 5) {
+          expect(names).toContain(`widget_ring_${kind}_${theme}_${step}`);
+        }
+      }
+    }
+    expect(names).toContain('widget_ring_over_light_100');
+    expect(names).toContain('widget_ring_over_dark_100');
+    expect(files).toHaveLength(2 * 2 * 21 + 2);
+  });
+
+  it('uses valid Android resource names', () => {
+    for (const name of names) expect(name).toMatch(/^[a-z][a-z0-9_]*$/);
+  });
+
+  it('draws only the track at 0% and an arc from the top otherwise', () => {
+    const empty = files.find((f) => f.name === 'widget_ring_steps_light_0').xml;
+    expect(empty.match(/<path/g)).toHaveLength(1);
+    const half = files.find((f) => f.name === 'widget_ring_steps_light_50').xml;
+    expect(half.match(/<path/g)).toHaveLength(2);
+    expect(arcPath(25)).toBe('M50,5 A45,45 0 0,1 95,50');
+    expect(arcPath(75)).toBe('M50,5 A45,45 0 1,1 5,50');
+  });
+});

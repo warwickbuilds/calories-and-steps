@@ -3,7 +3,23 @@ import {
   buildStepsWidgetProps,
   formatCompactCalories,
   formatCompactSteps,
+  ringStep,
 } from '../widgets';
+
+describe('ringStep', () => {
+  it('rounds progress to a 5% ring picture without faking empty or done', () => {
+    expect(ringStep(0)).toBe(0);
+    expect(ringStep(-1)).toBe(0);
+    expect(ringStep(Number.NaN)).toBe(0);
+    expect(ringStep(0.001)).toBe(5);
+    expect(ringStep(0.45)).toBe(45);
+    expect(ringStep(0.47)).toBe(45);
+    expect(ringStep(0.48)).toBe(50);
+    expect(ringStep(0.99)).toBe(95);
+    expect(ringStep(1)).toBe(100);
+    expect(ringStep(3)).toBe(100);
+  });
+});
 
 describe('1×1 widget compact formatters', () => {
   it('formats steps into ≤ 4 characters cleanly for a 1×1 ring', () => {
@@ -36,6 +52,7 @@ describe('buildStepsWidgetProps', () => {
       valueLabel: '–',
       label: 'STEPS',
       progress: 0,
+      ringStep: 0,
       reached: false,
       updatedDay: '2026-11-25',
     });
@@ -46,6 +63,7 @@ describe('buildStepsWidgetProps', () => {
       valueLabel: '6.4k',
       label: 'STEPS',
       progress: 0.642,
+      ringStep: 65,
       reached: false,
       updatedDay: '2026-11-25',
     });
@@ -54,6 +72,7 @@ describe('buildStepsWidgetProps', () => {
       valueLabel: '12k',
       label: 'STEPS',
       progress: 1,
+      ringStep: 100,
       reached: true,
       updatedDay: '2026-11-25',
     });
@@ -67,6 +86,7 @@ describe('buildCaloriesWidgetProps', () => {
       valueLabel: '2100',
       label: 'LEFT',
       progress: 1,
+      ringStep: 100,
       over: false,
       updatedDay: '2026-11-25',
     });
@@ -84,6 +104,7 @@ describe('buildCaloriesWidgetProps', () => {
       valueLabel: '250',
       label: 'OVER',
       progress: 1,
+      ringStep: 100,
       over: true,
       updatedDay: '2026-11-25',
     });
@@ -94,6 +115,7 @@ describe('buildCaloriesWidgetProps', () => {
       valueLabel: '–',
       label: 'CAL',
       progress: 0,
+      ringStep: 0,
       over: false,
       updatedDay: '2026-11-25',
     });
