@@ -1,8 +1,10 @@
 /**
- * Pure snapshot builders for the 1×1 Android home-screen widgets (Daily Steps
- * and Calories Left). Kept free of Expo/React imports so they can be unit
- * tested and every formatted value stays ≤ 4 characters to fit cleanly inside
- * a 1×1 circular progress ring without clipping.
+ * Pure snapshot builders for the Android home-screen widgets (Daily Steps and
+ * Calories Left). Kept free of Expo/React imports so they can be unit tested.
+ * Every formatted value stays ≤ 4 characters so it fits inside the ring.
+ *
+ * The ring itself is a picture (plugins/withWidgetRings.js makes one for every
+ * 5%), so the snapshot carries `ringStep`, the progress rounded to a picture.
  */
 
 import { caloriesReadout } from './today';
@@ -12,8 +14,10 @@ export interface StepsWidgetProps {
   valueLabel: string;
   /** Short uppercase micro-label under the number ("STEPS"). */
   label: string;
-  /** 0..1 progress towards daily step target (drives both circle and bar). */
+  /** 0..1 progress towards daily step target. */
   progress: number;
+  /** Progress as a ring picture: 0, 5, 10 … 100. See {@link ringStep}. */
+  ringStep: number;
   /** True when today's steps met or exceeded the target. */
   reached: boolean;
   /** Local date string YYYY-MM-DD for the snapshot. */
@@ -25,8 +29,10 @@ export interface CaloriesWidgetProps {
   valueLabel: string;
   /** Short uppercase micro-label under the number: "LEFT", "OVER", or "CAL". */
   label: string;
-  /** 0..1 progress for both circle and bar (remaining share, or 1 when over). */
+  /** 0..1 share of the target still left (1 when over). */
   progress: number;
+  /** Progress as a ring picture: 0, 5, 10 … 100. See {@link ringStep}. */
+  ringStep: number;
   /** True when today's calories exceed the daily target. */
   over: boolean;
   /** Local date string YYYY-MM-DD for the snapshot. */
@@ -34,6 +40,18 @@ export interface CaloriesWidgetProps {
 }
 
 const clamp01 = (n: number) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
+
+/**
+ * Rounds 0..1 progress to the nearest 5% ring picture. Any progress at all
+ * shows at least 5%, and anything short of done stops at 95%, so the ring
+ * never looks empty or finished when it isn't.
+ */
+export function ringStep(progress: number): number {
+  const p = clamp01(progress);
+  if (p <= 0) return 0;
+  if (p >= 1) return 100;
+  return Math.min(95, Math.max(5, Math.round(p * 20) * 5));
+}
 
 /**
  * Compact step count guaranteed ≤ 4 characters so it never clips inside a 1×1 ring:
@@ -73,6 +91,7 @@ export function buildStepsWidgetProps(
       valueLabel: '–',
       label: 'STEPS',
       progress: 0,
+      ringStep: 0,
       reached: false,
       updatedDay,
     };
@@ -84,6 +103,7 @@ export function buildStepsWidgetProps(
     valueLabel: formatCompactSteps(safeSteps),
     label: 'STEPS',
     progress,
+    ringStep: ringStep(progress),
     reached,
     updatedDay,
   };
@@ -100,16 +120,19 @@ export function buildCaloriesWidgetProps(
       valueLabel: safeEaten > 0 ? formatCompactCalories(safeEaten) : '–',
       label: 'CAL',
       progress: 0,
+      ringStep: 0,
       over: false,
       updatedDay,
     };
   }
   const safeTarget = Math.round(target);
   const readout = caloriesReadout(safeEaten, safeTarget);
+  const progress = readout.over ? 1 : clamp01(readout.remaining);
   return {
     valueLabel: formatCompactCalories(readout.value),
     label: readout.over ? 'OVER' : 'LEFT',
-    progress: readout.over ? 1 : clamp01(readout.remaining),
+    progress,
+    ringStep: ringStep(progress),
     over: readout.over,
     updatedDay,
   };
