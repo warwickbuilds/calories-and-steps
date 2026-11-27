@@ -1,19 +1,24 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { StepsAccessCard } from '@/components/StepsAccessCard';
 import { StepsChart } from '@/components/StepsChart';
-import { Badge, Card, ProgressBar, Screen, Text } from '@/components/ui';
+import { Badge, Card, ProgressBar, Screen, Segmented, Text } from '@/components/ui';
 import { useProfile } from '@/hooks/data';
 import { useStepsHistory, useStepsSync } from '@/hooks/steps';
 import { useToday } from '@/hooks/useToday';
-import { fromLocalDateString } from '@/lib/dates';
-import { WEEK_DAYS, stepsSummary, totalSteps } from '@/lib/steps';
+import {
+  PERIOD_OPTIONS,
+  PERIOD_SPEC,
+  periodAxisLabels,
+  periodBarLabel,
+  periodBars,
+  type ChartPeriod,
+} from '@/lib/chartPeriods';
+import { stepsSummary, totalSteps } from '@/lib/steps';
 import { formatNumber } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
-
-const weekday = (day: string, today: string) =>
-  day === today ? 'Today' : fromLocalDateString(day).toLocaleDateString(undefined, { weekday: 'short' });
 
 export default function StepsScreen() {
   const { colors } = useTheme();
@@ -21,10 +26,17 @@ export default function StepsScreen() {
   const { todayHours } = useStepsSync();
   const target = profile?.stepTarget ?? 10000;
   const todayKey = useToday();
-  const week = useStepsHistory(WEEK_DAYS, todayKey);
-  const today = week[week.length - 1]?.steps ?? null;
-  const weekTotal = totalSteps(week);
-  const summary = stepsSummary(week, target);
+  const [period, setPeriod] = useState<ChartPeriod>('1W');
+  const spec = PERIOD_SPEC[period];
+  const history = useStepsHistory(spec.days, todayKey);
+  const today = history[history.length - 1]?.steps ?? null;
+  const periodTotal = totalSteps(history);
+  const summary = stepsSummary(history, target);
+  const bars = periodBars(
+    history.map((d) => ({ day: d.day, value: d.steps })),
+    period,
+  );
+  const daily = spec.bucket === 1;
   const hours = todayHours?.day === todayKey ? todayHours.hours : null;
   const reached = today != null && today >= target;
 
@@ -62,27 +74,30 @@ export default function StepsScreen() {
         ) : null}
       </Card>
 
-      <Card title="Last 7 days">
+      <Card title={`Last ${spec.title}`}>
+        <Segmented value={period} onChange={setPeriod} options={PERIOD_OPTIONS} />
         <View style={styles.total}>
           <Text variant="label" muted>
-            7-day total
+            {spec.short} total
           </Text>
-          <Text variant="metric">{weekTotal == null ? '–' : formatNumber(weekTotal)}</Text>
+          <Text variant="metric">{periodTotal == null ? '–' : formatNumber(periodTotal)}</Text>
         </View>
         <StepsChart
-          bars={week.map((d) => ({ key: d.day, value: d.steps }))}
+          bars={bars.map((b) => ({ key: b.key, value: b.value }))}
           target={target}
-          labels={week.map((d) => weekday(d.day, todayKey))}
-          formatInspect={(b) => ({
-            label:
-              b.key === todayKey
-                ? 'Today'
-                : fromLocalDateString(b.key).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
-            value: b.value == null ? 'No data' : `${formatNumber(b.value)} steps`,
-          })}
-          accessibilityLabel={`Steps for the last 7 days. ${week
-            .map((d) => `${weekday(d.day, todayKey)} ${d.steps == null ? 'no data' : formatNumber(d.steps)}`)
-            .join(', ')}. Target ${formatNumber(target)}.`}
+          average={period === '1W' ? null : summary.average}
+          labels={periodAxisLabels(bars, period, todayKey)}
+          formatInspect={(_, i) => {
+            const b = bars[i];
+            return {
+              label: periodBarLabel(b, todayKey),
+              value:
+                b.value == null ? 'No data' : `${daily ? '' : 'avg '}${formatNumber(b.value)} steps`,
+            };
+          }}
+          accessibilityLabel={`Steps for the last ${spec.title}${daily ? '' : period === '3M' ? ', as weekly averages' : ', as 4-week averages'}. Daily average ${
+            summary.average == null ? 'no data' : formatNumber(summary.average)
+          }. Target ${formatNumber(target)}.`}
         />
         {summary.daysWithData > 0 ? (
           <View style={[styles.stats, { borderTopColor: colors.line }]}>
