@@ -1,24 +1,31 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CaloriesChart } from '@/components/CaloriesChart';
 import { FoodIcon } from '@/components/FoodIcon';
-import { AddButton, Badge, Card, IconButton, ProgressBar, Screen, SplitBar, Text } from '@/components/ui';
-import { useCaloriesWeek, useDayItems, useDayTotals, useTargets } from '@/hooks/data';
+import { AddButton, Badge, Card, IconButton, ProgressBar, Screen, Segmented, SplitBar, Text } from '@/components/ui';
+import { useCaloriesRange, useDayItems, useDayTotals, useTargets } from '@/hooks/data';
 import { useToday } from '@/hooks/useToday';
+import {
+  PERIOD_OPTIONS,
+  PERIOD_SPEC,
+  periodAxisLabels,
+  periodBarLabel,
+  periodBars,
+  periodDays,
+  type ChartPeriod,
+} from '@/lib/chartPeriods';
 import { addDays, formatLongDate, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { caloriesSummary, dayLabel, formatAmount, macroLine } from '@/lib/food';
 import { MEAL_TYPES, caloriesReadout, formatNumber, isLocalDate, macroSplit } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space } from '@/theme/tokens';
 
-const weekday = (day: string, today: string) =>
-  day === today ? 'Today' : fromLocalDateString(day).toLocaleDateString(undefined, { weekday: 'short' });
-
 /**
  * Calories summary page: today's (or selected day's) calorie & macro breakdown,
- * 7-day average with an interactive 7-day bar chart against the daily target,
+ * average for the chosen period (1W, 1M, 3M, 1Y) with an interactive bar chart against the daily target,
  * and a compact logged meals list for browsing or adding to any day.
  */
 export default function FoodScreen() {
@@ -31,9 +38,17 @@ export default function FoodScreen() {
   const items = useDayItems(day);
   const totals = useDayTotals(day);
   const targets = useTargets();
-  const weekHistory = useCaloriesWeek(day);
+  const [period, setPeriod] = useState<ChartPeriod>('1W');
+  const spec = PERIOD_SPEC[period];
+  const daily = spec.bucket === 1;
+  const days = useMemo(() => periodDays(period, day), [period, day]);
+  const history = useCaloriesRange(days);
   const targetCal = targets?.calories ?? 0;
-  const summary = caloriesSummary(weekHistory, targetCal);
+  const summary = caloriesSummary(history, targetCal);
+  const bars = periodBars(
+    history.map((d) => ({ day: d.day, value: d.calories })),
+    period,
+  );
   const readout = caloriesReadout(totals.calories, targetCal);
   const macros = macroSplit(totals, targets);
   const macroColor = { protein: colors.protein, carbs: colors.carbs, fat: colors.fat };
@@ -107,15 +122,16 @@ export default function FoodScreen() {
       </Card>
 
       <Card
-        title={isToday ? 'Last 7 days' : `7 days to ${dayLabel(day, today)}`}
+        title={isToday ? `Last ${spec.title}` : `${spec.title[0].toUpperCase()}${spec.title.slice(1)} to ${dayLabel(day, today)}`}
         right={
           avgBadgeLabel ? (
             <Badge tone={avgOver ? 'danger' : 'calories'} dot label={avgBadgeLabel} />
           ) : undefined
         }>
+        <Segmented value={period} onChange={setPeriod} options={PERIOD_OPTIONS} />
         <View style={styles.avgBlock}>
           <Text variant="label" muted>
-            7-day average
+            {spec.short} average
           </Text>
           <View style={styles.heroRow}>
             <Text variant="metric">{summary.average == null ? '–' : formatNumber(summary.average)}</Text>
@@ -126,25 +142,25 @@ export default function FoodScreen() {
         </View>
 
         <CaloriesChart
-          bars={weekHistory.map((d) => ({ key: d.day, value: d.calories }))}
+          bars={bars.map((b) => ({ key: b.key, value: b.value }))}
           target={targetCal > 0 ? targetCal : null}
-          labels={weekHistory.map((d) => weekday(d.day, today))}
-          selectedKey={day}
-          formatInspect={(b) => ({
-            label:
-              b.key === today
-                ? 'Today'
-                : fromLocalDateString(b.key).toLocaleDateString(undefined, {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                  }),
-            value: b.value == null ? 'Not logged' : `${formatNumber(b.value)} calories`,
-            over: b.value != null && targetCal > 0 && b.value > targetCal,
-          })}
-          accessibilityLabel={`Calories for the 7 days ending ${dayLabel(day, today)}. ${weekHistory
-            .map((d) => `${weekday(d.day, today)} ${d.calories == null ? 'not logged' : `${formatNumber(d.calories)} calories`}`)
-            .join(', ')}.${targetCal > 0 ? ` Target ${formatNumber(targetCal)} calories.` : ''}`}
+          average={period === '1W' ? null : summary.average}
+          labels={periodAxisLabels(bars, period, today)}
+          selectedKey={period === '1W' ? day : undefined}
+          formatInspect={(_, i) => {
+            const b = bars[i];
+            return {
+              label: periodBarLabel(b, today),
+              value:
+                b.value == null ? 'Not logged' : `${daily ? '' : 'avg '}${formatNumber(b.value)} calories`,
+              over: b.value != null && targetCal > 0 && b.value > targetCal,
+            };
+          }}
+          accessibilityLabel={`Calories for the ${spec.title} ending ${dayLabel(day, today)}${
+            daily ? '' : period === '3M' ? ', as weekly averages' : ', as 4-week averages'
+          }. Average ${summary.average == null ? 'nothing logged' : `${formatNumber(summary.average)} calories`}.${
+            targetCal > 0 ? ` Target ${formatNumber(targetCal)} calories.` : ''
+          }`}
         />
 
         {summary.daysLogged > 0 ? (
@@ -154,7 +170,7 @@ export default function FoodScreen() {
                 Logged
               </Text>
               <Text variant="bodyStrong" style={styles.tabular}>
-                {summary.daysLogged} / 7 days
+                {summary.daysLogged} / {history.length} days
               </Text>
             </View>
             {targetCal > 0 ? (

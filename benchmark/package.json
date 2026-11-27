@@ -1,0 +1,16 @@
+{
+  "name": "calories-and-steps-benchmark",
+  "private": true,
+  "description": "AI accuracy benchmark for meal estimates and nutrition labels. Not part of the app.",
+  "type": "module",
+  "scripts": {
+    "bench": "tsx run.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "sharp": "0.35.5",
+    "tsx": "4.23.15",
+    "typescript": "~6.0.3"
+  }
+}
