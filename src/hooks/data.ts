@@ -76,16 +76,6 @@ export function useRecentFoods() {
   return useMemo(() => recentFoods(data ?? []), [data]);
 }
 
-/** Daily calorie totals for the 7 days ending on `day`, oldest first. */
-export function useCaloriesWeek(day: string): DayCalories[] {
-  const days = useMemo(() => weekEndingOn(day), [day]);
-  const { data } = useLiveQuery(dailyCaloriesQuery(days[0], days[6]), [day]);
-  return useMemo(() => {
-    const totals = Object.fromEntries((data ?? []).map((r) => [r.day, Number(r.calories) || 0]));
-    return caloriesHistory(days, totals);
-  }, [data, days]);
-}
-
 /** Daily calorie totals for a list of consecutive days (oldest first), null where nothing was logged. */
 export function useCaloriesRange(days: string[]): DayCalories[] {
   const from = days[0];

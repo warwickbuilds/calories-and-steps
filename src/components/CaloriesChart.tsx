@@ -23,6 +23,7 @@ export interface CaloriesBar {
 export function CaloriesChart({
   bars,
   target = null,
+  average = null,
   labels,
   selectedKey,
   height = 166,
@@ -31,6 +32,8 @@ export function CaloriesChart({
 }: {
   bars: CaloriesBar[];
   target?: number | null;
+  /** Average for the period, drawn as a solid line in the accent colour with a legend under the chart. */
+  average?: number | null;
   labels: string[];
   /** Key of the highlighted axis day (e.g. the day being viewed). */
   selectedKey?: string;
@@ -54,7 +57,7 @@ export function CaloriesChart({
   });
 
   const pad = { top: formatInspect ? 28 : 16, bottom: 4, left: target ? GUTTER : 4, right: 4 };
-  const max = Math.max(target ? target * 1.18 : 1, ...bars.map((b) => (b.value ?? 0) * 1.05));
+  const max = Math.max(average ?? 0, target ? target * 1.18 : 1, ...bars.map((b) => (b.value ?? 0) * 1.05));
   const plotW = Math.max(0, width - pad.left - pad.right);
   const plotH = height - pad.top - pad.bottom;
   const y = (v: number) => pad.top + plotH - (v / max) * plotH;
@@ -186,6 +189,17 @@ export function CaloriesChart({
                 />
               );
             })}
+            {average != null && average > 0 ? (
+              <Line
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={y(average)}
+                y2={y(average)}
+                stroke={colors.calories}
+                strokeWidth={1.5}
+                opacity={activeIndex != null ? 0.35 : 0.9}
+              />
+            ) : null}
             {target ? (
               <>
                 <Line
@@ -214,10 +228,11 @@ export function CaloriesChart({
       </View>
       <View style={[styles.axis, { paddingLeft: pad.left, paddingRight: pad.right }]}>
         {labels.map((l, i) => {
+          const perBar = labels.length === bars.length;
           const isHighlighted =
-            activeIndex != null
+            activeIndex != null && perBar
               ? activeIndex === i
-              : selectedKey
+              : selectedKey && perBar
                 ? bars[i]?.key === selectedKey
                 : l === 'Today';
           return (
@@ -225,17 +240,40 @@ export function CaloriesChart({
               key={`${l}-${i}`}
               variant="caption"
               muted={!isHighlighted}
-              style={[styles.under, isHighlighted && styles.activeLabel]}>
+              // One label per bar sits under its bar; fewer labels spread out.
+              style={[perBar && styles.under, isHighlighted && styles.activeLabel]}>
               {l}
             </Text>
           );
         })}
       </View>
+      {average != null && average > 0 ? (
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendLine, { backgroundColor: colors.calories }]} />
+            <Text variant="caption" muted>
+              Average {Math.round(average).toLocaleString('en-US')}
+            </Text>
+          </View>
+          {target ? (
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDots, { borderColor: colors.text }]} />
+              <Text variant="caption" muted>
+                Target {Math.round(target).toLocaleString('en-US')}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  legend: { flexDirection: 'row', gap: space[4], marginTop: space[2] },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendLine: { width: 14, height: 2, borderRadius: 1 },
+  legendDots: { width: 14, height: 0, borderTopWidth: 1.5, borderStyle: 'dotted', opacity: 0.6 },
   inspectRow: {
     position: 'absolute',
     top: 0,
