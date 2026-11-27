@@ -1,4 +1,4 @@
-import { Box, Column, Image, Text } from '@expo/ui/jetpack-compose';
+import { Box, Button, Column, Image, Text } from '@expo/ui/jetpack-compose';
 import {
   fillMaxSize,
   paddingAll,
@@ -20,6 +20,10 @@ import type { CaloriesWidgetProps } from '@/lib/widgets';
  * can't draw a sized progress ring themselves.
  * The widget has no background (transparent); the ring picture carries a
  * see-through disc behind the number so it reads on any wallpaper.
+ * Tapping anywhere on the widget opens the app on the Calories tab. The whole
+ * layout sits in a Button whose target is "openUrl:<deep link>"; our patch to
+ * expo-widgets (patches/expo-widgets+*.patch) turns that into an "open this
+ * link" action instead of the usual broadcast.
  * NOTE: Inside a `'widget'` directive, every constant must live inside the
  * function body (module-scope values are not serialized into the widget bundle).
  */
@@ -42,29 +46,34 @@ const CaloriesWidgetLayout = (props: CaloriesWidgetProps, environment: WidgetEnv
   const valueLabel = safeProps.valueLabel ?? '–';
   const label = safeProps.label ?? 'LEFT';
 
+  // `target` isn't in Button's types; expo-widgets reads it from the props.
+  const tap = { target: 'openUrl:caloriesandsteps://food' } as Record<string, string>;
+
   return (
-    <Box
-      contentAlignment="center"
-      modifiers={[fillMaxSize(), paddingAll(4)]}>
-      <Image source={{ uri: ring }} contentScale="fit" modifiers={[fillMaxSize()]} />
-      <Column
-        horizontalAlignment="center"
-        verticalArrangement="center"
-        modifiers={[wrapContentWidth(), wrapContentHeight()]}>
-        <Text
-          color={over ? danger : ink}
-          maxLines={1}
-          style={{ fontSize: 13, fontWeight: 'bold', textAlign: 'center' }}>
-          {valueLabel}
-        </Text>
-        <Text
-          color={over ? danger : muted}
-          maxLines={1}
-          style={{ fontSize: 8, fontWeight: 'bold', textAlign: 'center' }}>
-          {label}
-        </Text>
-      </Column>
-    </Box>
+    <Button {...tap} modifiers={[fillMaxSize()]}>
+      <Box
+        contentAlignment="center"
+        modifiers={[fillMaxSize(), paddingAll(4)]}>
+        <Image source={{ uri: ring }} contentScale="fit" modifiers={[fillMaxSize()]} />
+        <Column
+          horizontalAlignment="center"
+          verticalArrangement="center"
+          modifiers={[wrapContentWidth(), wrapContentHeight()]}>
+          <Text
+            color={over ? danger : ink}
+            maxLines={1}
+            style={{ fontSize: 13, fontWeight: 'bold', textAlign: 'center' }}>
+            {valueLabel}
+          </Text>
+          <Text
+            color={over ? danger : muted}
+            maxLines={1}
+            style={{ fontSize: 8, fontWeight: 'bold', textAlign: 'center' }}>
+            {label}
+          </Text>
+        </Column>
+      </Box>
+    </Button>
   );
 };
 
