@@ -204,7 +204,7 @@ Full versions are in [Main dependency versions](#main-dependency-versions).
 | Keyboard-aware screens | Tapping a number or text box scrolls it up above the keyboard on every screen (Today's weigh-in included), and Save/Next buttons ride on top of the keyboard | Done (PR #30, 0.27.0) |
 | Home-screen widgets | Two Android home-screen widgets (**Daily Steps** and **Calories Left**): a full, centred progress ring drawn as a vector picture that scales to any cell, on a transparent background with a see-through disc behind the number, resizable from 1×1, light/dark support and hydration-safe live sync | Done (PR #26, #27, #28, #29, 0.26.0) |
 
-**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix), **v0.14.0** (backup and restore), **v0.16.0** (check-in polish and smaller arm64 + universal APKs), **v0.18.0** (actual weigh-in totals and reliability/cropping fixes), **v0.20.0** (weight chart start/latest labels and Today redesign), **v0.21.0** (UI & highlight colour polish, custom dual-arc icons, interactive chart scrub, haptics, and Stone/OLED themes), and **v0.23.0** (smart local reminders, Today/Calories layout updates and Android home-screen widgets). Everything since — 1×1 widget sizing and hydration-safe snapshot sync (0.24.0), the widget ring fix (0.25.0), transparent widgets (0.26.0) and keyboard-aware screens (0.27.0) — goes out in the next release. See [which versions were released](#versions-and-changelog).
+**v0.2.0** was released on 2026-11-24, the first signed APK, built by GitHub Actions and published from GitHub's Releases page (see [Releases](#releases)). The same day followed **v0.3.0** (weight import and the Google AI key; Rick confirmed it works on his phone), **v0.6.0** (all of Phase 3), **v0.7.0** (the weight chart upgrade), **v0.11.0** (ml for drinks and food icons), **v0.13.0** (steps from Health Connect, the new tabs and the voice stop fix), **v0.14.0** (backup and restore), **v0.16.0** (check-in polish and smaller arm64 + universal APKs), **v0.18.0** (actual weigh-in totals and reliability/cropping fixes), **v0.20.0** (weight chart start/latest labels and Today redesign), **v0.21.0** (UI & highlight colour polish, custom dual-arc icons, interactive chart scrub, haptics, and Stone/OLED themes), **v0.23.0** (smart local reminders, Today/Calories layout updates and Android home-screen widgets), **v0.24.0** (1×1 widget sizing and hydration-safe snapshot sync) and **v0.25.0** (the widget ring fix) on 2026-11-26, and **v0.27.0** (transparent widgets from 0.26.0 and keyboard-aware screens) on 2026-11-27, the latest release. See [which versions were released](#versions-and-changelog).
 
 Phase 3 was built in three steps (the food log, barcodes and labels, then photo meal estimates), one commit each, and shipped together in PR #8 as 0.6.0. Versions 0.4.0 and 0.5.0 were never released. 0.6.0 adds a native module (speech recognition), so a new development build is needed for local work.
 
@@ -397,7 +397,7 @@ Several PRs can merge between two releases, so not every version number gets its
 
 | Version | Released? |
 | --- | --- |
-| 0.2.0, 0.3.0, 0.6.0, 0.7.0, 0.11.0, 0.13.0, 0.14.0, 0.16.0, 0.18.0, 0.20.0, 0.21.0, 0.23.0 | Released on GitHub |
+| 0.2.0, 0.3.0, 0.6.0, 0.7.0, 0.11.0, 0.13.0, 0.14.0, 0.16.0, 0.18.0, 0.20.0, 0.21.0, 0.23.0, 0.24.0, 0.25.0, 0.27.0 | Released on GitHub (0.27.0 is the latest, 2026-11-27) |
 | 0.4.0, 0.5.0 | Never built: Phase 3 was split into steps during development, then shipped together as 0.6.0 |
 | 0.8.0 (ml for drinks) | Not tagged; shipped in 0.11.0 |
 | 0.9.0, 0.10.0 | Only used on branches before they were renumbered to 0.12.0 and 0.13.0; never merged |
@@ -406,13 +406,11 @@ Several PRs can merge between two releases, so not every version number gets its
 | 0.17.0 (weight totals from weigh-ins) | Not tagged; shipped in 0.18.0 |
 | 0.19.0 (start and latest labels) | Not tagged; shipped in 0.20.0 |
 | 0.22.0 (Smart local reminders & Today/Calories layout) | Not tagged; shipped in 0.23.0 |
-| 0.24.0 (1×1 home-screen widgets fix) | Not tagged; ships in the next release |
-| 0.25.0 (widget ring fix) | Not tagged; ships in the next release |
-| 0.26.0 (transparent widgets) | Not tagged; ships in the next release |
-| 0.27.0 (keyboard-aware screens) | Next release, once tagged |
+| 0.26.0 (transparent widgets) | Not tagged; shipped in 0.27.0 |
 
 | Date | Change | PR |
 | --- | --- | --- |
+| 2026-11-27 | README brought up to date with GitHub: 0.24.0, 0.25.0 and 0.27.0 are released (0.27.0 is the latest; 0.26.0 shipped inside it), and Future enhancements no longer mentions what has shipped (widgets, themes, icons, the steps summary strip). No app change, still 0.27.0 | #32 |
 | 2026-11-27 | Fix the keyboard covering inputs: on Rick's phone, tapping Today's weigh-in box brought up the number pad over it and the screen didn't scroll, so he couldn't see what he typed. Cause: Android apps are now edge-to-edge, so the window no longer shrinks for the keyboard, and `Screen`'s `KeyboardAvoidingView` did nothing on Android (`behavior` was only set for iOS). `Screen` (`src/components/ui/Screen.tsx`) now uses `KeyboardAwareScrollView` from the new `react-native-keyboard-controller` (1.22.7, `KeyboardProvider` in `src/app/_layout.tsx`), which scrolls the focused box to 24 px above the keyboard, and its footer (Save, Add, Next) sits in a `KeyboardStickyView` so it rides on the keyboard instead of hiding behind it. Every screen built on `Screen` gets this: Today, Weight, Steps, Calories, Progress, Settings, onboarding, quick add and food editing, barcodes and labels, meal estimates, check-ins and weight import. New native module, so it needs a new APK. No DB migration. Version 0.27.0 | #30 |
 | 2026-11-26 | Transparent home-screen widgets (Rick asked): removed the tile background and rounded corners from `src/widgets/StepsWidget.tsx` and `src/widgets/CaloriesWidget.tsx`, so the wallpaper shows round the ring. To keep the number readable on any wallpaper, each ring picture from `plugins/withWidgetRings.js` now has a see-through disc inside the ring (`DISC`: `#E6FFFFFF` light, `#D9151917` dark). Text colours unchanged. No DB migration. Version 0.26.0 | #29 |
 | 2026-11-26 | Fix the home-screen widgets' ring: on Rick's phone the ring came out as a small clipped arc, off-centre and overlapping the number, with a redundant bar below and lots of empty space. Cause: Glance can't size a determinate circular progress indicator, so the `size(46, 46)` was ignored. The ring is now a vector picture (`widget_ring_<steps\|calories\|over>_<light\|dark>_<0…100 in 5s>`, 86 files written into `res/drawable` at prebuild by the new `plugins/withWidgetRings.js`) shown with `Image` `fillMaxSize` + `contentScale="fit"`, so it scales to the launcher's cell and stays centred. Number and label sit inside it (13sp / 8sp); the progress bar is gone. Snapshots gain `ringStep` (`ringStep()` in `src/lib/widgets.ts`: nearest 5%, never shows empty or done when it isn't). Widgets are now resizable (`resizeMode: "both"`). Brighter ring tracks so they show in dark mode. No DB migration. Version 0.25.0 | #28 |
@@ -718,7 +716,7 @@ Everything we've discussed that is not built yet.
 - Refresh a cached product from Open Food Facts after a while, in case its data was corrected.
 
 **Steps, later**
-- Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year) and best-day highlights. The last-7-day summary strip (daily average, days on target and current streak) now uses `stepsSummary` from `src/lib/steps.ts` on the Steps tab; longer-range analytics will reuse the same helper.
+- Step analytics (Rick, 2026-11-24: "we'll build out the steps analytics in the future"): longer periods (30 days, months, a year) and best-day highlights. Longer-range analytics can reuse `stepsSummary` from `src/lib/steps.ts`, which already drives the Steps tab's 7-day strip.
 - Reading older history with Health Connect's history permission (more than 30 days before access was given).
 - Syncing in the background (needs Health Connect's background read permission) so Today is up to date before the app opens, and so the Daily Steps home-screen widget stays fresh while the app is closed (see Widgets, later).
 - Entering steps by hand for days without a phone or watch.
@@ -729,7 +727,7 @@ Everything we've discussed that is not built yet.
 - Favourites (pin a food to the top of the recent list).
 
 **Look and feel, later**
-- Additional accent or seasonal themes beyond Light, Stone, Dark and OLED (Stone and OLED shipped in 0.21.0). Green stays for steps and orange for calories in every theme.
+- Additional accent or seasonal themes beyond Light, Stone, Dark and OLED. Green stays for steps and orange for calories in every theme.
 
 **Step and calorie graphs, later**
 - Rework the step and calorie graphs (Rick, 2026-11-24: "graph modification for step and calories"). What to change is still to be worked out with Rick; see also the step analytics above.
@@ -738,7 +736,10 @@ Everything we've discussed that is not built yet.
 - Check-in detail, side-by-side compare and meal estimate photos now show uncropped (`contain` fit as of 0.18.0); confirm on-device with Rick whether any other cropping or camera framing tweaks are needed.
 
 **Widgets, later**
-- Android **Daily Steps** and **Calories Left** single-tile home-screen widgets shipped in 0.23.0 (updating whenever the app opens, logs food/steps or backgrounds). Still planned: background Health Connect step refresh while the app is closed (see Steps, later), tap-to-open-specific-tab deep links from widgets, larger text when a widget is resized bigger (expo-widgets doesn't pass the cell size to the layout yet, so the ring scales but the number stays one size), and iOS WidgetKit SwiftUI layouts when iOS returns.
+- Background Health Connect step refresh so the widgets stay fresh while the app is closed (see Steps, later).
+- Tapping a widget opens its own tab (Steps or Calories) instead of Today.
+- Larger text when a widget is resized bigger (expo-widgets doesn't pass the cell size to the layout yet, so the ring scales but the number stays one size).
+- iOS WidgetKit layouts when iOS returns.
 
 **Knowledge and inspiration, later**
 - A help and inspiration section (Rick, 2026-11-24): YouTube links, some funny ones, and men's health. Built around Rick's key messages, kept in his words:
@@ -751,7 +752,7 @@ Everything we've discussed that is not built yet.
   - Being lean with muscle feels so good.
 
 **Phase 5: polish**
-- Empty states and offline error handling. (Custom dual-arc app icons shipped in 0.21.0.)
+- Empty states and offline error handling.
 
 **Backup, later**
 - An optional password to encrypt the backup file.
