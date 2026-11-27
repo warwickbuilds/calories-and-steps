@@ -111,3 +111,27 @@ describe('withWidgetRings', () => {
     for (const colour of Object.values(DISC)) expect(colour).toMatch(/^#[0-9A-F]{8}$/);
   });
 });
+
+describe('widget taps open the right tab', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '../..');
+  const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+  const scheme = JSON.parse(read('app.json')).expo.scheme;
+
+  it.each([
+    ['src/widgets/StepsWidget.tsx', 'steps'],
+    ['src/widgets/CaloriesWidget.tsx', 'food'],
+  ])('%s opens the %s tab', (file, route) => {
+    expect(read(file)).toContain(`target: 'openUrl:${scheme}://${route}'`);
+    expect(fs.existsSync(path.join(root, `src/app/(tabs)/${route}.tsx`))).toBe(true);
+  });
+
+  it('keeps the expo-widgets patch that turns openUrl targets into an open-link action', () => {
+    const patches = fs.readdirSync(path.join(root, 'patches')).filter((f) => f.startsWith('expo-widgets+'));
+    expect(patches).toHaveLength(1);
+    const installed = require('expo-widgets/package.json').version;
+    expect(patches[0]).toBe(`expo-widgets+${installed}.patch`);
+    expect(read(`patches/${patches[0]}`)).toContain('actionStartActivity');
+  });
+});

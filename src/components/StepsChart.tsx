@@ -24,6 +24,7 @@ export interface StepsBar {
 export function StepsChart({
   bars,
   target = null,
+  average = null,
   labels,
   height = 160,
   formatInspect,
@@ -31,6 +32,8 @@ export function StepsChart({
 }: {
   bars: StepsBar[];
   target?: number | null;
+  /** Average for the period, drawn as a solid line in the accent colour with a legend under the chart. */
+  average?: number | null;
   /** Labels under the chart: one per bar, or a few spread from left to right. */
   labels: string[];
   height?: number;
@@ -54,7 +57,7 @@ export function StepsChart({
   });
 
   const pad = { top: formatInspect ? 28 : 16, bottom: 4, left: target ? GUTTER : 4, right: 4 };
-  const max = Math.max(target ? target * 1.15 : 1, ...bars.map((b) => b.value ?? 0));
+  const max = Math.max(average ?? 0, target ? target * 1.15 : 1, ...bars.map((b) => b.value ?? 0));
   const plotW = Math.max(0, width - pad.left - pad.right);
   const plotH = height - pad.top - pad.bottom;
   const y = (v: number) => pad.top + plotH - (v / max) * plotH;
@@ -175,6 +178,17 @@ export function StepsChart({
                 />
               );
             })}
+            {average != null && average > 0 ? (
+              <Line
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={y(average)}
+                y2={y(average)}
+                stroke={colors.steps}
+                strokeWidth={1.5}
+                opacity={activeIndex != null ? 0.35 : 0.9}
+              />
+            ) : null}
             {target ? (
               <>
                 <Line
@@ -210,11 +224,33 @@ export function StepsChart({
           );
         })}
       </View>
+      {average != null && average > 0 ? (
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendLine, { backgroundColor: colors.steps }]} />
+            <Text variant="caption" muted>
+              Average {Math.round(average).toLocaleString('en-US')}
+            </Text>
+          </View>
+          {target ? (
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDots, { borderColor: colors.text }]} />
+              <Text variant="caption" muted>
+                Target {Math.round(target).toLocaleString('en-US')}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  legend: { flexDirection: 'row', gap: space[4], marginTop: space[2] },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendLine: { width: 14, height: 2, borderRadius: 1 },
+  legendDots: { width: 14, height: 0, borderTopWidth: 1.5, borderStyle: 'dotted', opacity: 0.6 },
   inspectRow: {
     position: 'absolute',
     top: 0,
