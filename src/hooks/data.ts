@@ -86,6 +86,17 @@ export function useCaloriesWeek(day: string): DayCalories[] {
   }, [data, days]);
 }
 
+/** Daily calorie totals for a list of consecutive days (oldest first), null where nothing was logged. */
+export function useCaloriesRange(days: string[]): DayCalories[] {
+  const from = days[0];
+  const to = days[days.length - 1];
+  const { data } = useLiveQuery(dailyCaloriesQuery(from, to), [from, to]);
+  return useMemo(() => {
+    const totals = Object.fromEntries((data ?? []).map((r) => [r.day, Number(r.calories) || 0]));
+    return caloriesHistory(days, totals);
+  }, [data, days]);
+}
+
 /** Average calories over the logged days of the week ending on `day`. */
 export function useWeekAverage(day: string) {
   const days = useMemo(() => weekEndingOn(day), [day]);
