@@ -3,6 +3,7 @@ import {
   Camera,
   Check,
   Copy,
+  Database,
   FileText,
   Mic,
   PencilLine,
@@ -12,20 +13,26 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { FoodIcon } from '@/components/FoodIcon';
 import { AddButton, Button, Card, Screen, Segmented, Text } from '@/components/ui';
+import { findByBarcode, saveFoodRef } from '@/db/foods';
 import { addFood, copyMeal } from '@/db/meals';
 import { useDayTotals, useRecentFoods } from '@/hooks/data';
+import { useFoodDatabaseSearch, type FoodSearchState } from '@/hooks/foodSearch';
 import { addDays, fromLocalDateString, toLocalDateString } from '@/lib/dates';
 import { dayLabel, formatAmount, macroLine, searchFoods, type RecentFood } from '@/lib/food';
+import type { SearchHit } from '@/lib/foodSearch';
 import { hapticSuccess } from '@/lib/haptics';
 import { MEAL_TYPES, formatNumber, isLocalDate, isMealType, type MealType } from '@/lib/today';
 import { useTheme } from '@/theme/ThemeProvider';
 import { MAX_FONT_SCALE, radius, space, type as typeScale } from '@/theme/tokens';
 
-/** Where every "+" leads: search recent foods, AI/barcode capture, quick add, or same as yesterday. */
+/**
+ * Where every "+" leads: search recent foods and the Open Food Facts database,
+ * AI/barcode capture, quick add, or same as yesterday.
+ */
 export default function AddFoodScreen() {
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ meal?: string; day?: string }>();
@@ -37,6 +44,8 @@ export default function AddFoodScreen() {
   const [copying, setCopying] = useState(false);
   const recent = useRecentFoods();
   const matches = useMemo(() => searchFoods(recent, query), [recent, query]);
+  const database = useFoodDatabaseSearch(query);
+  const [opening, setOpening] = useState(false);
   const isToday = day === today;
 
   const prevDay = toLocalDateString(addDays(fromLocalDateString(day), -1));
@@ -79,6 +88,19 @@ export default function AddFoodScreen() {
       },
     });
 
+  // Cache the product under its barcode (unless it's already saved, maybe with
+  // the user's corrections), then open it like a scanned barcode.
+  const openProduct = async (hit: SearchHit) => {
+    if (opening) return;
+    setOpening(true);
+    try {
+      if (!(await findByBarcode(hit.barcode))) await saveFoodRef(hit.food, 'off', hit.barcode);
+      router.push({ pathname: '/product', params: { barcode: hit.barcode, meal, day } });
+    } finally {
+      setOpening(false);
+    }
+  };
+
   const addNow = async (f: RecentFood) => {
     await addFood({
       day,
@@ -111,11 +133,12 @@ export default function AddFoodScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search foods you’ve had before"
+          placeholder="Search foods"
           placeholderTextColor={colors.muted}
           maxFontSizeMultiplier={MAX_FONT_SCALE}
           accessibilityLabel="Search foods"
           returnKeyType="search"
+          onSubmitEditing={() => void database.search()}
           style={[typeScale.body, styles.searchInput, { color: colors.text }]}
         />
       </View>
@@ -153,9 +176,9 @@ export default function AddFoodScreen() {
         ) : null}
       </View>
 
-      {recent.length === 0 ? (
+      {recent.length === 0 && !query.trim() ? (
         <Text variant="label" muted style={styles.note}>
-          Foods you log show up here, so you can add them again in one tap.
+          Foods you log show up here, so you can add them again in one tap. Type a name to search the food database.
         </Text>
       ) : matches.length === 0 ? (
         <Card>
@@ -198,7 +221,113 @@ export default function AddFoodScreen() {
           })}
         </Card>
       )}
+
+      {database.canSearch ? (
+        <DatabaseCard
+          state={database.state}
+          homeName={database.home?.name ?? null}
+          onSearch={(everywhere) => void database.search(everywhere)}
+          onOpen={(hit) => void openProduct(hit)}
+        />
+      ) : null}
     </Screen>
+  );
+}
+
+/** Open Food Facts results for what's typed, searched only on request. */
+function DatabaseCard({
+  state,
+  homeName,
+  onSearch,
+  onOpen,
+}: {
+  state: FoodSearchState;
+  homeName: string | null;
+  onSearch: (everywhere?: boolean) => void;
+  onOpen: (hit: SearchHit) => void;
+}) {
+  const { colors } = useTheme();
+  if (state.kind === 'idle') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => onSearch()}
+        style={({ pressed }) => [
+          styles.dbButton,
+          { backgroundColor: colors.surface, borderColor: colors.cardBorder, opacity: pressed ? 0.75 : 1 },
+        ]}>
+        <View style={[styles.tileIcon, { backgroundColor: colors.caloriesSoft }]}>
+          <Database size={18} strokeWidth={1.9} color={colors.calories} />
+        </View>
+        <View style={styles.rowText}>
+          <Text variant="bodyMedium">Search the food database</Text>
+          <Text variant="caption" muted>
+            Open Food Facts{homeName ? `, products sold in ${homeName} first` : ''}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
+  if (state.kind === 'loading') {
+    return (
+      <Card>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.text} />
+          <Text variant="body">Searching Open Food Facts…</Text>
+        </View>
+      </Card>
+    );
+  }
+  if (state.kind === 'offline') {
+    return (
+      <Card>
+        <Text variant="bodyStrong">Couldn’t reach Open Food Facts</Text>
+        <Text variant="label" muted>
+          Check your connection and try again.
+        </Text>
+        <Button variant="secondary" label="Try again" onPress={() => onSearch()} />
+      </Card>
+    );
+  }
+  const where = state.country ? state.country.name : 'All countries';
+  return (
+    <Card title="Food database" right={<Text variant="caption" muted>{where}</Text>} style={styles.list}>
+      {state.hits.length === 0 ? (
+        <Text variant="body" muted style={styles.empty}>
+          No products match “{state.query}”. Try fewer words, or scan the barcode.
+        </Text>
+      ) : (
+        state.hits.map((hit, i) => {
+          const f = hit.food;
+          const per = f.unit === 'ml' ? '100 ml' : '100 g';
+          return (
+            <Pressable
+              key={hit.barcode}
+              accessibilityRole="button"
+              accessibilityHint="Opens it so you can choose the amount"
+              onPress={() => onOpen(hit)}
+              style={({ pressed }) => [
+                styles.row,
+                i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+                { opacity: pressed ? 0.6 : 1 },
+              ]}>
+              <FoodIcon food={f} />
+              <View style={styles.rowText}>
+                <Text variant="bodyMedium">{f.name}</Text>
+                <Text variant="caption" muted>
+                  {f.brand ? `${f.brand} · ` : ''}
+                  {formatNumber(f.caloriesPer100g)} calories per {per}
+                  {f.servingG != null ? ` · serving ${formatAmount(f.servingG, f.unit)}` : ''}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })
+      )}
+      {state.country ? (
+        <Button variant="ghost" label="Search all countries" onPress={() => onSearch(true)} />
+      ) : null}
+    </Card>
   );
 }
 
@@ -271,6 +400,17 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, paddingVertical: space[2] },
   note: { paddingHorizontal: space[1] },
+  dbButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
+  },
+  loading: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  empty: { paddingVertical: space[2] },
   list: { gap: 0, paddingVertical: space[2] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 60, paddingVertical: space[2] },
   rowText: { flex: 1, gap: 2 },
