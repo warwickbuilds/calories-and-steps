@@ -1,0 +1,7 @@
+meal,photo,description,item,grams,cal_per_100,protein_per_100,carbs_per_100,fat_per_100,calories,protein,carbs,fat
+m01,PXL_20261128_183012.jpg,"chicken breast, about a cup of rice and some broccoli, cooked in a bit of olive oil",cooked white rice,185,130,2.7,28,0.3,,,,
+m01,,,grilled chicken breast,160,165,31,0,3.6,,,,
+m01,,,steamed broccoli,90,35,2.4,7,0.4,,,,
+m01,,,olive oil,8,884,0,0,100,,,,
+m02,PXL_20261129_071544.jpg,"protein bar and a flat white with full cream milk",protein bar,60,,,,,220,20,22,7
+m02,,,flat white (full cream milk),220,270 kJ,3.3,4.7,3.4,,,,
